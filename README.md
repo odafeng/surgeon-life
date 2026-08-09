@@ -1,5 +1,7 @@
 # 外科醫師的一生
 
+**▶ 線上遊玩:https://odafeng.github.io/surgeon-life/**(請用電腦或手機橫向)
+
 一個回合制的人生經營遊戲。主角從高中生開始,走完(或走不完)一個台灣外科醫師的一生。
 寫實,苦中帶淚。
 
@@ -60,9 +62,10 @@
 
 架構決策見 `docs/adr/`,設計文件見 `docs/superpowers/specs/`。
 
-## 部署(GitHub Pages)
+## 部署
 
-Repo Settings → Pages → Source 選 `main` branch 根目錄即可,無 build step。
+已部署在 GitHub Pages:<https://odafeng.github.io/surgeon-life/>
+推上 `main` 就會自動重新部署,無 build step。
 
 ## 素材
 
