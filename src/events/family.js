@@ -1,5 +1,16 @@
 // 感情與家庭。跨階段，依 family.stage 與 family.kids 推進。
 // 有 choices 的事件，狀態推進一律寫在 choice 的 set 裡——engine 不會執行事件層的 set。
+// 孩子現在幾歲。所有跟孩子有關的事件都必須以這個為準——
+// 用主角的年齡當條件的話，32 歲生的孩子會在主角 45 歲那年「上國中」，
+// 然後在 49 歲那年第一次扶著沙發站起來。
+import { spouseAway } from '../characters.js';
+
+const kidAge = (s) => (s.family.children?.[0] ? s.age - s.family.children[0].bornAt : -1);
+const kidBetween = (lo, hi) => (s) => {
+  const a = kidAge(s);
+  return a >= lo && a <= hi;
+};
+
 export const FAMILY_EVENTS = [
   {
     id: 'f_blind_date',
@@ -29,9 +40,9 @@ export const FAMILY_EVENTS = [
     stages: ['pgy', 'resident', 'attending'],
     weight: 3,
     cond: (s) => s.family.stage === 'dating',
-    text: '電影開演二十分鐘，手機在口袋裡震動。你走到廳外接完，回座時對方把爆米花往你這邊推了推，沒有問是什麼事。',
+    text: '電影開演二十分鐘，手機在口袋裡震動。你走到廳外接完，回座時{配偶}把爆米花往你這邊推了推，沒有問是什麼事。',
     effects: { familyBond: -5, self: -3 },
-    log: '那部電影你們後來沒有看完。上串流那天，對方傳訊息說：「我自己看完了，還不錯。」',
+    log: '那部電影你們後來沒有看完。上串流那天，{配偶}傳訊息說：「我自己看完了，還不錯。」',
   },
   {
     id: 'f_shift_calendar',
@@ -41,9 +52,9 @@ export const FAMILY_EVENTS = [
     stages: ['pgy', 'resident', 'attending', 'aesthetic'],
     weight: 3,
     cond: (s) => s.family.stage === 'steady' || s.family.stage === 'married',
-    text: '你發現對方的手機行事曆裡有一份你的班表，標成灰色。那份表連你自己都沒有輸入過。',
+    text: '你發現{配偶}的手機行事曆裡有一份你的班表，標成灰色。那份表連你自己都沒有輸入過。',
     effects: { familyBond: 8, self: 4 },
-    log: '你問什麼時候弄的。對方說：「這樣我就知道哪幾天不用等你吃飯。」你當下很感動，過了三天才想通這句話真正的意思：有多少頓飯，是一個人吃的。',
+    log: '你問什麼時候弄的。{配偶}說：「這樣我就知道哪幾天不用等你吃飯。」你當下很感動，過了三天才想通這句話真正的意思：有多少頓飯，是一個人吃的。',
   },
   {
     id: 'f_meet_parents',
@@ -53,12 +64,12 @@ export const FAMILY_EVENTS = [
     once: true,
     weight: 2,
     cond: (s) => s.family.stage === 'steady',
-    text: '第一次到對方家吃飯。伯父問：「醫師好啊，以後是不是就穩定了？」你正要解釋外科的訓練還有幾年，桌子底下被踢了一下。',
+    text: '第一次到{配偶}家吃飯。伯父問：「醫師好啊，以後是不是就穩定了？」你正要解釋外科的訓練還有幾年，桌子底下被踢了一下。',
     choices: [
       {
         label: '順著說會越來越穩定。',
         effects: { familyBond: 5, self: -3 },
-        log: '一頓飯氣氛很好。回程的車上，對方說：「謝謝你今天沒有講實話。」',
+        log: '一頓飯氣氛很好。回程的車上，{配偶}說：「謝謝你今天沒有講實話。」',
       },
       {
         label: '老實講完訓練年限和值班。',
@@ -85,7 +96,7 @@ export const FAMILY_EVENTS = [
       {
         label: '再延一次。',
         effects: { familyBond: -12, self: -5 },
-        log: '對方說好，語氣很平靜。掛掉電話你才發現，這一次沒有人問下一次是什麼時候。',
+        log: '{配偶}說好，語氣很平靜。掛掉電話你才發現，這一次沒有人問下一次是什麼時候。',
       },
     ],
   },
@@ -107,8 +118,8 @@ export const FAMILY_EVENTS = [
     mood: 'weary',
     stages: ['resident', 'attending', 'aesthetic'],
     weight: 3,
-    cond: (s) => s.family.kids > 0,
-    text: '對方傳來十七秒的影片：孩子第一次自己站起來，扶著沙發，晃了兩下。訊息時間是下午三點十二分，你在開刀。',
+    cond: kidBetween(1, 2),
+    text: '{配偶}傳來十七秒的影片：孩子第一次自己站起來，扶著沙發，晃了兩下。訊息時間是下午三點十二分，你在開刀。',
     effects: { familyBond: -5, self: -4 },
     log: '你晚上十一點看到，回了一個「哇」。這段影片你後來重看過很多次，每一次都是在值班室。',
   },
@@ -118,13 +129,13 @@ export const FAMILY_EVENTS = [
     mood: 'weary',
     stages: ['resident', 'attending'],
     weight: 3,
-    cond: (s) => s.family.kids > 0,
-    text: '孩子燒到三十九度八，對方在急診等叫號。你人在開刀房，隔著門聽助理轉述訊息：「她說沒關係，你忙。」',
+    cond: (s) => kidBetween(1, 10)(s) && !spouseAway(s),
+    text: '孩子燒到三十九度八，{配偶}在急診等叫號。你人在開刀房，隔著門聽助理轉述訊息：「{她}說沒關係，你忙。」',
     choices: [
       {
         label: '刀一結束就衝去急診。',
         effects: { familyBond: 8, self: -3, health: -3 },
-        log: '你穿著刷手服跑進急診，同事嚇了一跳。孩子已經退燒睡著，對方在旁邊的椅子上也睡著了，手機還握在手裡。',
+        log: '你穿著刷手服跑進急診，同事嚇了一跳。孩子已經退燒睡著，{配偶}在旁邊的椅子上也睡著了，手機還握在手裡。',
       },
       {
         label: '打電話請熟識的兒科同事去看。',
@@ -139,7 +150,7 @@ export const FAMILY_EVENTS = [
     mood: 'weary',
     stages: ['resident', 'attending', 'aesthetic'],
     weight: 3,
-    cond: (s) => s.family.kids > 0 && s.alloc.family < 30,
+    cond: (s) => kidBetween(4, 11)(s) && s.alloc.family < 30,
     text: '睡前，孩子突然問：「你為什麼都不在？」不是抱怨的語氣，是真的在問，像在問天為什麼會黑。',
     choices: [
       {
@@ -160,10 +171,10 @@ export const FAMILY_EVENTS = [
     mood: 'weary',
     stages: ['resident', 'attending'],
     weight: 2,
-    cond: (s) => s.family.kids > 0,
+    cond: kidBetween(6, 11),
     text: '學校的畫畫作業題目是「我的家人」。孩子畫了你，只畫了一雙手，沒有畫臉。老師問為什麼，孩子說：「因為我只記得手。」',
     effects: { familyBond: -10, self: -6 },
-    log: '那張圖被貼在教室後面的公佈欄上。家長日那天你沒去，是對方拍給你看的。',
+    log: '那張圖被貼在教室後面的公佈欄上。家長日那天你沒去，是{配偶}拍給你看的。',
   },
   {
     id: 'f_kid_sports_day',
@@ -171,7 +182,7 @@ export const FAMILY_EVENTS = [
     mood: 'weary',
     stages: ['resident', 'attending', 'aesthetic'],
     weight: 3,
-    cond: (s) => s.family.kids > 0 && s.alloc.family < 25,
+    cond: (s) => kidBetween(6, 12)(s) && s.alloc.family < 25,
     text: '運動會的親子競賽需要一位家長。孩子在報名表上勾了「不參加」，理由欄自己寫：「爸爸媽媽要上班。」',
     effects: { familyBond: -12, self: -5 },
     log: '導師把表格拍給你看，還說不好意思打擾。她沒有責備的意思，這讓你更難受。',
@@ -182,7 +193,7 @@ export const FAMILY_EVENTS = [
     mood: 'weary',
     stages: ['attending', 'aesthetic'],
     weight: 2,
-    cond: (s) => s.family.kids > 0 && s.age >= 45,
+    cond: kidBetween(12, 15),
     text: '孩子上國中之後，回家就進房間關門。你想找話題，問了一句「最近功課還好嗎」，得到三個字：「還可以。」',
     choices: [
       {
@@ -204,7 +215,7 @@ export const FAMILY_EVENTS = [
     stages: ['attending', 'aesthetic'],
     once: true,
     weight: 2,
-    cond: (s) => s.family.kids > 0 && s.age >= 48,
+    cond: kidBetween(17, 18),
     text: '孩子在填志願，抬頭問你：「你會希望我當醫生嗎？」桌上攤著的落點分析，醫學系在射程內。',
     choices: [
       {
@@ -231,32 +242,10 @@ export const FAMILY_EVENTS = [
     stages: ['attending', 'aesthetic'],
     once: true,
     weight: 2,
-    cond: (s) => s.family.kids > 0 && s.age >= 55,
+    cond: (s) => kidAge(s) >= 19,
     text: '孩子搬出去住。房間空下來那天，你在門口站了一會兒，才發現這是你第一次好好看這個房間。',
     effects: { familyBond: -5, self: -5 },
     log: '牆上還貼著小學的獎狀。你看了上面的日期，那幾年你在拚升等。',
-  },
-  {
-    id: 'f_spouse_career',
-    scene: 'home',
-    mood: 'weary',
-    stages: ['resident', 'attending', 'aesthetic'],
-    once: true,
-    weight: 3,
-    cond: (s) => s.family.stage === 'married' && s.family.kids > 0,
-    text: '對方的公司給了外派機會，三年，加薪四成。晚上談這件事，話題不到十分鐘就變成「那小孩怎麼辦」。',
-    choices: [
-      {
-        label: '支持對方去。',
-        effects: { familyBond: -5, self: 4 },
-        log: '你們試了八個月的遠距。第九個月對方辭掉外派回來，說「這樣不行」。你到現在都不確定那句「不行」指的是誰。',
-      },
-      {
-        label: '請對方留下。',
-        effects: { familyBond: -8, self: -6 },
-        log: '對方回了公司一封很短的信。之後每次談到工作，開場白都是「反正我也不是那麼想去」。這句話說太多次，就不像真的了。',
-      },
-    ],
   },
   {
     id: 'f_spouse_line',
@@ -264,18 +253,22 @@ export const FAMILY_EVENTS = [
     mood: 'lifted',
     stages: ['pgy', 'resident', 'attending', 'aesthetic'],
     weight: 2,
-    cond: (s) => (s.family.stage === 'married' || s.family.stage === 'steady') && s.attrs.self < 40,
-    text: '你連續兩週沒睡好，坐在客廳發呆。對方沒問你怎麼了，只是把一杯溫水放在你面前：「你今天有救到人嗎？沒有也沒關係。」',
+    cond: (s) =>
+      (s.family.stage === 'married' || s.family.stage === 'steady') &&
+      s.attrs.self < 40 &&
+      !spouseAway(s),
+    text: '你連續兩週沒睡好，坐在客廳發呆。{配偶}沒問你怎麼了，只是把一杯溫水放在你面前：「你今天有救到人嗎？沒有也沒關係。」',
     effects: { familyBond: 6, self: 8 },
     log: '你點點頭。那個晚上你睡了七個小時，是那半年來最長的一次。',
   },
   {
     id: 'f_spouse_note',
+    once: true,
     scene: 'oncall',
     mood: 'lifted',
     stages: ['pgy', 'resident', 'attending'],
     weight: 2,
-    cond: (s) => s.family.stage !== 'single',
+    cond: (s) => s.family.stage !== 'single' && !spouseAway(s),
     text: '你打開值班室的便當，底下壓著一張便利貼：「今天有三個荷包蛋，兩個是給你同事的。」',
     effects: { familyBond: 5, self: 6 },
     log: '你把那張便利貼夾在識別證後面。半年後它跟白袍一起進了洗衣機，爛掉了，你難過了一整天。',
@@ -286,8 +279,8 @@ export const FAMILY_EVENTS = [
     mood: 'weary',
     stages: ['attending', 'aesthetic'],
     weight: 2,
-    cond: (s) => s.family.stage === 'married' && s.age >= 45,
-    text: '對方的健檢報告出來，有一顆需要進一步檢查的結節。你看報告的手，突然沒有平常那麼穩。',
+    cond: (s) => s.family.stage === 'married' && s.age >= 45 && !spouseAway(s),
+    text: '{配偶}的健檢報告出來，有一顆需要進一步檢查的結節。你看報告的手，突然沒有平常那麼穩。',
     choices: [
       {
         label: '親自安排最信任的同事來看。',
@@ -297,7 +290,7 @@ export const FAMILY_EVENTS = [
       {
         label: '照正常流程掛號排隊。',
         effects: { familyBond: -5, self: -4 },
-        log: '排了六週。這六週你每天都在想，但一句都沒有跟對方講。結果是良性的。對方後來說：「我以為你會幫我插隊。」',
+        log: '排了六週。這六週你每天都在想，但一句都沒有跟{配偶}講。結果是良性的。{配偶}後來說：「我以為你會幫我插隊。」',
       },
     ],
   },
@@ -308,29 +301,30 @@ export const FAMILY_EVENTS = [
     stages: ['resident', 'attending'],
     once: true,
     weight: 2,
-    cond: (s) => s.family.stage === 'married' || s.family.stage === 'steady',
-    text: '對方第一次來你上班的地方送東西，在走廊上站了二十分鐘等你。那二十分鐘裡，你經過了兩次，都沒有看到。',
+    cond: (s) => (s.family.stage === 'married' || s.family.stage === 'steady') && !spouseAway(s),
+    text: '{配偶}第一次來你上班的地方送東西，在走廊上站了二十分鐘等你。那二十分鐘裡，你經過了兩次，都沒有看到。',
     effects: { familyBond: -5, self: -4 },
-    log: '回家後對方只說了一句：「原來你們走路都那麼快。」',
+    log: '回家後{配偶}只說了一句：「原來你們走路都那麼快。」',
   },
   {
     id: 'f_inlaws_newyear',
+    once: true,
     scene: 'home',
     mood: 'wry',
     stages: ['resident', 'attending', 'aesthetic'],
     weight: 3,
-    cond: (s) => s.family.stage === 'married',
-    text: '過年，你值大年初一。對方一個人回去，整晚被問了三次同一個問題：「另一半怎麼沒來？」',
+    cond: (s) => s.family.stage === 'married' && !spouseAway(s),
+    text: '過年，你值大年初一。{配偶}一個人回去，整晚被問了三次同一個問題：「另一半怎麼沒來？」',
     choices: [
       {
         label: '值完班連夜開車過去。',
         effects: { familyBond: 10, self: 3, health: -4 },
-        log: '你半夜十一點到，長輩都睡了。桌上留著一盤菜，蓋著保鮮膜。對方說：「他們有幫你留。」',
+        log: '你半夜十一點到，長輩都睡了。桌上留著一盤菜，蓋著保鮮膜。{配偶}說：「他們有幫你留。」',
       },
       {
         label: '傳訊息說今年真的不行。',
         effects: { familyBond: -10, self: -4 },
-        log: '對方回了一個「好」。隔年過年，長輩沒有再問你會不會來。',
+        log: '{配偶}回了一個「好」。隔年過年，長輩沒有再問你會不會來。',
       },
     ],
   },
@@ -361,91 +355,11 @@ export const FAMILY_EVENTS = [
     mood: 'weary',
     stages: ['attending', 'aesthetic'],
     weight: 3,
-    cond: (s) => s.age >= 45,
+    // 人走了之後就不會再有「爸媽走路變慢」這種發現。父母的病程由 people-family.js 那條弧線負責。
+    cond: (s) => s.age >= 45 && !s.flags.parentIllness && !s.flags.parentGone,
     text: '你發現爸媽走路變慢了。家裡的浴室多了扶手，是他們自己請人裝的，沒有跟你說。',
     effects: { familyBond: -3, self: -4 },
     log: '你問為什麼不講，媽媽說：「你那麼忙。」這四個字是你這輩子聽最多次的一句話，而且每一次都是別人在體諒你。',
-  },
-  {
-    id: 'f_parent_patient',
-    scene: 'clinic',
-    mood: 'weary',
-    stages: ['attending', 'aesthetic'],
-    once: true,
-    weight: 3,
-    cond: (s) => s.age >= 48,
-    text: '爸爸的胃鏡切片報告出來，是惡性的。你在門診的電腦前把整份報告看了三遍，然後照常叫下一號。',
-    effects: { self: -8, health: -3 },
-    set: (s) => {
-      s.flags.parentIll = true;
-    },
-    log: '那個下午你看了三十七個病人，每一個你都問了「還有沒有哪裡不舒服」。這句話你講了十幾年，第一次覺得問完之後心會空一塊。',
-  },
-  {
-    id: 'f_parent_operate',
-    scene: 'or',
-    mood: 'weary',
-    stages: ['attending'],
-    once: true,
-    weight: 3,
-    cond: (s) => s.flags.parentIll === true && s.attrs.clinical >= 55,
-    text: '爸爸的刀，科裡的人都說「你自己來最好」。你站在排程表前面，游標停在自己的名字上很久。',
-    choices: [
-      {
-        label: '自己開。',
-        effects: { clinical: 1, self: -6, health: -4 },
-        stats: { surgeries: 1 },
-        log: '你開了。過程沒有任何意外，你的手比平常還穩。麻醉退了以後，爸爸第一句話是問你吃飯了沒。你走出病房才蹲下來。',
-      },
-      {
-        label: '請最信任的同事開。',
-        effects: { familyBond: 5, self: 3 },
-        log: '你站在觀察窗外面看完全程。同事收尾時抬頭看了你一眼，比了一個手勢。你這輩子沒有那麼專心地看過別人開刀。',
-      },
-    ],
-  },
-  {
-    id: 'f_caregiver',
-    scene: 'home',
-    mood: 'weary',
-    stages: ['attending', 'aesthetic'],
-    weight: 2,
-    cond: (s) => s.age >= 52,
-    text: '媽媽需要人照顧了。家庭群組裡討論日照中心、外籍看護、長照補助，最後是妹妹說：「我來吧，你比較忙。」',
-    choices: [
-      {
-        label: '出錢，請看護。',
-        effects: { money: -60, familyBond: -3 },
-        log: '你每個月轉一筆錢，也每個月更晚回家。你很清楚，錢是這些東西裡最容易給出去的那一種。',
-      },
-      {
-        label: '排出時間，跟妹妹輪流。',
-        effects: { familyBond: 10, self: 3, health: -4, money: -20 },
-        log: '你把週三的門診減半，收入少了，睡眠也少了。但媽媽在你幫她洗澡的那天說：「你小時候我也是這樣幫你洗的。」',
-      },
-    ],
-  },
-  {
-    id: 'f_parent_last',
-    scene: 'or',
-    mood: 'weary',
-    stages: ['attending', 'aesthetic'],
-    once: true,
-    weight: 3,
-    cond: (s) => s.flags.parentIll === true && s.age >= 50,
-    text: '醫院打來說情況不好的時候，你正在開一台已經開了三小時的刀。你問還剩多久，那頭說不知道。',
-    choices: [
-      {
-        label: '交給第二助手，離台。',
-        effects: { familyBond: 8, self: -5, clinical: -2 },
-        log: '你趕到的時候還來得及握到手。後來你聽說那台刀是主任接手收的，他一句話都沒有問。',
-      },
-      {
-        label: '把刀開完。',
-        effects: { self: -10 },
-        log: '你開完了，病人活著出來。脫手套的時候，護理師的表情已經告訴你答案。這件事你不會後悔，但你會一直想。',
-      },
-    ],
   },
   {
     id: 'f_health_red',
@@ -485,8 +399,12 @@ export const FAMILY_EVENTS = [
     mood: 'lifted',
     stages: ['attending', 'aesthetic'],
     weight: 2,
-    cond: (s) => s.family.stage === 'married' && s.alloc.family >= 30 && s.attrs.familyBond < 55,
-    text: '你休了年假，兩個人去了一趟沒有行程的旅行。第二天早上，對方說：「你知道嗎，我好久沒看過你不看手機了。」',
+    cond: (s) =>
+      s.family.stage === 'married' &&
+      s.alloc.family >= 30 &&
+      s.attrs.familyBond < 55 &&
+      !spouseAway(s),
+    text: '你休了年假，兩個人去了一趟沒有行程的旅行。第二天早上，{配偶}說：「你知道嗎，我好久沒看過你不看手機了。」',
     effects: { familyBond: 14, self: 6, health: 2 },
     log: '你把手機拿出來，關機，塞進背包最底層。這個動作你做過很多次，這是第一次真的做到。',
   },
@@ -561,9 +479,9 @@ export const FAMILY_EVENTS = [
     stages: ['attending', 'aesthetic'],
     once: true,
     weight: 2,
-    cond: (s) => s.family.stage === 'married' && s.stats.missedDinners >= 600,
-    text: '對方整理抽屜時翻出一本舊記事本，前面幾年每一頁都寫著「今天等到幾點」。後面就沒有寫了。',
+    cond: (s) => s.family.stage === 'married' && s.stats.missedDinners >= 600 && !spouseAway(s),
+    text: '{配偶}整理抽屜時翻出一本舊記事本，前面幾年每一頁都寫著「今天等到幾點」。後面就沒有寫了。',
     effects: { familyBond: -6, self: -8 },
-    log: '你問為什麼後來不寫了。對方說：「因為後來就不等了。」',
+    log: '你問為什麼後來不寫了。{配偶}說：「因為後來就不等了。」',
   },
 ];

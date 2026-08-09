@@ -8,6 +8,7 @@
 // 感情要的是持續出現。
 import { advance } from '../characters.js';
 import { getStage } from '../engine.js';
+import { spouseAway } from '../characters.js';
 
 const S = (s) => s.people.spouse;
 const kidAge = (s, i = 0) => (s.family.children[i] ? s.age - s.family.children[i].bornAt : -1);
@@ -259,7 +260,7 @@ export const FAMILY_ARC_EVENTS = [
     stages: ['resident', 'attending', 'aesthetic'],
     once: true,
     weight: 6,
-    cond: (s) => kidAge(s) >= 1 && kidAge(s) <= 3 && s.alloc.family >= 20,
+    cond: (s) => kidAge(s) >= 1 && kidAge(s) <= 3 && s.alloc.family >= 20 && !spouseAway(s),
     text: '你難得準時到家，剛好看見孩子扶著茶几站起來，走了三步。{配偶}在旁邊拿著手機，錄到一半才發現你回來了。',
     effects: { familyBond: 12, self: 8 },
     bond: { spouse: 6 },
@@ -274,10 +275,10 @@ export const FAMILY_ARC_EVENTS = [
     stages: ['resident', 'attending', 'aesthetic'],
     weight: 6,
     cond: (s) => kidAge(s) >= 4 && kidAge(s) <= 6 && s.alloc.family < 20,
-    text: '幼稚園的親子日你又缺席了。老師後來轉述，孩子指著全家福說：「這是我爸爸，住在醫院。」',
+    text: '幼稚園的親子日你又缺席了。老師後來轉述，孩子指著全家福說：「這是我{爸爸}，住在醫院。」',
     effects: { familyBond: -14, self: -6 },
     bond: { spouse: -4 },
-    memory: '孩子指著全家福說：這是我爸爸，住在醫院。',
+    memory: '孩子指著全家福說：這是我{爸爸}，住在醫院。',
     log: '你把這句話轉述給同事聽，大家都笑了。笑完之後，休息室安靜了很久。',
   },
   {
@@ -289,7 +290,7 @@ export const FAMILY_ARC_EVENTS = [
     once: true,
     weight: 6,
     cond: (s) => kidAge(s) >= 7 && kidAge(s) <= 12 && s.alloc.family >= 20,
-    text: '小學運動會。你請了假，站在跑道邊。孩子跑最後一棒，經過你面前的時候大喊了一聲「爸」。',
+    text: '小學運動會。你請了假，站在跑道邊。孩子跑最後一棒，經過你面前的時候大喊了一聲「{爸}」。',
     effects: { familyBond: 14, self: 10 },
     memory: '小學運動會，孩子跑最後一棒，經過你面前時大喊了一聲爸。',
     log: '他們班第四名。回家路上他一直講那一段，你一句都沒有聽膩。',
@@ -303,12 +304,12 @@ export const FAMILY_ARC_EVENTS = [
     once: true,
     weight: 6,
     cond: (s) => kidAge(s) >= 8 && kidAge(s) <= 12,
-    text: '孩子的作文貼在聯絡簿裡，題目是〈我的爸爸〉。全文一百二十字，有四十個字在講你「很偉大，救了很多人」。',
+    text: '孩子的作文貼在聯絡簿裡，題目是〈我的{爸爸}〉。全文一百二十字，有四十個字在講你「很偉大，救了很多人」。',
     choices: [
       {
-        label: '跟他說，爸爸也想多陪你。',
+        label: '跟他說，{爸爸}也想多陪你。',
         effects: { familyBond: 8, self: -4 },
-        memory: '你跟孩子說爸爸也想多陪你，他說：我知道啊，你要救人。',
+        memory: '你跟孩子說{爸爸}也想多陪你，他說：我知道啊，你要救人。',
         log: '他說：「我知道啊，你要救人。」那句話他講得很順，順到你知道他練習過很多次。',
       },
       {
@@ -519,6 +520,9 @@ export const FAMILY_ARC_EVENTS = [
         effects: { self: 8, health: -6, familyBond: 8 },
         bond: { spouse: 16 },
         memory: '{配偶}有一個等很久的外派機會，你說：你去，孩子我來想辦法。',
+        set: (s) => {
+          s.flags.spouseAwayUntil = s.age + 3; // 人真的不在，家裡的戲要跟著停三年
+        },
         log: '你把刀表改成早班為主。接送、聯絡簿、發燒的夜晚，從這個月起都是你的。送{她}上飛機那天，你們兩個誰都沒有說後悔。',
       },
       {
@@ -647,7 +651,7 @@ export const FAMILY_ARC_EVENTS = [
     choices: [
       {
         label: '請看護，錢我出。',
-        effects: { self: 2, familyBond: -2 },
+        effects: { self: 2, familyBond: -2, money: -48 },
         set: (s) => {
           s.flags.parentCare = true;
         },

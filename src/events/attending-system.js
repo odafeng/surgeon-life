@@ -628,6 +628,7 @@ export const ATTENDING_SYSTEM_EVENTS = [
   // ───────────── 藥價與缺藥 ─────────────
   {
     id: 'as_drug_out',
+    once: true,
     scene: 'office',
     mood: 'wry',
     stages: ['attending'],

@@ -333,7 +333,7 @@ export const CORE_EVENTS = [
     stages: ['resident', 'attending'],
     weight: 4,
     cond: (s) => s.family.kids > 0 && s.alloc.family < 25,
-    text: '幼稚園的親子日你又缺席了。老師後來轉述，孩子指著全家福說：「這是我爸爸/媽媽，住在醫院。」',
+    text: '幼稚園的親子日你又缺席了。老師後來轉述，孩子指著全家福說：「這是我{爸爸}，住在醫院。」',
     effects: { familyBond: -15, self: -5 },
     log: '你把這句話轉述給同事聽，大家都笑了。笑完之後，休息室安靜了很久。',
   },

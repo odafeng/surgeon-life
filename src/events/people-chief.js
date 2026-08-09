@@ -35,6 +35,7 @@ export const CHIEF_EVENTS = [
   },
   {
     id: 'c_kpi_ranking',
+    once: true,
     scene: 'office',
     mood: 'wry',
     priority: true,

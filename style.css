@@ -1172,3 +1172,15 @@ body {
   line-height: 1.8;
   color: #6f6552;
 }
+
+/* 結局頁很長，而「再活一次」那顆深色按鈕在視窗下緣看起來像頁尾——
+   試玩者因此以為已經到底，錯過了人生結算單與圖鑑。 */
+.more-below {
+  margin-top: calc(var(--u) * 1.2);
+  text-align: center;
+  font-size: calc(var(--u) * 1.05) !important;
+  letter-spacing: 0.16em;
+  color: #8a7f68;
+  border-top: 1px dashed #c3b79c;
+  padding-top: calc(var(--u) * 0.8);
+}

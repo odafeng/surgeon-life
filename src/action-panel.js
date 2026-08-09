@@ -110,6 +110,10 @@ export function openActionPanel(state) {
 
   draw();
   $('act').classList.remove('hidden');
+  // 捲軸會留在去年捲到的位置，於是標題和「跟去年一樣」都在視窗上方看不見——
+  // 最需要那顆快捷鍵的後期玩家反而找不到它。
+  const sheet = $('act').querySelector('.scroll');
+  if (sheet) sheet.scrollTop = 0;
 
   return new Promise((resolve) => {
     const onClick = (e) => {

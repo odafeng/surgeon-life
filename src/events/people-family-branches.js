@@ -197,7 +197,11 @@ export const FAMILY_BRANCH_EVENTS = [
       s.family.stage !== 'single' &&
       s.family.kids === 0 &&
       s.family.invested >= 4,
-    text: '{她}說：「我懷孕了。」然後補了一句：「我沒有要逼你結婚。」你們兩個都愣在那裡，誰都沒有先講下一句。',
+    // 懷孕的是誰，決定了這一幕誰在講話。女性主角是自己說出口的那個人。
+    text: (s) =>
+      s.gender === 'f'
+        ? '你在值班室驗的。兩條線。你回家跟{配偶}說的時候，先講的是「我沒有要逼你結婚」——你自己也不知道為什麼要先講這句。'
+        : '{她}說：「我懷孕了。」然後補了一句：「我沒有要逼你結婚。」你們兩個都愣在那裡，誰都沒有先講下一句。',
     choices: [
       {
         label: '「那我們結婚吧。」',
@@ -210,14 +214,21 @@ export const FAMILY_BRANCH_EVENTS = [
           advance(s, 'spouse', 3);
           s.flags.expectingChild = true;
         },
-        log: '{她}說你不用因為這樣就結婚。你說不是因為這樣。你們兩個都知道有一半是，有一半不是。',
+        log: (s) =>
+          s.gender === 'f'
+            ? '{配偶}說你不用因為這樣就結婚。你說不是因為這樣。你們兩個都知道有一半是，有一半不是。'
+            : '{她}說你不用因為這樣就結婚。你說不是因為這樣。你們兩個都知道有一半是，有一半不是。',
       },
       {
-        label: '「孩子我會負責，婚我們再想。」',
+        label: (s) =>
+          s.gender === 'f' ? '「孩子我自己生，婚我們再想。」' : '「孩子我會負責，婚我們再想。」',
         hint: '家庭 ≥ 10%',
         effects: { self: -2 },
         bond: { spouse: -4 },
-        memory: '{她}懷孕了，你說孩子你會負責，婚再想。你們一直沒有再想。',
+        memory: (s) =>
+          s.gender === 'f'
+            ? '你懷孕了，你說孩子你自己生，婚再想。你們一直沒有再想。'
+            : '{她}懷孕了，你說孩子你會負責，婚再想。你們一直沒有再想。',
         set: (s) => {
           s.flags.expectingChild = true;
           s.flags.unwed = true;
@@ -272,7 +283,7 @@ export const FAMILY_BRANCH_EVENTS = [
       kidAge(s) <= 16 &&
       s.family.neglect >= 2 &&
       !s.flags.kidTrouble,
-    text: '導師打電話來，說孩子這學期缺曠很多，交的作業是別人的。「爸爸方便來一趟嗎？」你翻了行事曆，最近的空檔在三週後。',
+    text: '導師打電話來，說孩子這學期缺曠很多，交的作業是別人的。「{爸爸}方便來一趟嗎？」你翻了行事曆，最近的空檔在三週後。',
     choices: [
       {
         label: '把明天的門診請人代，今天就去。',

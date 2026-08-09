@@ -252,7 +252,11 @@ export const ACTIONS = [
     label: '出席孩子的活動',
     desc: '運動會、班親會、畢業典禮，挑一個。',
     cost: 2,
-    cond: (s) => s.family.kids > 0,
+    // 一歲的孩子沒有運動會。孩子的戲一律看孩子幾歲。
+    cond: (s) => {
+      const kid = s.family.children?.[0];
+      return Boolean(kid) && s.age - kid.bornAt >= 4 && s.age - kid.bornAt <= 18;
+    },
     apply: (s) => {
       s.attrs.familyBond = clamp(s.attrs.familyBond + 12);
       s.attrs.self = clamp(s.attrs.self + 3);

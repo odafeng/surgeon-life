@@ -5,6 +5,11 @@
 import { advance } from '../characters.js';
 
 const W = (s) => s.people.patient;
+// 認識他幾年了。整條線的年資、他的年齡、以及「他每年都回來」的節奏都靠這個——
+// 沒有它的話，stage 1 的四幕會在連續四年演完，而台詞裡他老了十八歲。
+const years = (s) => (W(s).metAt ? s.age - W(s).metAt : 0);
+/** 這一幕至少要等認識滿 n 年。 */
+const after = (n) => (s) => W(s).stage === 1 && W(s).alive && years(s) >= n;
 
 export const PATIENT_EVENTS = [
   // ───────── 第 0 幕：那台刀 ─────────
@@ -26,6 +31,7 @@ export const PATIENT_EVENTS = [
         bond: { patient: 12 },
         memory: '凌晨兩點，你沒有等，直接把王慶昌推進刀房。他活下來了。',
         set: (s) => {
+          s.people.patient.metAt = s.age; // 之後的年資與他的年齡都從這一年算
           advance(s, 'patient', 1);
         },
         log: '五個小時。十二指腸前壁一個一公分的洞，腹腔裡沖了八公升才乾淨。天亮的時候他的血壓回來了。你在更衣室脫手術衣，手抖到解不開背後那條帶子。',
@@ -36,6 +42,7 @@ export const PATIENT_EVENTS = [
         stats: { surgeries: 1, livesSaved: 1 },
         bond: { patient: 6 },
         set: (s) => {
+          s.people.patient.metAt = s.age; // 之後的年資與他的年齡都從這一年算
           advance(s, 'patient', 1);
         },
         log: '斷層做完是三點四十。那台刀開了七個小時，他活下來，多躺了十九天。那四十分鐘你到現在還在想。',
@@ -50,7 +57,7 @@ export const PATIENT_EVENTS = [
     stages: ['resident', 'attending'],
     once: true,
     weight: 3,
-    cond: (s) => W(s).stage === 1 && W(s).alive,
+    cond: (s) => W(s).stage === 1 && W(s).alive && years(s) <= 1, // 出院那天的事
     text: '王慶昌出院那天在護理站等了一個下午，就為了問一件事：「那天晚上開刀的醫師，叫什麼名字？」值班的人指了指走廊盡頭。',
     effects: { self: 6 },
     bond: { patient: 6 },
@@ -65,7 +72,7 @@ export const PATIENT_EVENTS = [
     priority: true,
     stages: ['attending'],
     weight: 3,
-    cond: (s) => W(s).stage === 1 && W(s).alive,
+    cond: after(2),
     text: '門診叫到王慶昌。他提著一袋自己種的芭樂進來，先把袋子放到你桌上才坐下：「醫師，今年這批比較甜。」他的追蹤影像沒有變化。',
     effects: { self: 5 },
     bond: { patient: 4 },
@@ -79,7 +86,7 @@ export const PATIENT_EVENTS = [
     priority: true,
     stages: ['attending'],
     weight: 2,
-    cond: (s) => W(s).stage === 1 && W(s).alive,
+    cond: after(4),
     text: '你在批價櫃檯前面聽見王慶昌跟旁邊的陌生人說：「這間醫院那個某某醫師，我的命是他救的。」他講得很大聲，那個陌生人一直點頭。',
     effects: { self: 4 },
     bond: { patient: 3 },
@@ -93,7 +100,7 @@ export const PATIENT_EVENTS = [
     stages: ['attending'],
     once: true,
     weight: 2,
-    cond: (s) => W(s).stage === 1 && W(s).alive,
+    cond: after(6),
     text: '王慶昌帶了一個鄰居來，站在診間門口不好意思地笑：「他肚子痛很久了，掛不到號。你幫他看一下就好。」候診區還有二十七個人。',
     choices: [
       {
@@ -118,15 +125,16 @@ export const PATIENT_EVENTS = [
     stages: ['attending'],
     once: true,
     weight: 4,
-    cond: (s) => W(s).stage === 1 && W(s).alive && s.age >= 44,
+    cond: (s) => after(14)(s) && s.age >= 44,
     text: '王慶昌今年不是自己開車來的，是兒子載他來。他從皮夾裡抽出那張泛黃的計程車收據，上面你的名字被摸得快看不見了。',
     effects: { self: 6 },
     bond: { patient: 5 },
-    memory: '王慶昌皮夾裡那張計程車收據，寫著你的名字，他留了十八年。',
+    memory: (s) => `王慶昌皮夾裡那張計程車收據，寫著你的名字，他留了 ${years(s)} 年。`,
     set: (s) => {
       advance(s, 'patient', 2);
     },
-    log: '「我跟我兒子講，這張不能丟。」他把收據折好放回去，「醫師，我七十了。」你翻他的病歷，才發現你認識他已經十八年。',
+    log: (s) =>
+      `「我跟我兒子講，這張不能丟。」他把收據折好放回去，「醫師，我 ${52 + years(s)} 了。」你翻他的病歷，才發現你認識他已經 ${years(s)} 年。`,
   },
 
   // ───────── 第 2 幕：這一次你可能救不回來 ─────────
@@ -156,7 +164,8 @@ export const PATIENT_EVENTS = [
     once: true,
     // 你在門診看見那個影子，接下來的事就不是抽籤決定的了。
     forced: (s) => s.flags.wangRelapse && !s.flags.wangDecided && W(s).alive,
-    text: '術前討論。王慶昌七十四歲，心臟功能不好，腫瘤貼著腸繫膜上動脈。麻醉科在紀錄上寫「風險極高，建議審慎評估」。他兒子在會客室等你的答案，王慶昌自己已經把同意書簽好了。',
+    text: (s) =>
+      `術前討論。王慶昌 ${52 + years(s)} 歲，心臟功能不好，腫瘤貼著腸繫膜上動脈。麻醉科在紀錄上寫「風險極高，建議審慎評估」。他兒子在會客室等你的答案，王慶昌自己已經把同意書簽好了。`,
     choices: [
       {
         label: '開。他當年就是這樣被拉回來的。',
@@ -175,7 +184,7 @@ export const PATIENT_EVENTS = [
         set: (s) => {
           s.flags.wangDecided = true;
         },
-        log: '你解釋了四十分鐘。他聽完點頭：「醫師你說不開，那就不開。」他信你，跟十八年前那個晚上一樣——只是這一次你要的是他別上刀台。',
+        log: '你解釋了四十分鐘。他聽完點頭：「醫師你說不開，那就不開。」他信你，跟第一次那個晚上一樣——只是這一次你要的是他別上刀台。',
       },
     ],
   },

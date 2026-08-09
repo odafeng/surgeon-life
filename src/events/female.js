@@ -135,6 +135,7 @@ export const FEMALE_EVENTS = [
   },
   {
     id: 'fw_who_is_the_surgeon',
+    once: true,
     scene: 'clinic',
     mood: 'wry',
     stages: ['attending', 'aesthetic'],

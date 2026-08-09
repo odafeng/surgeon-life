@@ -1,14 +1,26 @@
 // 結局判定。順序即優先序：越特殊的越前面。
 // 每個結局都要留下代價，不存在「全拿」的結局——這是整個遊戲的主旨。
 import { relationshipSummary, PEOPLE } from './characters.js';
+import { resolve } from './text.js';
 
 /** 有沒有孩子，結局文字要講對——結算單就在下面，講錯馬上穿幫。 */
 function kin(state) {
-  return state.family.kids > 0
-    ? { who: '孩子', talk: '孩子會在飯桌上講你聽不懂的學校的事' }
-    : state.family.stage === 'married'
-      ? { who: '另一半', talk: '另一半會在飯桌上講你聽不懂的同事的事' }
-      : { who: '你認識最久的朋友', talk: '有人會約你吃飯，而你去得成' };
+  // 結局那一年孩子可能已經三十幾歲了。寫成「講學校的事」會把整段的可信度拉掉。
+  const kid = state.family.children?.[0];
+  const kidAge = kid ? state.age - kid.bornAt : -1;
+  if (state.family.kids > 0)
+    return {
+      who: '孩子',
+      talk:
+        kidAge >= 25
+          ? '孩子會在飯桌上講你聽不懂的工作的事'
+          : kidAge >= 19
+            ? '孩子會在飯桌上講你聽不懂的朋友的事'
+            : '孩子會在飯桌上講你聽不懂的學校的事',
+    };
+  return state.family.stage === 'married'
+    ? { who: '另一半', talk: `${resolve(state, '{配偶}')}會在飯桌上講你聽不懂的同事的事` }
+    : { who: '你認識最久的朋友', talk: '有人會約你吃飯，而你去得成' };
 }
 
 function baseEnding(state, cause) {
@@ -159,7 +171,14 @@ function baseEnding(state, cause) {
       id: 'good_hands',
       title: '一雙沒有頭銜的好手',
       scene: 'home',
-      body: `你開到最後一天，刀還是全院最漂亮的。${kin(state).talk}，你聽得很開心。沒有升等，名牌上一直是「主治醫師」；新來的住院醫師只知道你刀開得好，不知道為什麼你沒當教授。你也很少解釋——那些點數要用夜晚換，而你的夜晚，早就標好了要給誰。`,
+      // 這個結局的條件是「沒當上教授」，不是「完全沒升等」。
+      // 對一個累積了八百多點、掛著副教授的人說「沒有升等」，會把玩家推出故事。
+      body:
+        `你開到最後一天，刀還是全院最漂亮的。${kin(state).talk}，你聽得很開心。` +
+        (state.rank === 'vs' || state.rank === 'none'
+          ? '名牌上一直是「主治醫師」；新來的住院醫師只知道你刀開得好，不知道為什麼你沒去升等。'
+          : `名牌上停在「${RANK_LABELS[state.rank]}」，沒有再往上；新來的住院醫師只知道你刀開得好，不知道為什麼你沒當教授。`) +
+        '你也很少解釋——那些點數要用夜晚換，而你的夜晚，早就標好了要給誰。',
     };
 
   if (a.clinical >= 40 && a.familyBond >= 50 && a.health >= 40 && a.self >= 50)

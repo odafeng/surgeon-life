@@ -6,6 +6,8 @@
 // 每個人有 bond（你們的關係）與 stage（弧線走到哪），事件用 cond 讀 stage 決定該演哪一幕。
 // stage 只進不退，由事件的 set 推進，所以每個人的故事一輩子只會走一次。
 
+import { resolve } from './text.js';
+
 export const PEOPLE = {
   mentor: {
     key: 'mentor',
@@ -51,6 +53,9 @@ export const PEOPLE = {
   },
 };
 
+/** 另一半外派中。人不在台灣的那幾年，家裡的戲不該照演。 */
+export const spouseAway = (state) => (state.flags.spouseAwayUntil || 0) > state.age;
+
 export function initPeople() {
   return {
     mentor: { bond: 55, stage: 0, gone: false },
@@ -85,23 +90,27 @@ export function nameOf(key) {
 
 /** 結局結算單上的人際欄位。 */
 export function relationshipSummary(state) {
+  // 結算單跟事件走同一條解析路徑，否則玩家會在人生的最後一頁看到 {配偶}。
+  const R = (v) => resolve(state, v);
   const p = state.people;
   if (!p) return [];
   const out = [];
-  if (p.mentor.gone) out.push({ label: '恩師', value: `${PEOPLE.mentor.name}・已故` });
-  else if (p.mentor.stage >= 2) out.push({ label: '恩師', value: `${PEOPLE.mentor.name}・退休` });
-  if (p.peer.path === 'left') out.push({ label: '同梯', value: `${PEOPLE.peer.name}・離開外科` });
+  if (p.mentor.gone) out.push({ label: '恩師', value: R(`${PEOPLE.mentor.name}・已故`) });
+  else if (p.mentor.stage >= 2)
+    out.push({ label: '恩師', value: R(`${PEOPLE.mentor.name}・退休`) });
+  if (p.peer.path === 'left')
+    out.push({ label: '同梯', value: R(`${PEOPLE.peer.name}・離開外科`) });
   else if (p.peer.path === 'broken')
-    out.push({ label: '同梯', value: `${PEOPLE.peer.name}・撐不住了` });
+    out.push({ label: '同梯', value: R(`${PEOPLE.peer.name}・撐不住了`) });
   else if (p.peer.path === 'stayed')
-    out.push({ label: '同梯', value: `${PEOPLE.peer.name}・還在開刀` });
+    out.push({ label: '同梯', value: R(`${PEOPLE.peer.name}・還在開刀`) });
   if (p.junior.path === 'stayed')
-    out.push({ label: '你帶的人', value: `${PEOPLE.junior.name}・留在外科` });
+    out.push({ label: '你帶的人', value: R(`${PEOPLE.junior.name}・留在外科`) });
   else if (p.junior.path === 'left')
-    out.push({ label: '你帶的人', value: `${PEOPLE.junior.name}・走了` });
-  if (p.spouse?.gone) out.push({ label: '另一半', value: `${PEOPLE.spouse.name}・離開了` });
+    out.push({ label: '你帶的人', value: R(`${PEOPLE.junior.name}・走了`) });
+  if (p.spouse?.gone) out.push({ label: '另一半', value: R(`${PEOPLE.spouse.name}・離開了`) });
   else if (p.spouse?.stage >= 3)
-    out.push({ label: '另一半', value: `${PEOPLE.spouse.name}・還在同一張餐桌` });
-  if (p.chief.succeeded) out.push({ label: '部主任', value: '你自己' });
+    out.push({ label: '另一半', value: R(`${PEOPLE.spouse.name}・還在同一張餐桌`) });
+  if (p.chief.succeeded) out.push({ label: '部主任', value: R('你自己') });
   return out;
 }

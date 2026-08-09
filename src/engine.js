@@ -3,6 +3,9 @@ import { rollTalents } from './talents.js';
 import { EVENTS } from './events.js';
 import { decideEnding } from './endings.js';
 import { initPeople, adjustBond } from './characters.js';
+import { resolve, val } from './text.js';
+
+export { resolve, val };
 
 export const ALLOC_KEYS = ['clinical', 'teaching', 'research', 'family', 'personal'];
 
@@ -199,27 +202,6 @@ export function applyBond(state, bond) {
  * 記下一個定義性時刻。結局的「你記得的事」會把它們原樣唸回來——
  * 那不是統計數字，是你自己做過的決定。
  */
-/**
- * 事件文字裡的代稱。
- *
- * 另一半的名字與人稱會隨主角性別改變，但整條家庭弧線的戲是同一齣。
- * 與其把三十個事件複製成兩份，事件裡寫 {配偶}、{她}，播放時才換掉——
- * 一個地方改，兩條路線都對。
- */
-export function resolve(state, str) {
-  if (typeof str !== 'string' || !str.includes('{')) return str;
-  const female = state.gender === 'f';
-  return str
-    .replace(/\{配偶\}/g, female ? '宗翰' : '郁涵')
-    .replace(/\{她\}/g, female ? '他' : '她')
-    .replace(/\{他\}/g, female ? '她' : '他'); // 指主角時用這個
-}
-
-/** 事件的文字欄位都可以是狀態的函式：同一幕，不同的人生說法不一樣。 */
-export function val(v, state) {
-  return typeof v === 'function' ? v(state) : v;
-}
-
 export function remember(state, text) {
   if (text) state.memories.push({ age: state.age, text: resolve(state, text) });
 }
@@ -476,13 +458,49 @@ export function malpracticeChance(state) {
 }
 
 /** 升等路上的下一個門檻，用於配置盤的進度提示。 */
+/**
+ * 下一關升等，以及每一條還缺什麼。
+ *
+ * 之前這裡只回報歸類計分，但教授還要「計畫主持滿 2 年」、副教授還要「部級計畫申請紀錄」。
+ * 試玩者累積到 848 點仍是副教授，看著配置盤上的「848 / 500」完全不知道自己卡在哪——
+ * 他不是選錯，是看不到規則。需求集中在這裡產生，配置盤與狀態頁都從這份清單渲染。
+ */
 export function nextPromotionGate(state) {
   if (state.career !== 'surgery' || getStage(state).key !== 'attending') return null;
   const a = state.attrs;
-  if (state.rank === 'vs')
-    return { label: '助理教授', papers: 300, done: a.papers >= 300 || state.flags.phd === 'done' };
-  if (state.rank === 'assistant') return { label: '副教授', papers: 400, done: a.papers >= 400 };
-  if (state.rank === 'associate') return { label: '教授', papers: 500, done: a.papers >= 500 };
+  const need = (label, met, detail) => ({ label, met, detail });
+  const teaching = need('教學服務 70 分', a.teaching >= 70, `目前 ${Math.round(a.teaching)}`);
+  const score = (n) => need(`歸類計分 ${n} 點`, a.papers >= n, `目前 ${Math.round(a.papers)}`);
+
+  if (state.rank === 'vs') {
+    const byPhd = state.flags.phd === 'done';
+    const s = score(300);
+    return {
+      label: '助理教授',
+      papers: 300,
+      needs: [byPhd ? need('歸類計分 300 點', true, '以博士學位送審，不受此限') : s, teaching],
+    };
+  }
+  if (state.rank === 'assistant')
+    return {
+      label: '副教授',
+      papers: 400,
+      needs: [
+        score(400),
+        teaching,
+        need('部級計畫申請紀錄', state.grants.applied, state.grants.applied ? '已有' : '還沒送過'),
+      ],
+    };
+  if (state.rank === 'associate')
+    return {
+      label: '教授',
+      papers: 500,
+      needs: [
+        score(500),
+        teaching,
+        need('計畫主持滿 2 年', state.grants.yearsPI >= 2, `目前 ${state.grants.yearsPI} 年`),
+      ],
+    };
   return null;
 }
 
@@ -520,8 +538,12 @@ export function forecast(state, alloc) {
       detail: `${Math.round(a.papers)} / ${gate.papers}`,
       good: true,
     });
-    if (a.teaching < 70)
-      warnings.push(`教學服務 ${Math.round(a.teaching)} 分，未達 70 分不得送件升等。`);
+    // 缺什麼就講什麼。只顯示計分進度的話，計分早就破表的人會卡在原地十年還不知道為什麼。
+    const missing = gate.needs.filter((n) => !n.met);
+    if (missing.length)
+      warnings.push(
+        `升等到${gate.label}還缺：${missing.map((n) => `${n.label}（${n.detail}）`).join('、')}。`,
+      );
   }
 
   const net = yearlyIncome(state, alloc) - yearlyExpenses(state);

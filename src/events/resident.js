@@ -195,7 +195,7 @@ export const RESIDENT_EVENTS = [
     cond: (s) => s.talents.dexterity >= 5,
     text: '值班室的床欄上綁著三十條線。你一邊聽學長講電話，一邊單手打結，打到手指發麻。',
     effects: { clinical: 3, health: -1 },
-    log: '打到第兩百個的時候，你忽然不用看了。這件事不會有人發給你任何證書。',
+    log: '打到第二百個的時候，你忽然不用看了。這件事不會有人發給你任何證書。',
   },
   {
     id: 'r_slow',

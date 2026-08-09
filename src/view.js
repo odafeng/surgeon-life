@@ -340,14 +340,11 @@ export function renderStatusPanel(state) {
     : '<li><span>還沒有誰在你的人生裡留下來</span><span></span></li>';
 
   const gate = nextPromotionGate(state);
+  // 條件清單由 nextPromotionGate 產生，狀態頁只負責畫。
+  // 之前這裡手寫了一次條件，配置盤手寫了另一次——兩份會各自漂移。
   $('sp-gate').textContent = gate
-    ? `下一關：${gate.label}。需要歸類計分 ${gate.papers} 點(目前 ${Math.round(a.papers)})、教學服務 70 分(目前 ${Math.round(a.teaching)})${
-        gate.label === '副教授'
-          ? '、部級計畫申請紀錄'
-          : gate.label === '教授'
-            ? '、計畫主持滿 2 年'
-            : ''
-      }。`
+    ? `下一關：${gate.label}。` +
+      gate.needs.map((n) => `${n.met ? '✓' : '✗'} ${n.label}（${n.detail}）`).join('　')
     : noGateLine(state);
 }
 

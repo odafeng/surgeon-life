@@ -148,7 +148,9 @@ export const NURSE_EVENTS = [
     priority: true,
     stages: ['attending'],
     weight: 3,
-    cond: (s) => N(s).stage >= 1 && !N(s).retired,
+    // 她在 stage 2 就遞了退休申請。退休生效前的那一年不該再演「一個人跑三間房」——
+    // 玩家會覺得她死而復生。retired 只在最後一天才為真，所以這裡看 stage。
+    cond: (s) => N(s).stage === 1,
     text: '刀房這季又走了兩個。阿蘭姐一個人跑三間房，中間還要接電話，回報「離職原因分析表」的欄位。',
     effects: { self: -3 },
     bond: { nurse: 3 },
