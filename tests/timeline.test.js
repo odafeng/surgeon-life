@@ -219,6 +219,15 @@ describe('結局不會反寫玩家的選擇', () => {
     主治醫師: { re: /主治醫師/, holds: () => true }, // 走到結局的外科醫師至少是主治
     孩子: { re: /孩子/, holds: (s) => s.family.kids > 0 },
   };
+
+  // 頭銜以外，結局也會宣稱處境。這一組要對「完整內文」驗，不能走 claims()——
+  // 那個過濾器會丟掉含否定詞的句子，而這幾句本身就帶著「不」和「沒有」，
+  // 走 claims() 的話它們永遠不會被看到，測試會假綠。
+  const SITUATIONS = {
+    家人不等你吃飯: { re: /家人早就學會不等你吃飯/, holds: (s) => s.attrs.familyBond < 45 },
+    膝蓋要扶欄杆: { re: /膝蓋上下樓要扶欄杆/, holds: (s) => s.attrs.health < 35 },
+    沒有為自己活過: { re: /沒有一年，你是為自己活的/, holds: (s) => s.attrs.self < 50 },
+  };
   // 出現在結局內文裡、看起來像頭銜或身分的詞，一律要有依據
   const TITLE_LIKE = /理事|院長|會長|部主任|副院長|主委/g;
 
@@ -230,26 +239,31 @@ describe('結局不會反寫玩家的選擇', () => {
       .filter((clause) => !/[沒不未]/.test(clause))
       .join('　');
 
+  // health 原本固定 50，於是 both_but 只會從「家庭垮」那半邊觸發，
+  // 「健康垮但家庭很好」那條分支一次都沒被跑到——而那正是漏掉的那一條。
+  // 每一個會被結局文字讀到的數值都要有高低兩種。
   const states = () => {
     const out = [];
     for (const kids of [0, 1])
       for (const succeeded of [false, true])
         for (const rank of ['vs', 'associate', 'professor'])
           for (const clinical of [30, 80])
-            for (const familyBond of [20, 70]) {
-              const s = createGame(1);
-              s.age = 66;
-              s.rank = rank;
-              s.attrs.clinical = clinical;
-              s.attrs.familyBond = familyBond;
-              s.attrs.health = 50;
-              s.attrs.self = 60;
-              s.family.kids = kids;
-              if (kids) s.family.children = [{ bornAt: 34 }];
-              s.family.stage = kids ? 'married' : 'single';
-              s.people.chief.succeeded = succeeded;
-              out.push(s);
-            }
+            for (const familyBond of [20, 80])
+              for (const health of [20, 70])
+                for (const self of [30, 80]) {
+                  const s = createGame(1);
+                  s.age = 66;
+                  s.rank = rank;
+                  s.attrs.clinical = clinical;
+                  s.attrs.familyBond = familyBond;
+                  s.attrs.health = health;
+                  s.attrs.self = self;
+                  s.family.kids = kids;
+                  if (kids) s.family.children = [{ bornAt: 34 }];
+                  s.family.stage = kids ? 'married' : 'single';
+                  s.people.chief.succeeded = succeeded;
+                  out.push(s);
+                }
     return out;
   };
 
@@ -259,8 +273,13 @@ describe('結局不會反寫玩家的選擇', () => {
     for (const s of states())
       for (const cause of ['retire', 'death']) {
         const e = decideEnding(s, cause);
-        for (const [word, { re, holds }] of Object.entries(TITLES))
-          if (re.test(claims(e.body)) && !holds(s))
+        // 頭銜授予要跳過否定句（「沒當教授」是在講沒發生的事）；
+        // 處境宣稱本身就含否定詞，必須對完整內文驗。
+        for (const [word, { re, holds, body }] of [
+          ...Object.entries(TITLES).map(([k, v]) => [k, { ...v, body: claims(e.body) }]),
+          ...Object.entries(SITUATIONS).map(([k, v]) => [k, { ...v, body: e.body }]),
+        ])
+          if (re.test(body) && !holds(s))
             bad.push(
               `${e.id}（${s.rank}/kids${s.family.kids}/主任${s.people.chief.succeeded}）說了「${word}」`,
             );
