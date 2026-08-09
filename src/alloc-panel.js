@@ -1,5 +1,12 @@
 // 年度配置盤：一條可拖曳分隔線的堆疊條，比例制，附後果預告。
-import { ALLOC_KEYS, AXIS_LABELS, getStage, forecast, validateAllocation } from './engine.js';
+import {
+  ALLOC_KEYS,
+  AXIS_LABELS,
+  getStage,
+  forecast,
+  validateAllocation,
+  conformAllocation,
+} from './engine.js';
 import { $ } from './view.js';
 
 const STAGE_DEFAULT = {
@@ -9,38 +16,27 @@ const STAGE_DEFAULT = {
   aesthetic: { clinical: 20, teaching: 0, research: 0, family: 40, personal: 40 },
 };
 
-/** 沿用去年的配置比較好用；第一年或換階段時給該階段的預設值。 */
+/**
+ * 沿用去年的配置比較好用；第一年或換階段時給該階段的預設值。
+ *
+ * 下限怎麼套一律交給 conformAllocation。這裡原本自己寫了一份一模一樣的邏輯，
+ * 而且同樣把 research 排在捐贈者第一順位——所以 PGY 升 R1 那年，
+ * 臨床多出來的 10% 全部從研究扣，personal 和 family 一動不動。
+ * 兩份實作只要有一份沒改到，玩家就會在畫面上看到沒改到的那一份。
+ */
 function startingAlloc(state) {
   const stage = getStage(state);
-  const base = state.alloc ? { ...state.alloc } : { ...STAGE_DEFAULT[stage.key] };
-  if (base.clinical < stage.minClinicalPct) {
-    // 抬高臨床到下限，差額從最寬裕的那一項扣
-    let need = stage.minClinicalPct - base.clinical;
-    base.clinical = stage.minClinicalPct;
-    for (const k of ['research', 'teaching', 'family', 'personal']) {
-      const take = Math.min(need, base[k]);
-      base[k] -= take;
-      need -= take;
-      if (need <= 0) break;
-    }
+  // 開盤要回到玩家「說過」的配置，而不是上一年被下限壓過的結果。
+  const want = state.intent || state.alloc;
+  const base = want ? { ...want } : { ...STAGE_DEFAULT[stage.key] };
+  const out = conformAllocation(state, base);
+  const sum = ALLOC_KEYS.reduce((s, k) => s + out[k], 0);
+  out.personal += 100 - sum; // 收尾補到 100
+  if (out.personal < 0) {
+    out.clinical += out.personal;
+    out.personal = 0;
   }
-  if (base.family < (state.family.floor || 0)) {
-    let need = state.family.floor - base.family;
-    base.family = state.family.floor;
-    for (const k of ['research', 'teaching', 'personal']) {
-      const take = Math.min(need, base[k]);
-      base[k] -= take;
-      need -= take;
-      if (need <= 0) break;
-    }
-  }
-  const sum = ALLOC_KEYS.reduce((s, k) => s + base[k], 0);
-  base.personal += 100 - sum; // 收尾補到 100
-  if (base.personal < 0) {
-    base.clinical += base.personal;
-    base.personal = 0;
-  }
-  return base;
+  return out;
 }
 
 /** 承諾的來源，用來解釋家庭下限為什麼在那裡。 */

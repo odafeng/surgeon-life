@@ -166,29 +166,29 @@ export function conformAllocation(state, alloc) {
   const out = { ...alloc };
   // 按比例跟每一軸拿，不要照順序把第一個捐贈者抽乾。
   // 原本 research 排第一順位，所以「臨床下限提高」或「家庭承諾生效」時
-  // 它會被抽到 0 而 teaching、personal 一動不動——快轉會把這個結果寫回 state.alloc，
-  // 於是研究軸再也回不來，整條學術線就此對玩家消失。
+  // 它會被抽到 0 而 teaching、personal 一動不動——研究軸再也回不來，
+  // 整條學術線就此對玩家消失。
   const raise = (key, target, donors) => {
     if (out[key] >= target) return;
-    let need = target - out[key];
-    out[key] = target;
     const pool = donors.reduce((sum, k) => sum + out[k], 0);
     if (pool <= 0) return;
-    for (const k of donors) {
-      if (need <= 0) break;
-      const share = Math.min(out[k], Math.round((out[k] / pool) * (target - (out[key] - need))));
-      const take = Math.min(need, share);
-      out[k] -= take;
-      need -= take;
+    const need = Math.min(target - out[key], pool);
+    out[key] += need;
+
+    // 先照比例取整數，餘數用最大餘數法補——直接照順序補會把偏誤放回去。
+    const want = donors.map((k) => ({ k, exact: (out[k] / pool) * need }));
+    const take = new Map(want.map((w) => [w.k, Math.min(out[w.k], Math.floor(w.exact))]));
+    let left = need - [...take.values()].reduce((a, b) => a + b, 0);
+    for (const w of [...want].sort((a, b) => (b.exact % 1) - (a.exact % 1) || b.exact - a.exact)) {
+      if (left <= 0) break;
+      if (take.get(w.k) < out[w.k]) {
+        take.set(w.k, take.get(w.k) + 1);
+        left -= 1;
+      }
     }
-    // 四捨五入可能還差一點，剩下的從還有餘裕的軸補齊
-    for (const k of donors) {
-      if (need <= 0) break;
-      const take = Math.min(need, out[k]);
-      out[k] -= take;
-      need -= take;
-    }
+    for (const [k, v] of take) out[k] -= v;
   };
+
   raise('clinical', min, ['research', 'teaching', 'personal', 'family']);
   raise('family', floor, ['research', 'teaching', 'personal']);
   return out;

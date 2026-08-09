@@ -312,6 +312,21 @@ describe('conformAllocation', () => {
     expect(Object.values(out).reduce((a, b) => a + b, 0)).toBe(100);
   });
 
+  // 試玩者在真實 UI 重現的那一條：25 歲 50/0/25/5/20，快轉三年，
+  // PGY 升 R1 之後臨床下限從 50 變 60，多出來的 10% 全從 research 扣。
+  // 原因是配置盤自己又寫了一份同樣的邏輯——兩份實作，只改到一份。
+  it('升 R1 那年多出來的臨床，按比例跟每一軸拿', () => {
+    const s = createGame(1);
+    s.age = 27;
+    const said = { clinical: 50, teaching: 0, research: 25, family: 5, personal: 20 };
+    const out = conformAllocation(s, said);
+    expect(out.clinical).toBe(60);
+    expect(said.research - out.research).toBe(5); // 25/50 的份額
+    expect(said.personal - out.personal).toBe(4); // 20/50 的份額
+    expect(said.family - out.family).toBe(1);
+    expect(Object.values(out).reduce((a, b) => a + b, 0)).toBe(100);
+  });
+
   it('每年從玩家的意圖重算，不會一層一層越削越少', () => {
     const s = createGame(1);
     s.age = 33;
