@@ -113,3 +113,108 @@ export function applyStats(state, stats) {
     state.stats[k] = (state.stats[k] || 0) + v;
   }
 }
+
+export function applyGrowth(state, alloc) {
+  const stage = getStage(state);
+  const t = state.talents;
+  const a = state.attrs;
+  a.clinical = clamp(a.clinical + alloc.clinical * (0.4 + t.dexterity * 0.16) * stage.clinicalMult);
+  if (state.career === 'aesthetic') a.clinical = clamp(a.clinical - 3);
+  a.teaching = clamp(a.teaching + alloc.teaching * (0.5 + t.charisma * 0.15) * stage.teachingMult);
+  a.papers += alloc.research * (2 + t.research * 1.2) * (state.flags.phd === 'done' ? 1.5 : 1);
+  a.familyBond = clamp(
+    a.familyBond +
+      alloc.family * 3 -
+      (state.family.kids > 0 && alloc.family < 3 ? 12 : 0) -
+      (alloc.family === 0 ? 8 : 0),
+  );
+  a.self = clamp(a.self + alloc.personal * 2.5 - (alloc.personal === 0 ? 3 : 0));
+  state.stats.missedDinners += (12 - alloc.family) * 10;
+  if (stage.surgical) {
+    const ops = alloc.clinical * stage.surgeriesPerMonth;
+    state.stats.surgeries += ops;
+    state.stats.livesSaved += Math.round(ops * 0.1);
+  }
+}
+
+export function settleHealth(state, alloc) {
+  const ageBase = 1 + (state.age >= 40 ? 1.5 : 0) + (state.age >= 55 ? 1.5 : 0);
+  const factor = 1.5 - state.talents.constitution * 0.08;
+  const overwork = Math.max(0, alloc.clinical + alloc.research - 8) * 1.2;
+  const recovery = alloc.personal * 1.8;
+  state.attrs.health = clamp(state.attrs.health - (ageBase + overwork) * factor + recovery);
+  return state.attrs.health <= 0;
+}
+
+const RANK_BONUS = { none: 0, vs: 0, assistant: 10, associate: 20, professor: 30 };
+
+export function settleMoney(state) {
+  const stage = getStage(state);
+  const salary =
+    stage.key === 'aesthetic'
+      ? 60 + state.talents.social * 45
+      : stage.salary + RANK_BONUS[state.rank];
+  const expenses = 40 + state.family.kids * 40 + (state.family.stage === 'married' ? 20 : 0);
+  state.attrs.money += salary - expenses;
+}
+
+export function settlePhd(state, alloc) {
+  if (state.flags.phd !== 'studying') return null;
+  state.attrs.health = clamp(state.attrs.health - 2); // 白天開刀,晚上上課
+  state.flags.phdProgress += alloc.research;
+  if (state.flags.phdProgress < 15) return null;
+  state.flags.phd = 'done';
+  return '你通過口試,拿到博士學位。口試委員最後一個問題是:「畢業後,你打算什麼時候做研究?」你看著自己下週的刀表,笑而不答。';
+}
+
+export function settleGrant(state, alloc) {
+  if (state.career !== 'surgery' || getStage(state).key !== 'attending') return null;
+  if (alloc.research < 3) return null;
+  state.grants.applied = true; // 申請紀錄本身就是副教授送審的門票
+  const p = Math.min(
+    0.5,
+    0.1 + state.talents.research * 0.03 + (state.flags.phd === 'done' ? 0.1 : 0),
+  );
+  if (state.rng.chance(p)) {
+    state.grants.yearsPI += 1;
+    return `你的部級研究計畫通過了,今年以主持人身分執行(累計 ${state.grants.yearsPI} 年)。經費不多,但升等表上那一格,終於能填了。`;
+  }
+  return '計畫申請結果:未通過。你寫了兩週的計畫書,審查意見一行:「創新性不足。」';
+}
+
+export function settlePromotion(state) {
+  if (state.career !== 'surgery' || getStage(state).key !== 'attending') return null;
+  const a = state.attrs;
+  const phd = state.flags.phd === 'done';
+  if (state.rank === 'none') {
+    state.rank = 'vs';
+    return '你升上主治醫師。恭喜——從今天起,你的薪水和健保點值綁在一起了。';
+  }
+  if (a.teaching < 70) return null; // 教學服務審查 70 分及格,未達不得送件
+  if (state.rank === 'vs' && (a.papers >= 300 || phd)) {
+    state.rank = 'assistant';
+    return phd
+      ? '你以博士學位送審,升等通過:助理教授。學位論文充當代表著作,歸類計分的門檻與你無關——細則寫得明白:「以學位送審者,不在此限。」'
+      : '外審五人回來四份「優良」,升等通過:助理教授。三百點歸類計分,是你十年的夜晚。月薪增加一萬元——你的手術技能,不在任何一張評分表上。';
+  }
+  if (state.rank === 'assistant' && a.papers >= 400 && state.grants.applied) {
+    state.rank = 'associate';
+    return '升等通過:副教授。院長在頒聘書時說「繼續努力」,你想不起他上次進開刀房是哪一年。';
+  }
+  if (state.rank === 'associate' && a.papers >= 500 && state.grants.yearsPI >= 2) {
+    state.rank = 'professor';
+    return '升等通過:教授。五百點計分、兩年計畫主持、外審五人全數通過——這是這個體系能給你的最高肯定,與你救過多少人無關。';
+  }
+  return null;
+}
+
+export function malpracticeChance(state) {
+  const stage = getStage(state);
+  if (state.career !== 'surgery' || (stage.key !== 'resident' && stage.key !== 'attending'))
+    return 0;
+  let p = stage.key === 'attending' ? 0.08 : 0.04;
+  p += Math.max(0, 65 - state.attrs.clinical) * 0.004;
+  p -= state.talents.social * 0.02;
+  if (state.flags.defensive) p -= 0.03;
+  return Math.min(0.45, Math.max(0.005, p));
+}
