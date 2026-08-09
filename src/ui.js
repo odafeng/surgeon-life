@@ -1,7 +1,9 @@
-// 遊戲流程。畫面交給 view.js,配置盤交給 alloc-panel.js。
-import { createGame, playYear } from './engine.js';
+// 遊戲流程。畫面交給 view.js，配置盤與行動面板各自獨立。
+import { createGame, playYear, getStage, conformAllocation } from './engine.js';
 import { PROLOGUE } from './events.js';
 import { openAllocPanel } from './alloc-panel.js';
+import { openActionPanel } from './action-panel.js';
+import { save, load, hasSave, clearSave, describeSave } from './save.js';
 import {
   $,
   sleep,
@@ -11,16 +13,17 @@ import {
   renderHud,
   showText,
   askChoice,
-  renderTalents,
+  animateTalentRoll,
   renderStatusPanel,
   renderLogPanel,
   renderEnding,
 } from './view.js';
 
 let state = null;
-const journal = [];
+let journal = [];
+let autoYears = 0; // 還要快轉幾年
 
-setScene('or'); // 標題畫面就先鋪好開刀房,不要開場是一片黑
+setScene('or'); // 標題畫面就先鋪好開刀房，不要開場是一片黑
 
 const PROLOGUE_SCENE = {
   16: 'home',
@@ -32,8 +35,20 @@ const PROLOGUE_SCENE = {
   24: 'corridor',
 };
 
+const fastForwarding = () => autoYears > 0;
+
 function remember(entry) {
   journal.push(entry);
+}
+
+function renderFastFlag() {
+  $('fast-flag').classList.toggle('hidden', !fastForwarding());
+  $('fast-left').textContent = fastForwarding() ? `還有 ${autoYears} 年` : '';
+}
+
+function autosave() {
+  if (!state || state.ending) return;
+  save(state, { journal });
 }
 
 async function runPrologue() {
@@ -54,20 +69,25 @@ async function runPrologue() {
   }
   await showText({
     src: '本篇開始',
-    body: '從現在起,每一年的時間怎麼分,由你決定。\n分完之後,命運會回應你——通常不是你想要的那種回應。',
+    body: '從現在起，每一年的時間怎麼分，由你決定。\n分完之後還有精力可以花，命運再回應你——通常不是你想要的那種回應。',
   });
 }
 
-/** 事件播放:切場景、顯示文字、需要決定時發牌。 */
+/** 事件播放。快轉時文字自動推進，但需要你決定的事件永遠會停下來。 */
 async function onLog(entry) {
   if (entry.kind === 'year') {
     remember(entry);
-    return; // 年份標題只進年誌,不佔畫面
+    return;
   }
   remember(entry);
   if (entry.scene) setScene(sceneForEvent(state, entry.scene));
   setPortrait(state.age, entry.mood);
-  await showText({ src: '', body: entry.text });
+  if (fastForwarding()) {
+    await showText({ src: '', body: entry.text }, { wait: false });
+    await sleep(620);
+  } else {
+    await showText({ src: '', body: entry.text });
+  }
   renderHud(state);
 }
 
@@ -75,23 +95,48 @@ async function chooser(ev) {
   if (ev.scene) setScene(sceneForEvent(state, ev.scene));
   setPortrait(state.age, ev.mood);
   await showText({ src: '', body: ev.text }, { wait: false });
-  return askChoice(ev.choices);
+  return askChoice(ev.choices); // 需要決定的事件不快轉
 }
 
 async function yearLoop() {
-  while (true) {
+  for (;;) {
     setPortrait(state.age);
     setScene(sceneForEvent(state, null));
     renderHud(state);
     $('textbox').classList.add('hidden');
+    renderFastFlag();
 
-    const alloc = await openAllocPanel(state);
-    renderHud(state);
+    if (!fastForwarding()) {
+      const { alloc, years } = await openAllocPanel(state);
+      state.alloc = alloc;
+      autoYears = years - 1;
+      renderHud(state);
+      renderFastFlag();
 
-    const { ending } = await playYear(state, alloc, chooser, onLog);
+      const actionLogs = await openActionPanel(state);
+      for (const l of actionLogs) remember({ kind: 'choice', text: l });
+      renderHud(state);
+    } else {
+      autoYears -= 1;
+      // 換階段時停下來。臨床下限變了，去年的配置未必還合法，
+      // 而且升上住院醫師或主治本來就是該重新想一次的時刻。
+      state.alloc = conformAllocation(state, state.alloc);
+      renderFastFlag();
+    }
+
+    autosave();
+    const stageBefore = getStage(state).key;
+    const { ending } = await playYear(state, state.alloc, chooser, onLog);
     renderHud(state);
+    if (!ending && getStage(state).key !== stageBefore) {
+      autoYears = 0;
+      renderFastFlag();
+    }
 
     if (ending) {
+      autoYears = 0;
+      renderFastFlag();
+      clearSave(); // 走到結局就沒有「繼續」可言了
       await sleep(700);
       $('textbox').classList.add('hidden');
       $('cards').classList.add('hidden');
@@ -103,12 +148,36 @@ async function yearLoop() {
 
 // ───────── 事件繫結 ─────────
 
-$('btn-start').onclick = () => {
+function refreshContinueButton() {
+  const info = hasSave() ? describeSave() : null;
+  const btn = $('btn-continue');
+  btn.classList.toggle('hidden', !info);
+  if (info) btn.textContent = `繼續上次的人生（${info.age} 歲）`;
+}
+refreshContinueButton();
+
+$('btn-start').onclick = async () => {
   state = createGame(Date.now() >>> 0);
-  renderTalents(state);
+  journal = [];
+  autoYears = 0;
   $('screen-start').classList.add('hidden');
   $('screen-talents').classList.remove('hidden');
   setScene('home');
+  await animateTalentRoll(state);
+  $('btn-accept').classList.remove('hidden');
+};
+
+$('btn-continue').onclick = async () => {
+  const got = load();
+  if (!got) {
+    refreshContinueButton();
+    return;
+  }
+  state = got.state;
+  journal = got.meta.journal || [];
+  autoYears = 0;
+  $('screen-start').classList.add('hidden');
+  await yearLoop();
 };
 
 $('btn-accept').onclick = async () => {
@@ -128,8 +197,29 @@ $('btn-log').onclick = () => {
   $('log-panel').classList.remove('hidden');
 };
 
+$('btn-save').onclick = () => {
+  if (!state) return;
+  const res = save(state, { journal });
+  const btn = $('btn-save');
+  const span = btn.querySelector('span');
+  span.textContent = res.ok ? '✓' : '✗';
+  btn.title = res.ok ? '已存檔' : res.reason;
+  setTimeout(() => {
+    span.textContent = '存';
+    btn.title = '存檔';
+  }, 1200);
+};
+
+$('btn-fast-stop').onclick = () => {
+  autoYears = 0;
+  renderFastFlag();
+};
+
 for (const b of document.querySelectorAll('.close-overlay')) {
   b.onclick = () => b.closest('.overlay').classList.add('hidden');
 }
 
-$('btn-restart').onclick = () => window.location.reload();
+$('btn-restart').onclick = () => {
+  clearSave();
+  window.location.reload();
+};

@@ -1,4 +1,4 @@
-// 年度配置盤:一條可拖曳分隔線的堆疊條,比例制,附後果預告。
+// 年度配置盤：一條可拖曳分隔線的堆疊條，比例制，附後果預告。
 import { ALLOC_KEYS, AXIS_LABELS, getStage, forecast, validateAllocation } from './engine.js';
 import { $ } from './view.js';
 
@@ -9,12 +9,12 @@ const STAGE_DEFAULT = {
   aesthetic: { clinical: 20, teaching: 0, research: 0, family: 40, personal: 40 },
 };
 
-/** 沿用去年的配置比較好用;第一年或換階段時給該階段的預設值。 */
+/** 沿用去年的配置比較好用；第一年或換階段時給該階段的預設值。 */
 function startingAlloc(state) {
   const stage = getStage(state);
   const base = state.alloc ? { ...state.alloc } : { ...STAGE_DEFAULT[stage.key] };
   if (base.clinical < stage.minClinicalPct) {
-    // 抬高臨床到下限,差額從最寬裕的那一項扣
+    // 抬高臨床到下限，差額從最寬裕的那一項扣
     let need = stage.minClinicalPct - base.clinical;
     base.clinical = stage.minClinicalPct;
     for (const k of ['research', 'teaching', 'family', 'personal']) {
@@ -43,7 +43,7 @@ export function openAllocPanel(state) {
   $('plan-sub').textContent = `${stage.label}　／　拖曳分隔線調整比重`;
   $('plan-lock').textContent = min
     ? `斜線區是 ${stage.label}的臨床下限 ${min}%——這不是你能選的。`
-    : '你已經離開健保體系,沒有人規定你的時間怎麼分。';
+    : '你已經離開健保體系，沒有人規定你的時間怎麼分。';
 
   function bounds() {
     const b = [0];
@@ -120,8 +120,8 @@ export function openAllocPanel(state) {
   }
 
   /**
-   * 推擠式拖曳:往右拖會把右邊所有分隔線一起推走,不是只吃相鄰那一段。
-   * 只吃相鄰段的話,想把臨床從 40% 拉到 80% 得拖四次分隔線,很難用。
+   * 推擠式拖曳：往右拖會把右邊所有分隔線一起推走，不是只吃相鄰那一段。
+   * 只吃相鄰段的話，想把臨床從 40% 拉到 80% 得拖四次分隔線，很難用。
    */
   function onMove(e) {
     if (dragging === null) return;
@@ -154,21 +154,29 @@ export function openAllocPanel(state) {
   $('plan').classList.remove('hidden');
 
   return new Promise((resolve) => {
-    const run = () => {
+    const finish = (years) => {
       let final;
       try {
         final = validateAllocation(state, alloc);
       } catch {
-        return; // 按鈕本來就是 disabled,這裡只是保險
+        return; // 按鈕本來就是 disabled，這裡只是保險
       }
-      $('btn-run').removeEventListener('click', run);
+      $('btn-run').removeEventListener('click', runOne);
+      $('plan-fast').removeEventListener('click', runMany);
       bar.removeEventListener('pointerdown', onDown);
       bar.removeEventListener('pointermove', onMove);
       bar.removeEventListener('pointerup', onUp);
       bar.removeEventListener('pointercancel', onUp);
       $('plan').classList.add('hidden');
-      resolve(final);
+      resolve({ alloc: final, years });
     };
-    $('btn-run').addEventListener('click', run);
+    const runOne = () => finish(1);
+    const runMany = (e) => {
+      const years = Number(e.target.dataset?.years);
+      // 快轉會跳過中間幾年的配置與行動，所以配置本身不合法時不給快轉
+      if (years && !$('btn-run').disabled) finish(years);
+    };
+    $('btn-run').addEventListener('click', runOne);
+    $('plan-fast').addEventListener('click', runMany);
   });
 }

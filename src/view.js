@@ -1,4 +1,4 @@
-// DOM 渲染層。只碰畫面,不碰規則。
+// DOM 渲染層。只碰畫面，不碰規則。
 import { getStage, AXIS_LABELS, ALLOC_KEYS, nextPromotionGate } from './engine.js';
 import { TALENT_LABELS } from './talents.js';
 
@@ -33,7 +33,7 @@ export function portraitFor(age) {
   return 60;
 }
 
-/** mood: weary(疲憊) / wry(苦笑) / lifted(振奮),省略則是平靜。 */
+/** mood: weary(疲憊) / wry(苦笑) / lifted(振奮)，省略則是平靜。 */
 export function setPortrait(age, mood) {
   const el = $('portrait');
   const base = portraitFor(age);
@@ -42,7 +42,7 @@ export function setPortrait(age, mood) {
   el.setAttribute('src', src);
 }
 
-/** 主角在名牌上的稱號:用當下最刺的那個事實。 */
+/** 主角在名牌上的稱號：用當下最刺的那個事實。 */
 function sealTitle(state) {
   if (state.career === 'aesthetic') return '離開健保的人';
   if (state.attrs.money < 0) return `負債 ${Math.abs(Math.round(state.attrs.money))} 萬`;
@@ -96,7 +96,7 @@ export function renderHud(state) {
   $('nameplate').classList.remove('hidden');
 }
 
-/** 顯示一段文字,等玩家點擊後才繼續。 */
+/** 顯示一段文字，等玩家點擊後才繼續。 */
 export function showText({ src = '', body }, { wait = true } = {}) {
   $('tb-src').textContent = src;
   $('tb-body').textContent = body;
@@ -151,6 +151,47 @@ export function askChoice(choices) {
   });
 }
 
+/**
+ * 擲骰動畫。天賦是真的擲出來的，所以要讓玩家看見數字在滾。
+ * 先全部一起滾，再一項一項定格——最後定格的是體質，因為它決定你能活多久。
+ */
+export async function animateTalentRoll(state) {
+  const order = ['exam', 'dexterity', 'research', 'charisma', 'social', 'constitution'];
+  const el = $('talent-list');
+  el.innerHTML = order
+    .map(
+      (k) =>
+        `<li data-k="${escapeHtml(k)}" class="rolling"><span>${escapeHtml(TALENT_LABELS[k])}</span>` +
+        `<span><span class="pips">${'○'.repeat(10)}</span><b class="num">?</b></span></li>`,
+    )
+    .join('');
+
+  const rows = new Map(order.map((k) => [k, el.querySelector(`li[data-k="${k}"]`)]));
+  const paint = (row, v) => {
+    row.querySelector('.pips').textContent = '●'.repeat(v) + '○'.repeat(10 - v);
+    row.querySelector('.num').textContent = String(v);
+  };
+
+  // 全部一起滾
+  const spinning = new Set(order);
+  const spin = setInterval(() => {
+    for (const k of spinning) paint(rows.get(k), 1 + Math.floor(Math.random() * 10));
+  }, 65);
+  await sleep(850);
+
+  // 一項一項定格
+  for (const k of order) {
+    spinning.delete(k);
+    const row = rows.get(k);
+    paint(row, state.talents[k]);
+    row.classList.remove('rolling');
+    row.classList.add('landed');
+    await sleep(280);
+  }
+  clearInterval(spin);
+  await sleep(200);
+}
+
 export function renderTalents(state) {
   $('talent-list').innerHTML = Object.entries(state.talents)
     .map(
@@ -185,14 +226,14 @@ export function renderStatusPanel(state) {
 
   const gate = nextPromotionGate(state);
   $('sp-gate').textContent = gate
-    ? `下一關:${gate.label}。需要歸類計分 ${gate.papers} 點(目前 ${Math.round(a.papers)})、教學服務 70 分(目前 ${Math.round(a.teaching)})${
+    ? `下一關：${gate.label}。需要歸類計分 ${gate.papers} 點(目前 ${Math.round(a.papers)})、教學服務 70 分(目前 ${Math.round(a.teaching)})${
         gate.label === '副教授'
           ? '、部級計畫申請紀錄'
           : gate.label === '教授'
             ? '、計畫主持滿 2 年'
             : ''
       }。`
-    : '升等這條路上,你沒有下一關了。';
+    : '升等這條路上，你沒有下一關了。';
 }
 
 export function renderLogPanel(entries) {

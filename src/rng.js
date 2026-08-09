@@ -1,4 +1,6 @@
-// mulberry32:可播種、夠均勻、一行狀態。
+// mulberry32：可播種、夠均勻、一行狀態。
+// 狀態只有一個 32 位元整數，所以存檔能完整重現亂數序列——
+// 讀檔之後抽到的事件，會和沒存檔一路玩下去時一模一樣。
 export function createRng(seed) {
   let s = seed >>> 0;
   const next = () => {
@@ -13,5 +15,9 @@ export function createRng(seed) {
     int: (min, max) => min + Math.floor(next() * (max - min + 1)),
     chance: (p) => next() < p,
     pick: (arr) => arr[Math.floor(next() * arr.length)],
+    getState: () => s,
+    setState: (v) => {
+      s = v >>> 0;
+    },
   };
 }

@@ -13,7 +13,7 @@ export const AXIS_LABELS = {
   personal: '個人',
 };
 
-// 配置以百分比計,總和 100。minClinicalPct 是制度給的下限,拖不動。
+// 配置以百分比計，總和 100。minClinicalPct 是制度給的下限，拖不動。
 const STAGES = {
   pgy: {
     key: 'pgy',
@@ -38,7 +38,7 @@ const STAGES = {
   attending: {
     key: 'attending',
     label: '主治醫師',
-    salary: 220,
+    salary: 150,
     minClinicalPct: 20,
     clinicalMult: 0.7,
     teachingMult: 1.0,
@@ -48,7 +48,7 @@ const STAGES = {
   aesthetic: {
     key: 'aesthetic',
     label: '醫美診所',
-    salary: 0, // 由社交能力決定,見 settleMoney
+    salary: 0, // 由社交能力決定，見 settleMoney
     minClinicalPct: 0,
     clinicalMult: 0,
     teachingMult: 0,
@@ -57,8 +57,8 @@ const STAGES = {
   },
 };
 
-// 每軸的邊際遞減轉折點:超過 knee 之後,多投入只剩 tail 倍的效果。
-// 個人軸的 knee 最低——「休息」有效但無法無限堆疊,這是消滅支配策略的關鍵。
+// 每軸的邊際遞減轉折點：超過 knee 之後，多投入只剩 tail 倍的效果。
+// 個人軸的 knee 最低——「休息」有效但無法無限堆疊，這是消滅支配策略的關鍵。
 const DIMINISHING = {
   clinical: { knee: 45, tail: 0.4 },
   teaching: { knee: 20, tail: 0.35 },
@@ -74,11 +74,12 @@ export function createGame(seed) {
     career: 'surgery',
     rank: 'none',
     talents: rollTalents(rng),
-    attrs: { clinical: 5, teaching: 0, papers: 0, self: 50, health: 88, familyBond: 50, money: 10 },
+    attrs: { clinical: 5, teaching: 0, papers: 0, self: 50, health: 88, familyBond: 50, money: 60 },
     family: { stage: 'single', kids: 0 },
     grants: { applied: false, yearsPI: 0 },
     flags: {},
     used: [],
+    recent: [], // 最近抽過的事件，見 pickEvents 的冷卻機制
     stats: { surgeries: 0, livesSaved: 0, lawsuits: 0, missedDinners: 0, debtYears: 0 },
     alloc: null,
     ending: null,
@@ -103,14 +104,14 @@ export function effective(key, pct) {
   return Math.min(pct, knee) + Math.max(0, pct - knee) * tail;
 }
 
-/** 有效百分比換算成「等效月數」,讓既有的敘事數字(刀量、博士進度)維持原本的量級。 */
+/** 有效百分比換算成「等效月數」，讓既有的敘事數字（刀量、博士進度）維持原本的量級。 */
 function months(key, pct) {
   return (effective(key, pct) / 100) * 12;
 }
 
 /**
  * 健康上限隨年齡下降。
- * 這條線是「個人拉滿」不再無敵的第二道保險:休息能讓你貼著上限走,但上限自己會掉。
+ * 這條線是「個人拉滿」不再無敵的第二道保險：休息能讓你貼著上限走，但上限自己會掉。
  */
 export function healthCap(age) {
   return clamp(100 - Math.max(0, age - 32) * 1.0);
@@ -126,9 +127,29 @@ export function validateAllocation(state, alloc) {
     out[k] = v;
   }
   const sum = ALLOC_KEYS.reduce((s, k) => s + out[k], 0);
-  if (sum !== 100) throw new Error(`五項加起來必須是 100%,你分配了 ${sum}%`);
+  if (sum !== 100) throw new Error(`五項加起來必須是 100%，你分配了 ${sum}%`);
   if (out.clinical < stage.minClinicalPct)
     throw new Error(`${stage.label}的臨床不得低於 ${stage.minClinicalPct}%——這不是你能選的`);
+  return out;
+}
+
+/**
+ * 把配置校正成當前階段合法的樣子。
+ * 換階段時臨床下限會變（住院醫師 60%，主治只要 20%），
+ * 沿用去年的配置可能瞬間變成違法——快轉時特別容易踩到。
+ */
+export function conformAllocation(state, alloc) {
+  const min = getStage(state).minClinicalPct;
+  const out = { ...alloc };
+  if (out.clinical >= min) return out;
+  let need = min - out.clinical;
+  out.clinical = min;
+  for (const k of ['research', 'teaching', 'personal', 'family']) {
+    const take = Math.min(need, out[k]);
+    out[k] -= take;
+    need -= take;
+    if (need <= 0) break;
+  }
   return out;
 }
 
@@ -151,8 +172,8 @@ export function applyGrowth(state, alloc) {
   const t = state.talents;
   const a = state.attrs;
 
-  // 臨床:荒廢會退步。主治的下限只有 20%,所以「靠下限混」會讓刀越開越差。
-  // 鏽蝕與現有技能成正比——頂尖的手最難維持,這也是為什麼名醫不能離開刀房太久。
+  // 臨床：荒廢會退步。主治的下限只有 20%，所以「靠下限混」會讓刀越開越差。
+  // 鏽蝕與現有技能成正比——頂尖的手最難維持，這也是為什麼名醫不能離開刀房太久。
   const clinicalGain = months('clinical', alloc.clinical) * (0.4 + t.dexterity * 0.16);
   const rust = alloc.clinical < 25 ? Math.min(8, (25 - alloc.clinical) * 0.018 * a.clinical) : 0;
   a.clinical = clamp(a.clinical + clinicalGain * stage.clinicalMult - rust);
@@ -185,14 +206,14 @@ export function applyGrowth(state, alloc) {
   }
 }
 
-/** 今年健康的淨變化(不套用,供預告與結算共用)。 */
+/** 今年健康的淨變化（不套用，供預告與結算共用）。 */
 export function healthDelta(state, alloc) {
   const ageBase = 1.2 + (state.age >= 40 ? 1.6 : 0) + (state.age >= 55 ? 2.0 : 0);
   const factor = 1.5 - state.talents.constitution * 0.08;
   const load = alloc.clinical + alloc.research;
   const overwork = (Math.max(0, load - 55) / 100) * 14;
-  // 係數要夠大,才抵得過事件的零星扣血;但個人軸的 knee 很低(18%),
-  // 所以拉滿也只換到約 15 點回血,買不到不死之身。
+  // 係數要夠大，才抵得過事件的零星扣血；但個人軸的 knee 很低（18%），
+  // 所以拉滿也只換到約 15 點回血，買不到不死之身。
   const recovery = (effective('personal', alloc.personal) / 100) * 40;
   return recovery - (ageBase + overwork) * factor;
 }
@@ -205,28 +226,52 @@ export function settleHealth(state, alloc) {
 
 const RANK_BONUS = { none: 0, vs: 0, assistant: 10, associate: 20, professor: 30 };
 
-export function yearlyIncome(state) {
-  const stage = getStage(state);
-  return stage.key === 'aesthetic'
-    ? 60 + state.talents.social * 45
-    : stage.salary + RANK_BONUS[state.rank];
+/**
+ * 今年的健保點值。每年浮動，你無法控制，而你的收入綁在上面。
+ * 一年只擲一次，存進 state，讓預告和結算看到同一個數字。
+ */
+export function rollPointValue(state) {
+  state.pointValue = Number((0.72 + state.rng.next() * 0.23).toFixed(2));
+  return state.pointValue;
 }
 
+/**
+ * 年收入。主治的績效與「臨床投入量 × 點值」掛鉤——
+ * 勞動量換得到錢，技術換不到：刀開得漂不漂亮，不在這條公式裡。
+ */
+export function yearlyIncome(state, alloc = state.alloc) {
+  const stage = getStage(state);
+  const pv = state.pointValue ?? 0.82;
+  if (stage.key === 'aesthetic') {
+    const busy = alloc ? effective('clinical', alloc.clinical) / 100 : 0.4;
+    return Math.round(70 + state.talents.social * 42 + busy * 180);
+  }
+  const base = stage.salary + RANK_BONUS[state.rank];
+  const load = alloc ? effective('clinical', alloc.clinical) / 100 : 0.4;
+  const perf = stage.key === 'attending' ? load * 300 * pv : load * 40 * pv;
+  return Math.round(base + perf);
+}
+
+/**
+ * 年支出。房貸、孩子、逐漸老去的父母——一年比一年重，
+ * 而且和你開幾台刀無關。
+ */
 export function yearlyExpenses(state) {
-  return (
-    78 +
-    state.family.kids * 52 +
-    (state.family.stage === 'married' ? 26 : 0) +
-    Math.max(0, state.age - 30) * 2.4 // 房貸、父母、孩子的補習費,一年比一年重
+  return Math.round(
+    92 +
+      state.family.kids * 68 +
+      (state.family.stage === 'married' ? 34 : 0) +
+      Math.max(0, state.age - 30) * 3.4 +
+      (state.flags.parentCare ? 96 : 0), // 父母長照，由事件觸發後每年扣
   );
 }
 
 /**
- * 結算存款。負債會滾 8% 利息並累計負債年數——存款終於是個會咬人的限制,
+ * 結算存款。負債會滾 8% 利息並累計負債年數——存款終於是個會咬人的限制，
  * 而不是狀態列上一個變紅的數字。
  */
 export function settleMoney(state) {
-  state.attrs.money += yearlyIncome(state) - yearlyExpenses(state);
+  state.attrs.money += yearlyIncome(state, state.alloc) - yearlyExpenses(state);
   if (state.attrs.money < 0) {
     state.attrs.money = Math.round(state.attrs.money * 1.08);
     state.stats.debtYears += 1;
@@ -236,11 +281,11 @@ export function settleMoney(state) {
 
 export function settlePhd(state, alloc) {
   if (state.flags.phd !== 'studying') return null;
-  state.attrs.health = Math.max(0, state.attrs.health - 2); // 白天開刀,晚上上課
+  state.attrs.health = Math.max(0, state.attrs.health - 2); // 白天開刀，晚上上課
   state.flags.phdProgress += months('research', alloc.research);
   if (state.flags.phdProgress < 15) return null;
   state.flags.phd = 'done';
-  return '你通過口試,拿到博士學位。口試委員最後一個問題是:「畢業後,你打算什麼時候做研究?」你看著自己下週的刀表,笑而不答。';
+  return '你通過口試，拿到博士學位。口試委員最後一個問題是：「畢業後，你打算什麼時候做研究？」你看著自己下週的刀表，笑而不答。';
 }
 
 export function settleGrant(state, alloc) {
@@ -253,9 +298,9 @@ export function settleGrant(state, alloc) {
   );
   if (state.rng.chance(p)) {
     state.grants.yearsPI += 1;
-    return `你的部級研究計畫通過了,今年以主持人身分執行(累計 ${state.grants.yearsPI} 年)。經費不多,但升等表上那一格,終於能填了。`;
+    return `你的部級研究計畫通過了，今年以主持人身分執行（累計 ${state.grants.yearsPI} 年）。經費不多，但升等表上那一格，終於能填了。`;
   }
-  return '計畫申請結果:未通過。你寫了兩週的計畫書,審查意見一行:「創新性不足。」';
+  return '計畫申請結果：未通過。你寫了兩週的計畫書，審查意見一行：「創新性不足。」';
 }
 
 export function settlePromotion(state) {
@@ -264,22 +309,22 @@ export function settlePromotion(state) {
   const phd = state.flags.phd === 'done';
   if (state.rank === 'none') {
     state.rank = 'vs';
-    return '你升上主治醫師。恭喜——從今天起,你的薪水和健保點值綁在一起了。';
+    return '你升上主治醫師。恭喜——從今天起，你的薪水和健保點值綁在一起了。';
   }
-  if (a.teaching < 70) return null; // 教學服務審查 70 分及格,未達不得送件
+  if (a.teaching < 70) return null; // 教學服務審查 70 分及格，未達不得送件
   if (state.rank === 'vs' && (a.papers >= 300 || phd)) {
     state.rank = 'assistant';
     return phd
-      ? '你以博士學位送審,升等通過:助理教授。學位論文充當代表著作,歸類計分的門檻與你無關——細則寫得明白:「以學位送審者,不在此限。」'
-      : '外審五人回來四份「優良」,升等通過:助理教授。三百點歸類計分,是你十年的夜晚。月薪增加一萬元——你的手術技能,不在任何一張評分表上。';
+      ? '你以博士學位送審，升等通過：助理教授。學位論文充當代表著作，歸類計分的門檻與你無關——細則寫得明白：「以學位送審者，不在此限。」'
+      : '外審五人回來四份「優良」，升等通過：助理教授。三百點歸類計分，是你十年的夜晚。月薪增加一萬元——你的手術技能，不在任何一張評分表上。';
   }
   if (state.rank === 'assistant' && a.papers >= 400 && state.grants.applied) {
     state.rank = 'associate';
-    return '升等通過:副教授。院長在頒聘書時說「繼續努力」,你想不起他上次進開刀房是哪一年。';
+    return '升等通過：副教授。院長在頒聘書時說「繼續努力」，你想不起他上次進開刀房是哪一年。';
   }
   if (state.rank === 'associate' && a.papers >= 500 && state.grants.yearsPI >= 2) {
     state.rank = 'professor';
-    return '升等通過:教授。五百點計分、兩年計畫主持、外審五人全數通過——這是這個體系能給你的最高肯定,與你救過多少人無關。';
+    return '升等通過：教授。五百點計分、兩年計畫主持、外審五人全數通過——這是這個體系能給你的最高肯定，與你救過多少人無關。';
   }
   return null;
 }
@@ -295,7 +340,7 @@ export function malpracticeChance(state) {
   return Math.min(0.45, Math.max(0.005, p));
 }
 
-/** 升等路上的下一個門檻,用於配置盤的進度提示。 */
+/** 升等路上的下一個門檻，用於配置盤的進度提示。 */
 export function nextPromotionGate(state) {
   if (state.career !== 'surgery' || getStage(state).key !== 'attending') return null;
   const a = state.attrs;
@@ -307,8 +352,8 @@ export function nextPromotionGate(state) {
 }
 
 /**
- * 配置的後果預告。玩家必須能在按下確認之前預見代價,
- * 否則配置就不是決策,只是猜謎。
+ * 配置的後果預告。玩家必須能在按下確認之前預見代價，
+ * 否則配置就不是決策，只是猜謎。
  */
 export function forecast(state, alloc) {
   const chips = [];
@@ -341,46 +386,65 @@ export function forecast(state, alloc) {
       good: true,
     });
     if (a.teaching < 70)
-      warnings.push(`教學服務 ${Math.round(a.teaching)} 分,未達 70 分不得送件升等。`);
+      warnings.push(`教學服務 ${Math.round(a.teaching)} 分，未達 70 分不得送件升等。`);
   }
 
-  const net = yearlyIncome(state) - yearlyExpenses(state);
+  const net = yearlyIncome(state, alloc) - yearlyExpenses(state);
   chips.push({
     label: '年結餘',
     value: `${net >= 0 ? '+' : ''}${Math.round(net)} 萬`,
+    detail: `收 ${yearlyIncome(state, alloc)} ／ 支 ${yearlyExpenses(state)}`,
     good: net >= 0,
   });
+  if (state.pointValue && getStage(state).key !== 'aesthetic')
+    chips.push({
+      label: '健保點值',
+      value: state.pointValue.toFixed(2),
+      good: state.pointValue >= 0.85,
+    });
 
-  if (nextHealth <= 0) warnings.push('照這個配置,你活不過今年。');
+  if (nextHealth <= 0) warnings.push('照這個配置，你活不過今年。');
   else if (dh < 0 && nextHealth < 30)
     warnings.push(
-      `健康只剩 ${Math.round(nextHealth)},再撐約 ${Math.max(1, Math.ceil(nextHealth / -dh))} 年就會倒下。`,
+      `健康只剩 ${Math.round(nextHealth)}，再撐約 ${Math.max(1, Math.ceil(nextHealth / -dh))} 年就會倒下。`,
     );
-  if (alloc.personal <= 5 && dh < 0) warnings.push('個人幾乎歸零:沒有任何回血來源。');
-  if (state.family.kids > 0 && alloc.family < 25) warnings.push('家庭低於 25%:孩子那邊會出事。');
-  if (a.money < 0) warnings.push(`存款是負的,今年利息會再吃掉 ${Math.round(-a.money * 0.08)} 萬。`);
+  if (alloc.personal <= 5 && dh < 0) warnings.push('個人幾乎歸零：沒有任何回血來源。');
+  if (state.family.kids > 0 && alloc.family < 25) warnings.push('家庭低於 25%：孩子那邊會出事。');
+  if (a.money < 0)
+    warnings.push(`存款是負的，今年利息會再吃掉 ${Math.round(-a.money * 0.08)} 萬。`);
   if (alloc.clinical < 25 && getStage(state).surgical)
-    warnings.push('臨床低於 25%:刀會生疏,技能開始退步。');
+    warnings.push('臨床低於 25%：刀會生疏，技能開始退步。');
 
   return { chips, warnings };
 }
 
+/**
+ * 剛看過的事件不再抽。沒有這條的話，池子小的階段（例如醫美）會連年跳出同一則新聞，
+ * 玩家看到的不是「人生」，是壞掉的跑馬燈。
+ */
+export const RECENT_WINDOW = 16;
+
 export function pickEvents(state) {
   const stageKey = getStage(state).key;
   const rng = state.rng;
-  const eligible = EVENTS.filter(
+  const base = EVENTS.filter(
     (e) =>
       !e.special &&
       e.stages.includes(stageKey) &&
       !(e.once && state.used.includes(e.id)) &&
       (!e.cond || e.cond(state)),
   );
-  const picked = eligible.filter((e) => e.forced && e.forced(state));
+  const picked = base.filter((e) => e.forced && e.forced(state));
   if (rng.chance(malpracticeChance(state))) {
     picked.push(EVENTS.find((e) => e.id === 'a_lawsuit'));
   }
-  // 有 forced 屬性的事件只走 forced 通道,永不進隨機池(否則沒被告也可能抽到判決)
-  const pool = eligible.filter((e) => !e.forced);
+
+  // 有 forced 屬性的事件只走 forced 通道，永不進隨機池（否則沒被告也可能抽到判決）
+  const recent = state.recent || [];
+  const fresh = base.filter((e) => !e.forced && !recent.includes(e.id));
+  // 冷卻期把池子清空時就放寬，寧可重複也不能沒有事件
+  const pool = fresh.length > 0 ? fresh : base.filter((e) => !e.forced);
+
   for (let i = 0; i < 2 && pool.length > 0; i++) {
     const total = pool.reduce((s, e) => s + (e.weight || 1), 0);
     let r = rng.next() * total;
@@ -388,11 +452,13 @@ export function pickEvents(state) {
     if (idx === -1) idx = pool.length - 1;
     picked.push(pool.splice(idx, 1)[0]);
   }
+
+  state.recent = [...recent, ...picked.map((e) => e.id)].slice(-RECENT_WINDOW);
   return picked;
 }
 
 const STAGE_TRANSITION_LOGS = {
-  resident: '你成為外科住院醫師。值班表寄來了:這個月,你有十一天不會看到太陽下山。',
+  resident: '你成為外科住院醫師。值班表寄來了：這個月，你有十一天不會看到太陽下山。',
 };
 
 const BANKRUPT_LIMIT = -400;
@@ -406,6 +472,7 @@ export async function playYear(state, alloc, chooser, onLog) {
     logs.push(entry);
     if (onLog) await onLog(entry);
   };
+  rollPointValue(state);
   await emit({ kind: 'year', text: `【${state.age} 歲・${stage.label}】` });
   applyGrowth(state, alloc);
 
@@ -438,7 +505,7 @@ export async function playYear(state, alloc, chooser, onLog) {
   const dead = settleHealth(state, alloc);
   if (dead) {
     state.ending = decideEnding(state, 'death');
-    await emit({ kind: 'info', text: '你的身體,先於你的意志,停了下來。' });
+    await emit({ kind: 'info', text: '你的身體，先於你的意志，停了下來。' });
     return { logs, ending: state.ending };
   }
 
@@ -448,7 +515,7 @@ export async function playYear(state, alloc, chooser, onLog) {
     state.flags.forcedAesthetic = true;
     await emit({
       kind: 'info',
-      text: '銀行的催繳電話打到護理站。你在停車場坐了半小時,然後撥了那個一直壓在鍵盤下的號碼——醫美診所那邊說,明天就能上工。這不是選擇,是算術。',
+      text: '銀行的催繳電話打到護理站。你在停車場坐了半小時，然後撥了那個一直壓在鍵盤下的號碼——醫美診所那邊說，明天就能上工。這不是選擇，是算術。',
     });
   }
 

@@ -85,7 +85,7 @@ describe('applyEffects / applyStats', () => {
     applyEffects(s, { self: 999, health: -999, money: -500, papers: 3 });
     expect(s.attrs.self).toBe(100);
     expect(s.attrs.health).toBe(0);
-    expect(s.attrs.money).toBe(-490);
+    expect(s.attrs.money).toBe(-440); // 起始 60 萬 − 500
     expect(s.attrs.papers).toBe(3);
   });
 

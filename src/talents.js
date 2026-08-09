@@ -7,7 +7,7 @@ export const TALENT_LABELS = {
   constitution: '體質',
 };
 
-// 考試能力固定 9:你就是那個很會考試的孩子,不然進不了醫學系。
+// 考試能力固定 9：你就是那個很會考試的孩子，不然進不了醫學系。
 export function rollTalents(rng) {
   return {
     exam: 9,

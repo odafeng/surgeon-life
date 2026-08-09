@@ -11,7 +11,7 @@
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
-    <!-- 手機直握時的提示。這個版面是 16:9,直握擺不下場景加立繪加選項卡。 -->
+    <!-- 手機直握時的提示。這個版面是 16:9，直握擺不下場景加立繪加選項卡。 -->
     <div id="rotate-hint">
       <div class="rot-icon">▭</div>
       <p>請將手機轉為橫向</p>
@@ -39,6 +39,7 @@
       <div id="hud-right" class="hidden">
         <button id="btn-status" class="dia" title="狀態"><span>狀</span></button>
         <button id="btn-log" class="dia" title="年誌"><span>誌</span></button>
+        <button id="btn-save" class="dia" title="存檔"><span>存</span></button>
         <div id="hud-money"><i class="coin"></i><b id="money-val">10</b><s>萬</s></div>
       </div>
 
@@ -68,13 +69,37 @@
           <div id="plan-chips" class="fore"></div>
           <div id="plan-warn"></div>
           <button id="btn-run" class="go">就這樣過這一年</button>
+          <div id="plan-fast">
+            <span>維持這個配置，連續過</span>
+            <button data-years="3">3 年</button>
+            <button data-years="5">5 年</button>
+            <button data-years="10">10 年</button>
+            <small>快轉時仍會停在需要你決定的事件</small>
+          </div>
         </div>
+      </div>
+
+      <!-- 行動面板 -->
+      <div id="act" class="overlay hidden">
+        <div class="scroll wide">
+          <h3><span id="act-title"></span><small id="act-energy" class="energy"></small></h3>
+          <div id="act-list" class="act-list"></div>
+          <div id="act-done" class="act-done"></div>
+          <button id="btn-act-end" class="go">過這一年</button>
+        </div>
+      </div>
+
+      <!-- 快轉指示 -->
+      <div id="fast-flag" class="hidden">
+        <span>快轉中</span>
+        <b id="fast-left"></b>
+        <button id="btn-fast-stop">停下來</button>
       </div>
 
       <!-- 狀態面板 -->
       <div id="status-panel" class="overlay hidden">
         <div class="scroll">
-          <h3><span>能力與天賦</span><small>天賦是斜率,不是能力本身</small></h3>
+          <h3><span>能力與天賦</span><small>天賦是斜率，不是能力本身</small></h3>
           <div class="two-col">
             <div>
               <h4>天賦</h4>
@@ -104,6 +129,7 @@
         <div class="title-card">
           <h1>外科醫師的一生</h1>
           <p class="tagline">一個關於選擇的遊戲——在一個不太給你選擇的行業裡。</p>
+          <button id="btn-continue" class="go hidden">繼續上次的人生</button>
           <button id="btn-start" class="go">開始人生</button>
         </div>
       </div>
@@ -111,9 +137,13 @@
       <!-- 天賦 -->
       <div id="screen-talents" class="overlay hidden">
         <div class="scroll">
-          <h3><span>你出生了</span><small>天賦已經決定好了,沒有人問過你</small></h3>
+          <h3><span>你出生了</span><small>天賦已經決定好了，沒有人問過你</small></h3>
           <ul id="talent-list"></ul>
-          <button id="btn-accept" class="go">人生不能重骰,開始吧</button>
+          <p id="talent-hint" class="locknote">
+            六個數值裡，只有「考試能力」是固定的——你就是那個很會考試的孩子，不然進不了醫學系。
+            其餘五項每一次開局都重新擲過。
+          </p>
+          <button id="btn-accept" class="go hidden">人生不能重骰，開始吧</button>
         </div>
       </div>
 

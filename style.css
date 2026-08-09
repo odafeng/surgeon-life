@@ -816,3 +816,183 @@ body {
   position: sticky; /* 結算單長,按鈕不能被捲出畫面 */
   bottom: calc(var(--u) * -1.8);
 }
+
+/* ───────── 快轉 ───────── */
+#plan-fast {
+  margin-top: calc(var(--u) * 1);
+  display: flex;
+  align-items: center;
+  gap: calc(var(--u) * 0.7);
+  flex-wrap: wrap;
+  font-size: calc(var(--u) * 1.15);
+  color: #6f6552;
+}
+#plan-fast button {
+  font-family: inherit;
+  font-size: calc(var(--u) * 1.15);
+  padding: calc(var(--u) * 0.3) calc(var(--u) * 1);
+  background: transparent;
+  border: 1px solid #a9997c;
+  color: #4a4335;
+  cursor: pointer;
+}
+#plan-fast button:hover {
+  background: var(--ink);
+  color: var(--paper);
+  border-color: var(--ink);
+}
+#plan-fast small {
+  width: 100%;
+  color: #8a7f68;
+  font-size: calc(var(--u) * 1);
+}
+#fast-flag {
+  position: absolute;
+  top: calc(var(--u) * 1.2);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: calc(var(--u) * 1);
+  background: rgba(14, 13, 11, 0.9);
+  border: 1px solid var(--gold);
+  padding: calc(var(--u) * 0.5) calc(var(--u) * 1.4);
+  font-size: calc(var(--u) * 1.2);
+  letter-spacing: 0.16em;
+  color: var(--gold);
+}
+#fast-flag b {
+  color: var(--paper);
+  font-weight: 400;
+}
+#fast-flag button {
+  font-family: inherit;
+  font-size: calc(var(--u) * 1.1);
+  background: transparent;
+  border: 1px solid var(--gold);
+  color: var(--gold);
+  padding: calc(var(--u) * 0.2) calc(var(--u) * 0.9);
+  cursor: pointer;
+}
+#fast-flag button:hover {
+  background: var(--seal);
+  border-color: var(--seal);
+  color: #f3e6d2;
+}
+
+/* ───────── 行動面板 ───────── */
+.energy {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--u) * 0.4);
+}
+.energy em {
+  font-style: normal;
+  margin-right: calc(var(--u) * 0.5);
+}
+.energy .pip {
+  width: calc(var(--u) * 1);
+  height: calc(var(--u) * 1);
+  transform: rotate(45deg);
+  background: #cdc2a8;
+  border: 1px solid #a9997c;
+  display: inline-block;
+}
+.energy .pip.on {
+  background: var(--seal);
+  border-color: #7d2318;
+}
+.energy b {
+  margin-left: calc(var(--u) * 0.6);
+  font-weight: 600;
+}
+.act-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(calc(var(--u) * 20), 1fr));
+  gap: calc(var(--u) * 0.8);
+  margin-top: calc(var(--u) * 1.4);
+}
+.act {
+  position: relative;
+  text-align: left;
+  font-family: inherit;
+  background: rgba(255, 255, 255, 0.4);
+  border: 1px solid #a9997c;
+  padding: calc(var(--u) * 0.8) calc(var(--u) * 1) calc(var(--u) * 0.8) calc(var(--u) * 3.4);
+  cursor: pointer;
+  color: var(--ink);
+}
+.act:hover:not(:disabled) {
+  background: #fff;
+  border-color: var(--seal);
+}
+.act:disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+}
+.act-cost {
+  position: absolute;
+  left: calc(var(--u) * 0.8);
+  top: 50%;
+  transform: translateY(-50%);
+  width: calc(var(--u) * 2);
+  height: calc(var(--u) * 2);
+  border-radius: 50%;
+  background: var(--ink);
+  color: var(--paper);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(var(--u) * 1.2);
+}
+.act-name {
+  display: block;
+  font-size: calc(var(--u) * 1.4);
+  letter-spacing: 0.1em;
+}
+.act-desc {
+  display: block;
+  font-size: calc(var(--u) * 1.05);
+  color: #6f6552;
+  margin-top: calc(var(--u) * 0.2);
+  line-height: 1.6;
+}
+.act-done {
+  margin-top: calc(var(--u) * 1.2);
+}
+.act-done p {
+  font-size: calc(var(--u) * 1.15) !important;
+  line-height: 1.8 !important;
+  color: #4a4335;
+  padding: calc(var(--u) * 0.3) 0 calc(var(--u) * 0.3) calc(var(--u) * 1);
+  border-left: 2px solid var(--seal);
+  margin-top: calc(var(--u) * 0.4);
+}
+
+/* ───────── 擲骰 ───────── */
+#talent-list li.rolling .pips {
+  color: #a9997c;
+}
+#talent-list li .pips {
+  transition: color 0.2s;
+}
+#talent-list li.landed .pips {
+  animation: land 0.45s;
+}
+@keyframes land {
+  0% {
+    transform: scale(1.18);
+    color: var(--ink);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+#talent-list li .num {
+  display: inline-block;
+  min-width: calc(var(--u) * 2.4);
+  text-align: right;
+  font-weight: 600;
+  margin-left: calc(var(--u) * 0.8);
+}

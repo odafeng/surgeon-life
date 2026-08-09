@@ -10,13 +10,15 @@ export default [
     rules: { 'no-irregular-whitespace': ['error', { skipTemplates: true, skipStrings: true }] },
   },
   {
-    files: ['src/ui.js', 'src/view.js', 'src/alloc-panel.js'],
+    files: ['src/ui.js', 'src/view.js', 'src/alloc-panel.js', 'src/action-panel.js', 'src/save.js'],
     languageOptions: {
       globals: {
         document: 'readonly',
         window: 'readonly',
         navigator: 'readonly',
         setTimeout: 'readonly',
+        setInterval: 'readonly',
+        clearInterval: 'readonly',
       },
     },
   },

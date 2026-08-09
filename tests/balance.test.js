@@ -9,6 +9,7 @@ import {
   forecast,
   nextPromotionGate,
   yearlyExpenses,
+  yearlyIncome,
 } from '../src/engine.js';
 
 const alloc = (c, t, r, f, p) => ({
@@ -88,10 +89,12 @@ describe('settleMoney — 負債會咬人', () => {
   it('負存款滾 8% 利息並累計負債年數', () => {
     const s = createGame(1);
     s.age = 28;
+    s.alloc = alloc(70, 0, 10, 10, 10);
+    s.pointValue = 0.8;
     s.attrs.money = -1000;
     const before = s.attrs.money;
     settleMoney(s);
-    const net = 95 - yearlyExpenses(s); // 住院醫師薪水扣支出
+    const net = yearlyIncome(s, s.alloc) - yearlyExpenses(s);
     expect(s.attrs.money).toBe(Math.round((before + net) * 1.08));
     expect(s.stats.debtYears).toBe(1);
   });

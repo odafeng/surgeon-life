@@ -68,11 +68,17 @@ describe('EVENTS integrity', () => {
     expect(e.special).toBe(true);
   });
 
-  it('every stage has a reasonable pool of events', () => {
+  it('every stage has a pool big enough that a 40-year life does not repeat itself', () => {
+    // 一局最多走 40 年、每年抽 2 個，池子太小就會連年跳出同一則新聞。
+    // 醫美階段曾經只有 4 個事件，玩起來像壞掉的跑馬燈。
     for (const s of VALID_STAGES) {
       const n = EVENTS.filter((e) => e.stages.includes(s) && !e.special).length;
-      expect(n, `stage ${s}`).toBeGreaterThanOrEqual(4);
+      expect(n, `stage ${s}`).toBeGreaterThanOrEqual(35);
     }
+  });
+
+  it('the whole game carries 200+ events', () => {
+    expect(EVENTS.length).toBeGreaterThanOrEqual(200);
   });
 });
 
@@ -123,5 +129,30 @@ describe('美術素材引用', () => {
       'court',
     ])
       expect(existsSync(`assets/scene-${name}.webp`), name).toBe(true);
+  });
+});
+
+// 事件冷卻：剛看過的不再抽。沒有這條的話，池子小的階段會連年跳出同一則。
+describe('事件不會連年重複', () => {
+  it('連續 20 年至少看到 25 種不同事件', async () => {
+    const { createGame, pickEvents } = await import('../src/engine.js');
+    for (const setup of [
+      (s) => {
+        s.career = 'aesthetic';
+        s.talents.social = 3;
+      },
+      () => {},
+    ]) {
+      const s = createGame(42);
+      s.age = 40;
+      s.alloc = { clinical: 40, teaching: 10, research: 20, family: 15, personal: 15 };
+      setup(s);
+      const seen = new Set();
+      for (let y = 0; y < 20; y++) {
+        for (const e of pickEvents(s)) seen.add(e.id);
+        s.age++;
+      }
+      expect(seen.size).toBeGreaterThanOrEqual(25);
+    }
   });
 });
