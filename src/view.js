@@ -1,5 +1,5 @@
 // DOM 渲染層。只碰畫面，不碰規則。
-import { getStage, AXIS_LABELS, ALLOC_KEYS, nextPromotionGate } from './engine.js';
+import { getStage, AXIS_LABELS, ALLOC_KEYS, nextPromotionGate, resolve } from './engine.js';
 import { TALENT_LABELS } from './talents.js';
 import { PEOPLE } from './characters.js';
 import { ALL_ENDINGS, markSeen, collectionProgress } from './collection.js';
@@ -35,10 +35,17 @@ export function portraitFor(age) {
   return 60;
 }
 
+// 主角有兩套立繪。開局選定之後整局不變，所以存成模組狀態，
+// 不必把 gender 一路傳進每一個 setPortrait 呼叫點。
+let portraitSet = 'm';
+export function setPortraitGender(gender) {
+  portraitSet = gender === 'f' ? 'f-' : '';
+}
+
 /** mood: weary(疲憊) / wry(苦笑) / lifted(振奮)，省略則是平靜。 */
 export function setPortrait(age, mood) {
   const el = $('portrait');
-  const base = portraitFor(age);
+  const base = `${portraitSet}${portraitFor(age)}`;
   const src = mood ? `assets/portrait-${base}-${mood}.webp` : `assets/portrait-${base}.webp`;
   if (el.getAttribute('src') === src) return;
   el.setAttribute('src', src);
@@ -325,7 +332,7 @@ export function renderStatusPanel(state) {
                     ? '還在'
                     : bondWord(st.bond);
           return (
-            `<li><span>${escapeHtml(p.title)}・${escapeHtml(p.name)}</span>` +
+            `<li><span>${escapeHtml(p.title)}・${escapeHtml(resolve(state, p.name))}</span>` +
             `<span>${escapeHtml(note)}</span></li>`
           );
         })

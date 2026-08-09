@@ -16,6 +16,23 @@ const VALID_EFFECT_KEYS = [
 ];
 const VALID_STAT_KEYS = ['surgeries', 'livesSaved', 'lawsuits', 'missedDinners'];
 
+/**
+ * text / label / log / memory 都可以是狀態的函式。
+ * 兩種性別各解析一次——女性線只在 gender 為 f 時走另一半分支，
+ * 只驗一種性別的話，那一半永遠不會被跑到。
+ */
+function mustResolve(field, where) {
+  expect(['string', 'function'], where).toContain(typeof field);
+  if (typeof field !== 'function') return;
+  for (const gender of ['m', 'f']) {
+    const s = createGame(1, gender);
+    s.age = 40;
+    const out = field(s);
+    expect(typeof out, `${where} @${gender}`).toBe('string');
+    expect(out.length, `${where} @${gender}`).toBeGreaterThan(0);
+  }
+}
+
 describe('PROLOGUE', () => {
   it('runs 16→24 and contains the exam event at 18 whose every choice leads nowhere else', () => {
     expect(PROLOGUE[0].age).toBe(16);
@@ -38,18 +55,15 @@ describe('EVENTS integrity', () => {
       expect(e.id, e.id).toBeTruthy();
       expect(Array.isArray(e.stages) && e.stages.length > 0, e.id).toBe(true);
       for (const s of e.stages) expect(VALID_STAGES, `${e.id} stage ${s}`).toContain(s);
-      expect(['string', 'function'], e.id).toContain(typeof e.text);
+      mustResolve(e.text, `${e.id} text`);
+      if (e.log) mustResolve(e.log, `${e.id} log`);
+      if (e.memory) mustResolve(e.memory, `${e.id} memory`);
       if (e.choices) {
         expect(e.choices.length, e.id).toBeGreaterThanOrEqual(2);
         for (const c of e.choices) {
-          // 標籤跟 text 一樣可以是函式，讓同一個選擇在不同職級有不同說法。
-          expect(['string', 'function'], e.id).toContain(typeof c.label);
-          if (typeof c.label === 'function') {
-            const s = createGame(1);
-            s.age = 40;
-            expect(typeof c.label(s), `${e.id} label(state)`).toBe('string');
-          }
-          expect(typeof c.log, e.id).toBe('string');
+          mustResolve(c.label, `${e.id} label`);
+          mustResolve(c.log, `${e.id} log`);
+          if (c.memory) mustResolve(c.memory, `${e.id} memory`);
           for (const k of Object.keys(c.effects || {}))
             expect(VALID_EFFECT_KEYS, e.id).toContain(k);
           for (const k of Object.keys(c.stats || {})) expect(VALID_STAT_KEYS, e.id).toContain(k);
@@ -93,11 +107,16 @@ describe('美術素材引用', () => {
   const AGES = [25, 30, 42, 60];
   const MOODS = ['weary', 'wry', 'lifted'];
 
-  it('每個年齡段的四種表情都有檔案', () => {
-    for (const age of AGES) {
-      expect(existsSync(`assets/portrait-${age}.webp`), `${age} 平靜`).toBe(true);
-      for (const m of MOODS)
-        expect(existsSync(`assets/portrait-${age}-${m}.webp`), `${age} ${m}`).toBe(true);
+  // 兩套立繪都要齊。少一張的話，選了那個性別的玩家會在某一年看到破圖。
+  it('兩種性別、每個年齡段的四種表情都有檔案', () => {
+    for (const who of ['', 'f-']) {
+      for (const age of AGES) {
+        expect(existsSync(`assets/portrait-${who}${age}.webp`), `${who}${age} 平靜`).toBe(true);
+        for (const m of MOODS)
+          expect(existsSync(`assets/portrait-${who}${age}-${m}.webp`), `${who}${age} ${m}`).toBe(
+            true,
+          );
+      }
     }
   });
 

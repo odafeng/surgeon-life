@@ -20,6 +20,7 @@ import {
   renderEnding,
   renderCollectionNote,
   readingTime,
+  setPortraitGender,
 } from './view.js';
 
 let state = null;
@@ -172,16 +173,24 @@ function refreshContinueButton() {
 refreshContinueButton();
 renderCollectionNote();
 
-$('btn-start').onclick = async () => {
-  state = createGame(Date.now() >>> 0);
-  journal = [];
-  autoYears = 0;
+$('btn-start').onclick = () => {
   $('screen-start').classList.add('hidden');
-  $('screen-talents').classList.remove('hidden');
+  $('screen-gender').classList.remove('hidden');
   setScene('home');
-  await animateTalentRoll(state);
-  $('btn-accept').classList.remove('hidden');
 };
+
+for (const b of document.querySelectorAll('.gender')) {
+  b.onclick = async () => {
+    state = createGame(Date.now() >>> 0, b.dataset.g);
+    journal = [];
+    autoYears = 0;
+    setPortraitGender(state.gender);
+    $('screen-gender').classList.add('hidden');
+    $('screen-talents').classList.remove('hidden');
+    await animateTalentRoll(state);
+    $('btn-accept').classList.remove('hidden');
+  };
+}
 
 $('btn-continue').onclick = async () => {
   const got = load();
@@ -191,6 +200,7 @@ $('btn-continue').onclick = async () => {
   }
   state = got.state;
   journal = got.meta.journal || [];
+  setPortraitGender(state.gender);
   autoYears = 0;
   $('screen-start').classList.add('hidden');
   await yearLoop();

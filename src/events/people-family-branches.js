@@ -23,7 +23,7 @@ export const FAMILY_BRANCH_EVENTS = [
     once: true,
     weight: 6,
     cond: (s) => single(s) && s.age >= 33,
-    text: '大學同學會。有個當年坐你隔壁的人問你還記不記得大體解剖那學期，你們兩個是唯一撐到最後才走的。散場後她問你要不要吃宵夜。',
+    text: '大學同學會。有個當年坐你隔壁的人問你還記不記得大體解剖那學期，你們兩個是唯一撐到最後才走的。散場後{她}問你要不要吃宵夜。',
     choices: [
       {
         label: '去。',
@@ -35,7 +35,7 @@ export const FAMILY_BRANCH_EVENTS = [
           s.family.floor = 15;
           advance(s, 'spouse', 1);
         },
-        log: '你們吃到兩點。她說她知道外科是什麼樣子，因為她爸爸也是。你第一次覺得不用解釋。',
+        log: '你們吃到兩點。{她}說{她}知道外科是什麼樣子，因為{她}爸爸也是。你第一次覺得不用解釋。',
       },
       {
         label: '推說明天有刀。',
@@ -65,7 +65,7 @@ export const FAMILY_BRANCH_EVENTS = [
           s.family.floor = 15;
           advance(s, 'spouse', 1);
         },
-        log: '你想了三個禮拜才打。她接起來的第一句是：「我還以為你不會打了。」',
+        log: '你想了三個禮拜才打。{她}接起來的第一句是：「我還以為你不會打了。」',
       },
       {
         label: '把紙條收進白袍口袋，然後洗了。',
@@ -84,7 +84,7 @@ export const FAMILY_BRANCH_EVENTS = [
     once: true,
     weight: 6,
     cond: (s) => single(s) && s.age >= 56 && s.attrs.money >= 1800,
-    text: '五十幾歲了，有人開始靠近你。她比你小十八歲，很會聊天，知道你哪一天有刀、哪一天有空。她說她只是覺得你「很孤單」。',
+    text: '五十幾歲了，有人開始靠近你。{她}比你小十八歲，很會聊天，知道你哪一天有刀、哪一天有空。{她}說{她}只是覺得你「很孤單」。',
     choices: [
       {
         label: '你很久沒有人這樣陪了。',
@@ -99,7 +99,7 @@ export const FAMILY_BRANCH_EVENTS = [
         log: '你們一起吃飯、看展、出國。你很久沒有這樣笑過了。你的同事說你最近氣色很好。',
       },
       {
-        label: '你在她問到你有幾間房的時候，就懂了。',
+        label: '你在{她}問到你有幾間房的時候，就懂了。',
         effects: { self: -6 },
         log: '你客氣地結束了那頓飯。回家路上你想，也許是你多心了。這個念頭讓你更難過。',
       },
@@ -140,7 +140,7 @@ export const FAMILY_BRANCH_EVENTS = [
           s.family.stage = 'single';
           s.family.floor = 0;
         },
-        log: '你把話講清楚，她沒有吵，收拾東西就走了。走之前她說：「你也不是完全沒得到東西啊。」你想反駁，但你想不出來。',
+        log: '你把話講清楚，{她}沒有吵，收拾東西就走了。走之前{她}說：「你也不是完全沒得到東西啊。」你想反駁，但你想不出來。',
       },
       {
         label: '「我知道。我自己的錢，我自己決定。」',
@@ -197,7 +197,7 @@ export const FAMILY_BRANCH_EVENTS = [
       s.family.stage !== 'single' &&
       s.family.kids === 0 &&
       s.family.invested >= 4,
-    text: '她說：「我懷孕了。」然後補了一句：「我沒有要逼你結婚。」你們兩個都愣在那裡，誰都沒有先講下一句。',
+    text: '{她}說：「我懷孕了。」然後補了一句：「我沒有要逼你結婚。」你們兩個都愣在那裡，誰都沒有先講下一句。',
     choices: [
       {
         label: '「那我們結婚吧。」',
@@ -210,20 +210,20 @@ export const FAMILY_BRANCH_EVENTS = [
           advance(s, 'spouse', 3);
           s.flags.expectingChild = true;
         },
-        log: '她說你不用因為這樣就結婚。你說不是因為這樣。你們兩個都知道有一半是，有一半不是。',
+        log: '{她}說你不用因為這樣就結婚。你說不是因為這樣。你們兩個都知道有一半是，有一半不是。',
       },
       {
         label: '「孩子我會負責，婚我們再想。」',
         hint: '家庭 ≥ 10%',
         effects: { self: -2 },
         bond: { spouse: -4 },
-        memory: '她懷孕了，你說孩子你會負責，婚再想。你們一直沒有再想。',
+        memory: '{她}懷孕了，你說孩子你會負責，婚再想。你們一直沒有再想。',
         set: (s) => {
           s.flags.expectingChild = true;
           s.flags.unwed = true;
           s.family.floor = 10; // 沒有一張紙替你把時間鎖起來，也就沒有人擋著你不去
         },
-        log: '她點點頭，說好。這件事你們後來沒有再談過。沒有紙，就沒有人規定你每週要回去幾次。',
+        log: '{她}點點頭，說好。這件事你們後來沒有再談過。沒有紙，就沒有人規定你每週要回去幾次。',
       },
     ],
   },
@@ -247,12 +247,12 @@ export const FAMILY_BRANCH_EVENTS = [
           s.family.floor = Math.max(s.family.floor, 25);
           s.flags.unwed = false;
         },
-        log: '沒有婚禮，只有戶政事務所和兩份影本。她說這樣就好。孩子那天穿了新衣服，不知道發生了什麼事。',
+        log: '沒有婚禮，只有戶政事務所和兩份影本。{她}說這樣就好。孩子那天穿了新衣服，不知道發生了什麼事。',
       },
       {
         label: '「我們這樣就很好。」',
         effects: { self: 2, familyBond: -4 },
-        log: '你說得很自然。親戚沒有再問。回台北的車上，她看著窗外，一路沒有講話。',
+        log: '你說得很自然。親戚沒有再問。回台北的車上，{她}看著窗外，一路沒有講話。',
       },
     ],
   },
@@ -317,9 +317,9 @@ export const FAMILY_BRANCH_EVENTS = [
         log: '你在派出所待到天亮，賠了錢，簽了字。回家路上他坐在後座，開口說了三年來第一句完整的話：「你為什麼要來。」',
       },
       {
-        label: '刀開到一半，你請她先過去。',
+        label: '刀開到一半，你請{她}先過去。',
         effects: { self: -10, familyBond: -14, money: -80 },
-        memory: '派出所半夜打來的時候，你正在開刀，你請她先過去。',
+        memory: '派出所半夜打來的時候，你正在開刀，你請{她}先過去。',
         set: (s) => {
           s.flags.kidTrouble = 2;
         },

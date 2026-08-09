@@ -45,7 +45,7 @@ export const PEOPLE = {
   },
   spouse: {
     key: 'spouse',
-    name: '郁涵',
+    name: '{配偶}',
     title: '另一半',
     intro: '學會看你的班表，學會在你值班的晚上自己吃飯，學會不問你什麼時候下班。',
   },

@@ -8,7 +8,9 @@ import { createGame, playYear, conformAllocation } from '../src/engine.js';
 // （flags.expecting），跟 people-family.js 的 flags.expectingChild 平行跑，
 // 於是同一局會出現：35 歲驗孕棒兩條線、41 歲又問「要不要有個孩子」，
 // 中間那六年的懷孕沒有人記得。也會出現兩場婚禮。
-const OWNERS = ['people-family.js', 'people-family-branches.js'];
+// female.js 也在名單上：它寫的是「同一個」expectingChild，出生仍然走 fa_birth，
+// 所以它是同一台狀態機的另一個入口，不是第二套系統。
+const OWNERS = ['people-family.js', 'people-family-branches.js', 'female.js'];
 // 只抓「賦值」，不抓比較——= 後面不能再接 =。
 const MILESTONE_WRITES =
   /\bs\.family\.(stage|kids|floor|children)\s*(=(?!=)|\.push)|\bs\.flags\.expecting\w*\s*=(?!=)/;

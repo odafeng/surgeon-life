@@ -68,10 +68,16 @@ const DIMINISHING = {
   personal: { knee: 18, tail: 0.25 },
 };
 
-export function createGame(seed) {
+/**
+ * 開一局新的人生。
+ * gender 不是外觀選項——女性外科醫師的訓練期會撞上生育窗口，
+ * 那條軌跡有自己的事件、自己的代價，見 events/female.js。
+ */
+export function createGame(seed, gender = 'm') {
   const rng = createRng(seed);
   return {
     age: 25,
+    gender,
     career: 'surgery',
     rank: 'none',
     talents: rollTalents(rng),
@@ -193,8 +199,29 @@ export function applyBond(state, bond) {
  * 記下一個定義性時刻。結局的「你記得的事」會把它們原樣唸回來——
  * 那不是統計數字，是你自己做過的決定。
  */
+/**
+ * 事件文字裡的代稱。
+ *
+ * 另一半的名字與人稱會隨主角性別改變，但整條家庭弧線的戲是同一齣。
+ * 與其把三十個事件複製成兩份，事件裡寫 {配偶}、{她}，播放時才換掉——
+ * 一個地方改，兩條路線都對。
+ */
+export function resolve(state, str) {
+  if (typeof str !== 'string' || !str.includes('{')) return str;
+  const female = state.gender === 'f';
+  return str
+    .replace(/\{配偶\}/g, female ? '宗翰' : '郁涵')
+    .replace(/\{她\}/g, female ? '他' : '她')
+    .replace(/\{他\}/g, female ? '她' : '他'); // 指主角時用這個
+}
+
+/** 事件的文字欄位都可以是狀態的函式：同一幕，不同的人生說法不一樣。 */
+export function val(v, state) {
+  return typeof v === 'function' ? v(state) : v;
+}
+
 export function remember(state, text) {
-  if (text) state.memories.push({ age: state.age, text });
+  if (text) state.memories.push({ age: state.age, text: resolve(state, text) });
 }
 
 /**
@@ -580,7 +607,7 @@ export async function playYear(state, alloc, chooser, onLog) {
     if (e.cond && !e.cond(state)) continue;
     if (e.forced && !e.forced(state)) continue;
     if (e.once) state.used.push(e.id);
-    const text = typeof e.text === 'function' ? e.text(state) : e.text;
+    const text = resolve(state, val(e.text, state));
     if (e.choices) {
       await emit({ kind: 'event', text, scene: e.scene, mood: e.mood });
       const choices = e.choices
@@ -592,18 +619,18 @@ export async function playYear(state, alloc, chooser, onLog) {
       if (c.effects) applyEffects(state, c.effects);
       if (c.stats) applyStats(state, c.stats);
       if (c.bond) applyBond(state, c.bond);
-      if (c.memory) remember(state, c.memory);
+      if (c.memory) remember(state, val(c.memory, state));
       if (c.set) c.set(state);
-      await emit({ kind: 'choice', text: c.log });
+      await emit({ kind: 'choice', text: resolve(state, val(c.log, state)) });
     } else {
       if (e.effects) applyEffects(state, e.effects);
       if (e.stats) applyStats(state, e.stats);
       if (e.bond) applyBond(state, e.bond);
-      if (e.memory) remember(state, e.memory);
+      if (e.memory) remember(state, val(e.memory, state));
       if (e.set) e.set(state);
       await emit({
         kind: 'event',
-        text: [text, e.log].filter(Boolean).join('\n'),
+        text: [text, resolve(state, val(e.log, state))].filter(Boolean).join('\n'),
         scene: e.scene,
         mood: e.mood,
       });

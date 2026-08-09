@@ -1137,3 +1137,38 @@ body {
   padding-bottom: calc(var(--u) * 6.5);
   gap: calc(var(--u) * 2.8); /* 留給下面的代價文字 */
 }
+
+/* ───────── 性別 ───────── */
+.gender-pick {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: calc(var(--u) * 1.2);
+  margin-top: calc(var(--u) * 1.6);
+}
+.gender {
+  font-family: inherit;
+  text-align: left;
+  padding: calc(var(--u) * 1.4) calc(var(--u) * 1.6);
+  background: rgba(255, 255, 255, 0.4);
+  border: 1px solid #a9997c;
+  color: var(--ink);
+  cursor: pointer;
+}
+.gender:hover {
+  background: #fff;
+  border-color: var(--seal);
+}
+.gender b {
+  display: block;
+  font-size: calc(var(--u) * 2.2);
+  font-weight: 600;
+  letter-spacing: 0.2em;
+}
+.gender s {
+  display: block;
+  text-decoration: none;
+  margin-top: calc(var(--u) * 0.6);
+  font-size: calc(var(--u) * 1.05);
+  line-height: 1.8;
+  color: #6f6552;
+}

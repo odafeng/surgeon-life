@@ -17,6 +17,7 @@ import { CHIEF_EVENTS } from './events/people-chief.js';
 import { PATIENT_EVENTS } from './events/people-patient.js';
 import { FAMILY_ARC_EVENTS } from './events/people-family.js';
 import { FAMILY_BRANCH_EVENTS } from './events/people-family-branches.js';
+import { FEMALE_EVENTS } from './events/female.js';
 
 export const EVENTS = [
   ...PGY_EVENTS,
@@ -32,6 +33,8 @@ export const EVENTS = [
   ...NURSE_EVENTS,
   ...CHIEF_EVENTS,
   ...PATIENT_EVENTS,
+  // 女性線要排在家庭弧線前面：孕期的班表得先於產檢與生產演出來。
+  ...FEMALE_EVENTS,
   ...FAMILY_ARC_EVENTS,
   ...FAMILY_BRANCH_EVENTS,
 ];
