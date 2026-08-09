@@ -25,19 +25,20 @@ describe('applyGrowth', () => {
     slow.age = fast.age = 27; // resident, mult 1.0
     slow.talents.dexterity = 1;
     fast.talents.dexterity = 10;
-    applyGrowth(slow, alloc(8, 0, 0, 2, 2));
-    applyGrowth(fast, alloc(8, 0, 0, 2, 2));
-    // 1: 8*(0.4+0.16)=4.48 ; 10: 8*(0.4+1.6)=16
-    expect(fast.attrs.clinical - 5).toBeCloseTo(16, 1);
-    expect(slow.attrs.clinical - 5).toBeCloseTo(4.48, 1);
+    applyGrowth(slow, alloc(60, 0, 0, 20, 20));
+    applyGrowth(fast, alloc(60, 0, 0, 20, 20));
+    // 臨床 60% → 邊際遞減後 45+15*0.4=51% → 6.12 等效月
+    // 手感 1: 6.12*(0.4+0.16)=3.43 ; 手感 10: 6.12*(0.4+1.6)=12.24
+    expect(fast.attrs.clinical - 5).toBeCloseTo(12.24, 1);
+    expect(slow.attrs.clinical - 5).toBeCloseTo(3.43, 1);
   });
 
   it('a PhD multiplies paper output by 1.5 — the degree is a production line', () => {
     const phd = createGame(1);
     const none = createGame(1);
     phd.flags.phd = 'done';
-    applyGrowth(phd, alloc(6, 0, 4, 1, 1));
-    applyGrowth(none, alloc(6, 0, 4, 1, 1));
+    applyGrowth(phd, alloc(50, 0, 30, 10, 10));
+    applyGrowth(none, alloc(50, 0, 30, 10, 10));
     expect(phd.attrs.papers).toBeCloseTo(none.attrs.papers * 1.5, 5);
   });
 
@@ -45,22 +46,22 @@ describe('applyGrowth', () => {
     const s = createGame(1);
     s.family.kids = 1;
     const before = s.attrs.familyBond;
-    applyGrowth(s, alloc(6, 0, 2, 2, 2)); // family 2 < 3 → +6 -12
-    expect(s.attrs.familyBond).toBeCloseTo(before - 6, 5);
+    applyGrowth(s, alloc(60, 0, 0, 20, 20)); // 家庭 20% < 25% → +7.2 −12
+    expect(s.attrs.familyBond).toBeCloseTo(before - 4.8, 5);
   });
 
   it('zero personal months erodes self', () => {
     const s = createGame(1);
-    applyGrowth(s, alloc(6, 0, 2, 4, 0));
+    applyGrowth(s, alloc(60, 0, 20, 20, 0));
     expect(s.attrs.self).toBeCloseTo(47, 5);
   });
 
   it('counts missed dinners and surgeries', () => {
     const s = createGame(1);
     s.age = 27; // resident: surgical, 8/month
-    applyGrowth(s, alloc(8, 0, 0, 2, 2));
-    expect(s.stats.missedDinners).toBe(100);
-    expect(s.stats.surgeries).toBe(64);
+    applyGrowth(s, alloc(60, 0, 0, 20, 20));
+    expect(s.stats.missedDinners).toBe(96); // (100−20)% × 12 個月 × 10 頓
+    expect(s.stats.surgeries).toBe(49); // 6.12 等效月 × 8 台
   });
 });
 
@@ -69,8 +70,8 @@ describe('settleHealth', () => {
     const worked = createGame(1);
     const rested = createGame(1);
     worked.talents.constitution = rested.talents.constitution = 5;
-    settleHealth(worked, alloc(10, 0, 2, 0, 0)); // overwork (12-8)*1.2=4.8
-    settleHealth(rested, alloc(7, 0, 1, 0, 4)); // no overwork, recovery 7.2
+    settleHealth(worked, alloc(80, 0, 20, 0, 0)); // 負荷 100% → 過勞 6.3
+    settleHealth(rested, alloc(50, 0, 10, 10, 30)); // 負荷 60% → 過勞 0.7,且有回血
     expect(worked.attrs.health).toBeLessThan(rested.attrs.health);
   });
 
@@ -78,7 +79,7 @@ describe('settleHealth', () => {
     const s = createGame(1);
     s.attrs.health = 3;
     s.talents.constitution = 1;
-    expect(settleHealth(s, alloc(10, 0, 2, 0, 0))).toBe(true);
+    expect(settleHealth(s, alloc(80, 0, 20, 0, 0))).toBe(true);
     expect(s.attrs.health).toBe(0);
   });
 });
@@ -170,12 +171,12 @@ describe('settlePromotion', () => {
 });
 
 describe('settleGrant', () => {
-  it('research >= 3 months leaves an application record regardless of outcome', () => {
+  it('research >= 25% leaves an application record regardless of outcome', () => {
     const s = createGame(1);
     s.age = 40;
     s.rank = 'vs';
     s.rng = { chance: () => false, next: () => 0.99 };
-    const log = settleGrant(s, alloc(4, 0, 3, 3, 2));
+    const log = settleGrant(s, alloc(40, 0, 30, 20, 10));
     expect(s.grants.applied).toBe(true);
     expect(s.grants.yearsPI).toBe(0);
     expect(log).toMatch(/創新性不足/); // 被拒的審查意見,一行
@@ -186,31 +187,32 @@ describe('settleGrant', () => {
     s.age = 40;
     s.rank = 'vs';
     s.rng = { chance: () => true, next: () => 0 };
-    const log = settleGrant(s, alloc(4, 0, 3, 3, 2));
+    const log = settleGrant(s, alloc(40, 0, 30, 20, 10));
     expect(s.grants.yearsPI).toBe(1);
     expect(log).toMatch(/計畫/);
   });
 
-  it('is a no-op below 3 research months or outside attending surgery', () => {
+  it('is a no-op below 25% research or outside attending surgery', () => {
     const s = createGame(1);
     s.age = 40;
     s.rank = 'vs';
-    expect(settleGrant(s, alloc(6, 2, 2, 1, 1))).toBeNull();
+    expect(settleGrant(s, alloc(50, 20, 20, 5, 5))).toBeNull();
     const pgy = createGame(1);
-    expect(settleGrant(pgy, alloc(6, 0, 3, 2, 1))).toBeNull();
+    expect(settleGrant(pgy, alloc(50, 0, 30, 10, 10))).toBeNull();
   });
 });
 
 describe('settlePhd', () => {
-  it('accumulates progress from research months and graduates at 15', () => {
+  it('accumulates progress from the research share and graduates at 15', () => {
     const s = createGame(1);
     s.age = 36;
     s.rank = 'vs';
     s.flags.phd = 'studying';
     s.flags.phdProgress = 0;
-    expect(settlePhd(s, alloc(4, 0, 6, 1, 1))).toBeNull(); // 6
-    expect(settlePhd(s, alloc(4, 0, 6, 1, 1))).toBeNull(); // 12
-    expect(settlePhd(s, alloc(4, 0, 6, 1, 1))).toMatch(/博士/); // 18 ≥ 15 → 畢業
+    // 研究 50% → 有效 44% → 每年 5.28 等效月
+    expect(settlePhd(s, alloc(30, 0, 50, 10, 10))).toBeNull(); // 5.28
+    expect(settlePhd(s, alloc(30, 0, 50, 10, 10))).toBeNull(); // 10.56
+    expect(settlePhd(s, alloc(30, 0, 50, 10, 10))).toMatch(/博士/); // 15.84 ≥ 15 → 畢業
     expect(s.flags.phd).toBe('done');
   });
 
@@ -219,10 +221,10 @@ describe('settlePhd', () => {
     studying.flags.phd = 'studying';
     studying.flags.phdProgress = 0;
     const before = studying.attrs.health;
-    settlePhd(studying, alloc(6, 0, 2, 2, 2));
+    settlePhd(studying, alloc(60, 0, 20, 10, 10));
     expect(studying.attrs.health).toBe(before - 2);
     const idle = createGame(1);
-    expect(settlePhd(idle, alloc(6, 0, 2, 2, 2))).toBeNull();
+    expect(settlePhd(idle, alloc(60, 0, 20, 10, 10))).toBeNull();
   });
 });
 

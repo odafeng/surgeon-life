@@ -38,33 +38,39 @@ describe('getStage', () => {
 });
 
 describe('validateAllocation', () => {
-  it('accepts a valid 12-month allocation', () => {
-    const s = createGame(1); // pgy, minClinical 6
-    const alloc = { clinical: 6, teaching: 0, research: 2, family: 2, personal: 2 };
+  it('accepts a valid allocation summing to 100', () => {
+    const s = createGame(1); // pgy, minClinicalPct 50
+    const alloc = { clinical: 50, teaching: 0, research: 20, family: 15, personal: 15 };
     expect(validateAllocation(s, alloc)).toEqual(alloc);
   });
 
-  it('rejects sums other than 12', () => {
+  it('rejects sums other than 100', () => {
     const s = createGame(1);
     expect(() =>
-      validateAllocation(s, { clinical: 6, teaching: 0, research: 0, family: 0, personal: 0 }),
-    ).toThrow(/12/);
+      validateAllocation(s, { clinical: 50, teaching: 0, research: 0, family: 0, personal: 0 }),
+    ).toThrow(/100/);
   });
 
   it('rejects clinical below the stage minimum — you do not get a choice', () => {
-    const s = createGame(1); // pgy minClinical 6
+    const s = createGame(1); // pgy minClinicalPct 50
     expect(() =>
-      validateAllocation(s, { clinical: 5, teaching: 1, research: 2, family: 2, personal: 2 }),
+      validateAllocation(s, { clinical: 45, teaching: 5, research: 20, family: 15, personal: 15 }),
     ).toThrow(/臨床/);
   });
 
   it('rejects negatives and non-integers', () => {
     const s = createGame(1);
     expect(() =>
-      validateAllocation(s, { clinical: 13, teaching: -1, research: 0, family: 0, personal: 0 }),
+      validateAllocation(s, { clinical: 101, teaching: -1, research: 0, family: 0, personal: 0 }),
     ).toThrow();
     expect(() =>
-      validateAllocation(s, { clinical: 6.5, teaching: 0.5, research: 2, family: 1, personal: 2 }),
+      validateAllocation(s, {
+        clinical: 50.5,
+        teaching: 4.5,
+        research: 20,
+        family: 10,
+        personal: 15,
+      }),
     ).toThrow();
   });
 

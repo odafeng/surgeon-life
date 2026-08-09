@@ -2,48 +2,134 @@
 <html lang="zh-Hant">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>外科醫師的一生</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%233d5f6b'/%3E%3Cpath d='M16 6v20M8 12h16' stroke='%23e8e2d4' stroke-width='3'/%3E%3C/svg%3E"
+    />
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
-    <main id="app">
-      <section id="screen-start" class="screen">
-        <h1>外科醫師的一生</h1>
-        <p class="tagline">一個關於選擇的遊戲——在一個不太給你選擇的行業裡。</p>
-        <button id="btn-start" class="primary">開始人生</button>
-      </section>
+    <!-- 手機直握時的提示。這個版面是 16:9,直握擺不下場景加立繪加選項卡。 -->
+    <div id="rotate-hint">
+      <div class="rot-icon">▭</div>
+      <p>請將手機轉為橫向</p>
+      <small>這是一個橫向的遊戲</small>
+    </div>
 
-      <section id="screen-talents" class="screen hidden">
-        <h2>你出生了。</h2>
-        <p class="hint">天賦已經決定好了,沒有人問過你。</p>
-        <ul id="talent-list"></ul>
-        <button id="btn-accept-talents" class="primary">人生不能重骰,開始吧</button>
-      </section>
+    <main id="stage">
+      <!-- 場景層 -->
+      <div id="scene"></div>
+      <div id="scene-tint"></div>
+      <div id="scene-vig"></div>
 
-      <section id="screen-story" class="screen hidden">
-        <div id="status-bar" class="hidden"></div>
-        <div id="log"></div>
-        <div id="choice-box" class="hidden"></div>
-        <div id="plan-box" class="hidden">
-          <h3 id="plan-title"></h3>
-          <p class="hint">分配你今年的 12 個月。</p>
-          <div id="plan-rows"></div>
-          <p id="plan-remaining"></p>
-          <p id="plan-error" class="error"></p>
-          <button id="btn-run-year" class="primary">就這樣過這一年</button>
+      <!-- 立繪 -->
+      <img id="portrait" alt="" />
+
+      <!-- 左上狀態 -->
+      <div id="hud" class="hidden">
+        <div class="hud-age"><b id="hud-year">25</b><i>歲</i><em id="hud-stage">PGY</em></div>
+        <div id="hud-rank"></div>
+        <div id="hud-bars"></div>
+        <div id="hud-mix"></div>
+      </div>
+
+      <!-- 右上 -->
+      <div id="hud-right" class="hidden">
+        <button id="btn-status" class="dia" title="狀態"><span>狀</span></button>
+        <button id="btn-log" class="dia" title="年誌"><span>誌</span></button>
+        <div id="hud-money"><i class="coin"></i><b id="money-val">10</b><s>萬</s></div>
+      </div>
+
+      <!-- 名牌 -->
+      <div id="nameplate" class="hidden">
+        <u id="np-title"></u>
+        <p id="np-name">你</p>
+      </div>
+
+      <!-- 事件文字框 -->
+      <div id="textbox" class="hidden">
+        <u id="tb-src"></u>
+        <p id="tb-body"></p>
+        <span id="tb-more">▼</span>
+      </div>
+
+      <!-- 選項卡 -->
+      <div id="cards" class="hidden"></div>
+
+      <!-- 年度配置盤 -->
+      <div id="plan" class="overlay hidden">
+        <div class="scroll">
+          <h3><span id="plan-title"></span><small id="plan-sub"></small></h3>
+          <div id="plan-bar" class="ring"></div>
+          <div id="plan-legend" class="legend"></div>
+          <p id="plan-lock" class="locknote"></p>
+          <div id="plan-chips" class="fore"></div>
+          <div id="plan-warn"></div>
+          <button id="btn-run" class="go">就這樣過這一年</button>
         </div>
-      </section>
+      </div>
 
-      <section id="screen-ending" class="screen hidden">
-        <h2 id="ending-title"></h2>
-        <p id="ending-body"></p>
-        <p id="ending-filter"></p>
-        <h3>人生結算單</h3>
-        <table id="settlement"></table>
-        <button id="btn-restart" class="primary">再活一次</button>
-      </section>
+      <!-- 狀態面板 -->
+      <div id="status-panel" class="overlay hidden">
+        <div class="scroll">
+          <h3><span>能力與天賦</span><small>天賦是斜率,不是能力本身</small></h3>
+          <div class="two-col">
+            <div>
+              <h4>天賦</h4>
+              <ul id="sp-talents"></ul>
+            </div>
+            <div>
+              <h4>現況</h4>
+              <ul id="sp-attrs"></ul>
+            </div>
+          </div>
+          <p id="sp-gate" class="locknote"></p>
+          <button class="go close-overlay">關上</button>
+        </div>
+      </div>
+
+      <!-- 年誌 -->
+      <div id="log-panel" class="overlay hidden">
+        <div class="scroll">
+          <h3><span>年誌</span><small>你走過的每一年</small></h3>
+          <div id="log-body"></div>
+          <button class="go close-overlay">關上</button>
+        </div>
+      </div>
+
+      <!-- 開始 -->
+      <div id="screen-start" class="overlay">
+        <div class="title-card">
+          <h1>外科醫師的一生</h1>
+          <p class="tagline">一個關於選擇的遊戲——在一個不太給你選擇的行業裡。</p>
+          <button id="btn-start" class="go">開始人生</button>
+        </div>
+      </div>
+
+      <!-- 天賦 -->
+      <div id="screen-talents" class="overlay hidden">
+        <div class="scroll">
+          <h3><span>你出生了</span><small>天賦已經決定好了,沒有人問過你</small></h3>
+          <ul id="talent-list"></ul>
+          <button id="btn-accept" class="go">人生不能重骰,開始吧</button>
+        </div>
+      </div>
+
+      <!-- 結局 -->
+      <div id="screen-ending" class="overlay hidden">
+        <div class="scroll wide">
+          <h2 id="ending-title"></h2>
+          <p id="ending-body"></p>
+          <p id="ending-filter"></p>
+          <h4>人生結算單</h4>
+          <table id="settlement"></table>
+          <button id="btn-restart" class="go">再活一次</button>
+        </div>
+      </div>
     </main>
+
     <script type="module" src="src/ui.js"></script>
   </body>
 </html>

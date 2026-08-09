@@ -3,9 +3,14 @@ import { createGame, playYear, getStage, ALLOC_KEYS } from '../src/engine.js';
 import { createRng } from '../src/rng.js';
 
 function randomAlloc(state, rng) {
-  const min = getStage(state).minClinical;
+  const min = getStage(state).minClinicalPct;
   const alloc = { clinical: min, teaching: 0, research: 0, family: 0, personal: 0 };
-  for (let i = 0; i < 12 - min; i++) alloc[rng.pick(ALLOC_KEYS)] += 1;
+  let left = 100 - min;
+  while (left > 0) {
+    const chunk = Math.min(left, 5);
+    alloc[rng.pick(ALLOC_KEYS)] += chunk;
+    left -= chunk;
+  }
   return alloc;
 }
 

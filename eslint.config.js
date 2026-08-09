@@ -6,7 +6,11 @@ export default [
   js.configs.recommended,
   prettier,
   {
-    files: ['src/ui.js'],
+    // 全形空白(U+3000)是中文排版的一部分,樣板字串裡要放行
+    rules: { 'no-irregular-whitespace': ['error', { skipTemplates: true, skipStrings: true }] },
+  },
+  {
+    files: ['src/ui.js', 'src/view.js', 'src/alloc-panel.js'],
     languageOptions: {
       globals: {
         document: 'readonly',

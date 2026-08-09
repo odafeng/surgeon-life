@@ -1,6 +1,7 @@
-// 事件資料。cond/text/set 都收 state;規劃結果在 state.alloc。
+// 事件資料。cond/text/set 都收 state;規劃結果在 state.alloc(百分比,總和 100)。
 // effects 可用鍵:clinical/teaching/papers/self/health/familyBond/money
 // stats 可用鍵:surgeries/livesSaved/lawsuits/missedDinners
+// scene:對應 assets/scene-<name>.webp,沒寫的話沿用該階段的預設場景。
 
 export const PROLOGUE = [
   {
@@ -31,6 +32,7 @@ export const EVENTS = [
   // ───────────── PGY(25-26)─────────────
   {
     id: 'pgy_scut',
+    scene: 'corridor',
     stages: ['pgy'],
     weight: 3,
     text: '接不完的 NG、導尿、抽血、寫不完的病歷。學長說:「這就是 PGY,習慣就好。」',
@@ -39,6 +41,7 @@ export const EVENTS = [
   },
   {
     id: 'pgy_first_death',
+    scene: 'or',
     stages: ['pgy'],
     once: true,
     weight: 2,
@@ -48,6 +51,7 @@ export const EVENTS = [
   },
   {
     id: 'pgy_mentor',
+    scene: 'or',
     stages: ['pgy'],
     once: true,
     cond: (s) => s.talents.dexterity >= 6,
@@ -57,6 +61,7 @@ export const EVENTS = [
   },
   {
     id: 'pgy_salary_talk',
+    scene: 'home',
     stages: ['pgy'],
     weight: 2,
     text: '大學同學會。念資工的室友剛拿到新加坡的 offer,年薪是你的三倍。他問你:「你們醫師很賺吧?」',
@@ -75,6 +80,7 @@ export const EVENTS = [
   },
   {
     id: 'pgy_specialty',
+    scene: 'corridor',
     stages: ['pgy'],
     once: true,
     forced: (s) => s.age === 26,
@@ -101,7 +107,8 @@ export const EVENTS = [
     id: 'r_aortic',
     stages: ['resident'],
     weight: 3,
-    cond: (s) => s.alloc.clinical >= 7,
+    cond: (s) => s.alloc.clinical >= 58,
+    scene: 'oncall',
     text: '凌晨兩點,你已連續工作 28 小時。急診來電:主動脈剝離,需要人手。',
     choices: [
       {
@@ -119,6 +126,7 @@ export const EVENTS = [
   },
   {
     id: 'r_mm_conf',
+    scene: 'office',
     stages: ['resident'],
     weight: 2,
     text: '併發症與死亡討論會。投影片打出你的 case,主任的雷射筆停在你的名字上。',
@@ -137,6 +145,7 @@ export const EVENTS = [
   },
   {
     id: 'r_peer_quit',
+    scene: 'oncall',
     stages: ['resident'],
     once: true,
     weight: 2,
@@ -146,6 +155,7 @@ export const EVENTS = [
   },
   {
     id: 'r_paper_boss',
+    scene: 'office',
     stages: ['resident'],
     weight: 3,
     cond: (s) => s.alloc.research === 0,
@@ -165,6 +175,7 @@ export const EVENTS = [
   },
   {
     id: 'r_first_solo',
+    scene: 'or',
     stages: ['resident'],
     once: true,
     cond: (s) => s.attrs.clinical >= 40,
@@ -175,6 +186,7 @@ export const EVENTS = [
   },
   {
     id: 'r_needle',
+    scene: 'or',
     stages: ['resident'],
     weight: 1,
     text: '急刀中你被縫針扎到。沖洗、抽血、預防性投藥、寫異常事件報告——然後刷手,回去繼續開。',
@@ -185,6 +197,7 @@ export const EVENTS = [
   // ───────────── 主治(32+)─────────────
   {
     id: 'a_point_value',
+    scene: 'office',
     stages: ['attending'],
     weight: 3,
     text: '健保公告本季點值 0.78。你算了一下:昨天那台八小時的胃癌根除術,實拿的錢買不起一支新手機。',
@@ -193,6 +206,7 @@ export const EVENTS = [
   },
   {
     id: 'a_audit',
+    scene: 'office',
     stages: ['attending'],
     weight: 2,
     text: '健保署核刪了你三個月前的手術申報,理由:「非必要之醫療行為。」病人現在還活著,大概就是最好的反駁——但反駁要寫成三頁申覆。',
@@ -211,6 +225,7 @@ export const EVENTS = [
   },
   {
     id: 'a_referral',
+    scene: 'or',
     stages: ['attending'],
     weight: 3,
     cond: (s) => s.attrs.clinical >= 70,
@@ -231,6 +246,7 @@ export const EVENTS = [
   },
   {
     id: 'a_defensive',
+    scene: 'clinic',
     stages: ['attending'],
     once: true,
     cond: (s) => s.stats.lawsuits >= 1,
@@ -253,6 +269,7 @@ export const EVENTS = [
   },
   {
     id: 'a_vip',
+    scene: 'office',
     stages: ['attending'],
     weight: 2,
     text: '院長室來電:一位民代的家屬想「喬」下週的刀。你的排程上,一位排了三個月的阿伯剛好在那個時段。',
@@ -271,6 +288,7 @@ export const EVENTS = [
   },
   {
     id: 'a_student_ask',
+    scene: 'clinic',
     stages: ['attending'],
     weight: 2,
     cond: (s) => s.attrs.teaching >= 40,
@@ -290,6 +308,7 @@ export const EVENTS = [
   },
   {
     id: 'a_phd_offer',
+    scene: 'office',
     stages: ['attending'],
     once: true,
     cond: (s) => s.rank === 'vs' && s.flags.phd === undefined,
@@ -315,6 +334,7 @@ export const EVENTS = [
   },
   {
     id: 'a_phd_peer',
+    scene: 'corridor',
     stages: ['attending'],
     once: true,
     cond: (s) => s.rank === 'vs' && s.flags.phd !== 'done' && s.attrs.papers >= 100,
@@ -324,15 +344,17 @@ export const EVENTS = [
   },
   {
     id: 'a_teaching_credit',
+    scene: 'office',
     stages: ['attending'],
     weight: 2,
-    cond: (s) => s.alloc.teaching >= 2,
+    cond: (s) => s.alloc.teaching >= 15,
     text: '學期末,你在系統上登錄教學時數:門診教學、急診教學、病房迴診、開刀房帶刀——每一小時都要填,一格都不能少。細則說這些都算教學。細則沒說的是,這些都不算錢。',
     effects: { teaching: 2, self: -1 },
     log: '登錄系統當掉了兩次。你在深夜十一點按下送出,螢幕顯示:「教學時數已認列。」',
   },
   {
     id: 'a_promotion_denied',
+    scene: 'office',
     stages: ['attending'],
     once: true,
     cond: (s) => s.rank === 'vs' && s.attrs.clinical >= 70 && s.attrs.papers < 300,
@@ -342,6 +364,7 @@ export const EVENTS = [
   },
   {
     id: 'a_health_check',
+    scene: 'clinic',
     stages: ['attending', 'aesthetic'],
     weight: 2,
     cond: (s) => s.attrs.health < 35,
@@ -361,6 +384,7 @@ export const EVENTS = [
   },
   {
     id: 'a_mass_casualty',
+    scene: 'or',
     stages: ['attending'],
     weight: 2,
     cond: (s) => s.attrs.clinical >= 60,
@@ -371,6 +395,7 @@ export const EVENTS = [
   },
   {
     id: 'a_reunion',
+    scene: 'home',
     stages: ['attending'],
     once: true,
     weight: 2,
@@ -397,6 +422,7 @@ export const EVENTS = [
   },
   {
     id: 'a_aesthetic_offer',
+    scene: 'aesthetic',
     stages: ['attending'],
     once: true,
     cond: (s) => s.flags.aestheticCurious === true || s.attrs.money < 100,
@@ -420,6 +446,7 @@ export const EVENTS = [
   // ───────────── 醫美支線 ─────────────
   {
     id: 'ae_no_clients',
+    scene: 'aesthetic',
     stages: ['aesthetic'],
     weight: 3,
     cond: (s) => s.talents.social < 6,
@@ -429,6 +456,7 @@ export const EVENTS = [
   },
   {
     id: 'ae_hot',
+    scene: 'aesthetic',
     stages: ['aesthetic'],
     weight: 3,
     cond: (s) => s.talents.social >= 7,
@@ -438,6 +466,7 @@ export const EVENTS = [
   },
   {
     id: 'ae_old_patient',
+    scene: 'aesthetic',
     stages: ['aesthetic'],
     once: true,
     text: '一位你當年從鬼門關拉回來的病人走進診所,是來打雷射的。她認出了你,愣住:「醫師……你怎麼在這裡?」',
@@ -456,6 +485,7 @@ export const EVENTS = [
   },
   {
     id: 'ae_news',
+    scene: 'aesthetic',
     stages: ['aesthetic'],
     weight: 2,
     text: '新聞:「外科人力荒,急診壅塞,病患苦等 14 小時。」你在候診室的電視上看到老東家的名字。',
@@ -476,9 +506,10 @@ export const EVENTS = [
   // ───────────── 感情/家庭(跨階段)─────────────
   {
     id: 'f_meet',
+    scene: 'home',
     stages: ['pgy', 'resident', 'attending', 'aesthetic'],
     weight: 3,
-    cond: (s) => s.family.stage === 'single' && s.alloc.family >= 2,
+    cond: (s) => s.family.stage === 'single' && s.alloc.family >= 15,
     text: '朋友介紹你認識了一個人。第一次見面,對方問:「聽說你們醫師都很忙?」',
     choices: [
       {
@@ -499,9 +530,10 @@ export const EVENTS = [
   },
   {
     id: 'f_steady',
+    scene: 'home',
     stages: ['pgy', 'resident', 'attending', 'aesthetic'],
     weight: 3,
-    cond: (s) => s.family.stage === 'dating' && s.alloc.family >= 2,
+    cond: (s) => s.family.stage === 'dating' && s.alloc.family >= 15,
     text: '交往漸漸穩定。對方學會了看你的班表,學會了在你值班的晚上自己吃飯,學會了不問「你什麼時候下班」。',
     set: (s) => {
       s.family.stage = 'steady';
@@ -511,6 +543,7 @@ export const EVENTS = [
   },
   {
     id: 'f_breakup',
+    scene: 'oncall',
     stages: ['pgy', 'resident', 'attending', 'aesthetic'],
     weight: 4,
     cond: (s) =>
@@ -524,9 +557,10 @@ export const EVENTS = [
   },
   {
     id: 'f_propose',
+    scene: 'home',
     stages: ['resident', 'attending', 'aesthetic'],
     weight: 3,
-    cond: (s) => s.family.stage === 'steady' && s.alloc.family >= 3,
+    cond: (s) => s.family.stage === 'steady' && s.alloc.family >= 25,
     text: '交往多年,你在難得的連休訂了餐廳。戒指在口袋裡放了三個月——三次想拿出來,三次被 on call 打斷。',
     choices: [
       {
@@ -546,9 +580,10 @@ export const EVENTS = [
   },
   {
     id: 'f_child',
+    scene: 'home',
     stages: ['resident', 'attending', 'aesthetic'],
     weight: 2,
-    cond: (s) => s.family.stage === 'married' && s.family.kids === 0 && s.alloc.family >= 3,
+    cond: (s) => s.family.stage === 'married' && s.family.kids === 0 && s.alloc.family >= 25,
     text: '晚餐桌上,另一半輕輕地問:「我們……要不要有個孩子?」',
     choices: [
       {
@@ -568,18 +603,20 @@ export const EVENTS = [
   },
   {
     id: 'f_kid_stranger',
+    scene: 'home',
     stages: ['resident', 'attending'],
     weight: 4,
-    cond: (s) => s.family.kids > 0 && s.alloc.family < 3,
+    cond: (s) => s.family.kids > 0 && s.alloc.family < 25,
     text: '幼稚園的親子日你又缺席了。老師後來轉述,孩子指著全家福說:「這是我爸爸/媽媽,住在醫院。」',
     effects: { familyBond: -15, self: -5 },
     log: '你把這句話轉述給同事聽,大家都笑了。笑完之後,休息室安靜了很久。',
   },
   {
     id: 'f_anniversary',
+    scene: 'home',
     stages: ['resident', 'attending', 'aesthetic'],
     weight: 2,
-    cond: (s) => s.family.stage === 'married' && s.alloc.family >= 3,
+    cond: (s) => s.family.stage === 'married' && s.alloc.family >= 25,
     text: '結婚紀念日,你難得準時下班。餐廳裡你們聊的還是孩子和房貸——但至少,你在。',
     effects: { familyBond: 10, self: 3 },
     log: '「在場」聽起來是很低的標準。對你們家來說,它是奢侈品。',
@@ -588,6 +625,7 @@ export const EVENTS = [
   // ───────────── 醫糾(special:由 engine 依機率注入)─────────────
   {
     id: 'a_lawsuit',
+    scene: 'court',
     special: true,
     stages: ['resident', 'attending'],
     text: '存證信函寄到了醫院。一台急刀的併發症,家屬提告。你記得那一晚——你已經 30 個小時沒睡,而你是當時唯一能上的人。',
@@ -611,6 +649,7 @@ export const EVENTS = [
   },
   {
     id: 'a_verdict_win',
+    scene: 'court',
     stages: ['resident', 'attending'],
     forced: (s) => s.flags.onTrial === true && s.talents.social >= 5,
     text: '纏訟多年,判決出爐:無罪。你在法庭上把當晚的處置一條一條講清楚,法官聽懂了。',
@@ -622,6 +661,7 @@ export const EVENTS = [
   },
   {
     id: 'a_verdict_lose',
+    scene: 'court',
     stages: ['resident', 'attending'],
     forced: (s) => s.flags.onTrial === true && s.talents.social < 5,
     text: '判決:賠償 200 萬。你在法庭上緊張得詞不達意,對造律師口若懸河。你開的刀沒有輸,你輸在說話。',
