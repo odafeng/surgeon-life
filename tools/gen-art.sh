@@ -3,7 +3,7 @@
 # key 從專案 .env 讀,全程不 echo
 set -euo pipefail
 OUT="$1"; SIZE="$2"; QUAL="$3"; PROMPT_FILE="$4"; BG="${5:-opaque}"; MODEL="${6:-gpt-image-2}"
-PROJ=/Users/huangshifeng/Desktop/Projects/surgeon-life
+PROJ="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"  # 專案根目錄,由腳本位置推得
 TMP=$(mktemp /tmp/_imgXXXXXX)
 trap 'rm -f "$TMP"' EXIT
 KEY=$(grep '^OPENAI_API_KEY=' "$PROJ/.env" | cut -d= -f2- | tr -d '"'"'"' \r\n')

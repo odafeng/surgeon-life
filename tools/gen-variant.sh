@@ -4,7 +4,7 @@
 # key 從專案根目錄 .env 讀,全程不 echo。
 set -euo pipefail
 OUT="$1"; REF="$2"; PROMPT_FILE="$3"; SIZE="${4:-1024x1536}"
-PROJ=/Users/huangshifeng/Desktop/Projects/surgeon-life
+PROJ="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"  # 專案根目錄,由腳本位置推得
 KEY=$(grep '^OPENAI_API_KEY=' "$PROJ/.env" | cut -d= -f2- | tr -d '"'"'"' \r\n')
 TMP=$(mktemp /tmp/_edXXXXXX)
 trap 'rm -f "$TMP"' EXIT

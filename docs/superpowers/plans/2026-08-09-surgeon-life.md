@@ -2859,7 +2859,7 @@ Expected: 全綠(ui.js 不在測試範圍,但必須過 lint)
 
 - [ ] **Step 5: 手動驗證(smoke 整條流程)**
 
-Run: `python3 -m http.server 8080 --directory /home/odafeng/surgeon-life &`,瀏覽器開 `http://localhost:8080`。逐項確認:
+Run: `python3 -m http.server 8080 --directory <專案根目錄> &`,瀏覽器開 `http://localhost:8080`。逐項確認:
 
 1. 開始畫面 →「開始人生」→ 天賦畫面,考試能力固定 9 顆點,其他隨機。
 2. 序章逐行出現;18 歲聯考出現三個選項,任選一個都得到「你都填了醫學系」。
