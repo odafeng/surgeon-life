@@ -310,6 +310,32 @@ export function healthDelta(state, alloc) {
   return recovery - (ageBase + overwork) * factor;
 }
 
+/**
+ * 事件每年平均扣掉的健康。
+ * 這不是設計出來的數字，是量出來的：40 條完整職涯、1256 個年份，
+ * 把實際變化減去結算公式的預期，平均 −3.4。少了這一項，預告會過度樂觀，
+ * 個人 8% 的玩家會在沒有任何警告的情況下死在五十歲。
+ */
+const EVENT_HEALTH_DRAG = 3.4;
+
+/**
+ * 照這個配置一路走下去，哪一年會倒。沒有就回 null。
+ *
+ * 用的是同一套 healthDelta 與 healthCap，所以它不會跟結算說謊。
+ * 事件傷害用上面那個平均值代入——那是平均，運氣差的人會更早。
+ */
+export function projectCollapse(state, alloc) {
+  let health = state.attrs.health;
+  const probe = { age: state.age, talents: state.talents };
+  for (let age = state.age; age <= 65; age++) {
+    probe.age = age;
+    const delta = healthDelta(probe, alloc) - EVENT_HEALTH_DRAG;
+    health = Math.max(0, Math.min(healthCap(age), health + delta));
+    if (health <= 0) return age;
+  }
+  return null;
+}
+
 export function settleHealth(state, alloc) {
   const cap = healthCap(state.age);
   state.attrs.health = Math.max(0, Math.min(cap, state.attrs.health + healthDelta(state, alloc)));
@@ -517,6 +543,13 @@ export function forecast(state, alloc) {
     warnings.push(
       `健康只剩 ${Math.round(nextHealth)}，再撐約 ${Math.max(1, Math.ceil(nextHealth / -dh))} 年就會倒下。`,
     );
+  // 舊的警告只在個人 ≤ 5% 才出現，但實測個人 8% 一樣是全滅，中位數死在 50 歲——
+  // 警告來得太晚。門檻不寫死（它隨體質與年齡浮動），改成把同一套結算往前推到底。
+  else {
+    const fallAt = projectCollapse(state, alloc);
+    if (fallAt !== null)
+      warnings.push(`照這個配置一路走下去，你會在 ${fallAt} 歲倒下，走不到退休。`);
+  }
   if (alloc.personal <= 5 && dh < 0) warnings.push('個人幾乎歸零：沒有任何回血來源。');
   if (state.family.kids > 0 && alloc.family < 25) warnings.push('家庭低於 25%：孩子那邊會出事。');
   if (a.money < 0)

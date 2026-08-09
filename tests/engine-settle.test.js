@@ -8,6 +8,8 @@ import {
   settleGrant,
   settlePromotion,
   malpracticeChance,
+  projectCollapse,
+  forecast,
 } from '../src/engine.js';
 
 const alloc = (c, t, r, f, p) => ({
@@ -247,5 +249,43 @@ describe('malpracticeChance', () => {
     s.career = 'aesthetic';
     s.age = 40;
     expect(malpracticeChance(s)).toBe(0);
+  });
+});
+
+describe('projectCollapse', () => {
+  // 新手最常見的死法是把「個人」壓到剩一點點，然後在沒有任何警告的情況下
+  // 死在五十歲。這條預告要在他按下確認之前就講清楚。
+  const at = (personal) => ({
+    clinical: 100 - 10 - 10 - 15 - personal,
+    teaching: 10,
+    research: 10,
+    family: 15,
+    personal,
+  });
+
+  it('個人壓到很低就預告倒下的年份，而且越低越早', () => {
+    const s = createGame(7);
+    s.age = 33;
+    const zero = projectCollapse(s, at(0));
+    const five = projectCollapse(s, at(5));
+    expect(zero).toBeGreaterThan(33);
+    expect(zero).toBeLessThan(five);
+    expect(five).toBeLessThanOrEqual(65);
+  });
+
+  it('個人給夠就不會預告倒下', () => {
+    const s = createGame(7);
+    s.age = 33;
+    expect(projectCollapse(s, at(20))).toBeNull();
+    expect(projectCollapse(s, at(25))).toBeNull();
+  });
+
+  it('配置盤的警告跟預告是同一個數字，不會各說各話', () => {
+    const s = createGame(7);
+    s.age = 33;
+    const alloc = at(5);
+    const fallAt = projectCollapse(s, alloc);
+    const warned = forecast(s, alloc).warnings.find((w) => w.includes('倒下'));
+    expect(warned).toContain(String(fallAt));
   });
 });
