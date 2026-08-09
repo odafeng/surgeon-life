@@ -153,8 +153,8 @@ export const PATIENT_EVENTS = [
     priority: true,
     stages: ['attending'],
     once: true,
-    weight: 4,
-    cond: (s) => s.flags.wangRelapse && W(s).alive,
+    // 你在門診看見那個影子，接下來的事就不是抽籤決定的了。
+    forced: (s) => s.flags.wangRelapse && !s.flags.wangDecided && W(s).alive,
     text: '術前討論。王慶昌七十四歲，心臟功能不好，腫瘤貼著腸繫膜上動脈。麻醉科在紀錄上寫「風險極高，建議審慎評估」。他兒子在會客室等你的答案，王慶昌自己已經把同意書簽好了。',
     choices: [
       {
@@ -185,8 +185,7 @@ export const PATIENT_EVENTS = [
     priority: true,
     stages: ['attending'],
     once: true,
-    weight: 4,
-    cond: (s) => s.flags.wangDecided && W(s).alive,
+    forced: (s) => s.flags.wangDecided && !s.flags.wangFarewell && W(s).alive,
     text: '王慶昌最後一次自己走進診間。他瘦了十四公斤，襯衫領口空出一圈。他沒有問病情，只說：「醫師，那塊地我租給人了。芭樂樹留三棵，我兒子會顧。」',
     effects: { self: -5 },
     bond: { patient: 6 },
@@ -204,8 +203,7 @@ export const PATIENT_EVENTS = [
     priority: true,
     stages: ['attending'],
     once: true,
-    weight: 4,
-    cond: (s) => s.flags.wangFarewell && W(s).alive,
+    forced: (s) => s.flags.wangFarewell && W(s).alive,
     text: '禮拜三下午，他兒子打電話到門診找你。王慶昌走了，在家裡，很安靜。他撐了十一個月，比誰算的都久。',
     effects: { self: -8, health: -2 },
     bond: { patient: 3 },

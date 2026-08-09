@@ -241,7 +241,8 @@ export const CHIEF_EVENTS = [
     stages: ['attending'],
     once: true,
     weight: 4,
-    cond: (s) => C(s).stage >= 2 && s.age >= 55,
+    // 中間那一幕沒遇到也不能卡住整條線——他到年紀就是會走。
+    cond: (s) => s.age >= 55 && (C(s).stage >= 2 || (C(s).stage === 1 && s.age >= 58)),
     text: '黃振邦的卸任茶會。院長講了六分鐘，講他任內科室營收成長幾成、評鑑拿了幾個優等。黃振邦上台講了兩句：「這一科的人力，我沒有爭到。」停了一下，「對不起。」',
     effects: { self: -4 },
     bond: { chief: 6 },
@@ -257,8 +258,8 @@ export const CHIEF_EVENTS = [
     priority: true,
     stages: ['attending'],
     once: true,
-    weight: 4,
-    cond: (s) => C(s).stage >= 3 && !C(s).succeeded && s.age >= 55,
+    // 位置空出來的那一年，這張紙一定會出現在你桌上。你可以不簽，但你躲不掉。
+    forced: (s) => C(s).stage >= 3 && !C(s).succeeded && s.age >= 55,
     text: '主任出缺。遴選委員把意向書放在你桌上。你翻到第三頁，職責欄第一項是「達成院方年度績效目標」，第二項才是「督導醫療品質」。',
     choices: [
       {
