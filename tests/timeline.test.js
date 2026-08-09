@@ -205,37 +205,78 @@ describe('婚禮', () => {
 
 describe('結局不會反寫玩家的選擇', () => {
   // 有人在 65 歲明確拒絕了部主任，結局卻寫「教授、部主任、學會理事」。
-  // 結局的文字是最後一段話，玩家沒有機會反駁——它不能宣稱沒有發生的事。
-  const CLAIMS = [
-    ['部主任', (s) => s.people?.chief?.succeeded],
-    ['孩子', (s) => s.family.kids > 0],
-  ];
+  // 結局是玩家唯一無法反駁的一段文字，它不能宣稱沒有發生的事。
+  //
+  // 這份清單原本只守「部主任」和「孩子」——也就是我當時已經知道的兩個，
+  // 所以「學會理事」（整個專案沒有任何 state）就這樣漏過去了。
+  // 改成登記制：結局裡只要出現頭銜類的詞，就必須在這裡登記它的依據，
+  // 沒登記的直接紅燈，而不是安靜地通過。
+  // 用 regex 而不是 includes：「副教授」裡面也有「教授」。
+  const TITLES = {
+    部主任: { re: /部主任/, holds: (s) => s.people?.chief?.succeeded },
+    教授: { re: /(?<![副助理])教授/, holds: (s) => s.rank === 'professor' },
+    副教授: { re: /副教授/, holds: (s) => ['associate', 'professor'].includes(s.rank) },
+    主治醫師: { re: /主治醫師/, holds: () => true }, // 走到結局的外科醫師至少是主治
+    孩子: { re: /孩子/, holds: (s) => s.family.kids > 0 },
+  };
+  // 出現在結局內文裡、看起來像頭銜或身分的詞，一律要有依據
+  const TITLE_LIKE = /理事|院長|會長|部主任|副院長|主委/g;
 
-  it('結局內文宣稱的事，狀態裡都要成立', async () => {
-    const { decideEnding } = await import('../src/endings.js');
-    const bad = [];
+  // 「不知道為什麼你沒當教授」是在講一件沒發生的事，不是在授予頭銜。
+  // 按句子切開，跳過帶否定詞的那幾句再檢查。
+  const claims = (body) =>
+    body
+      .split(/[。；，]/)
+      .filter((clause) => !/[沒不未]/.test(clause))
+      .join('　');
+
+  const states = () => {
+    const out = [];
     for (const kids of [0, 1])
       for (const succeeded of [false, true])
         for (const rank of ['vs', 'associate', 'professor'])
           for (const clinical of [30, 80])
-            for (const cause of ['retire', 'death']) {
+            for (const familyBond of [20, 70]) {
               const s = createGame(1);
               s.age = 66;
               s.rank = rank;
               s.attrs.clinical = clinical;
-              s.attrs.familyBond = 60;
+              s.attrs.familyBond = familyBond;
               s.attrs.health = 50;
               s.attrs.self = 60;
               s.family.kids = kids;
               if (kids) s.family.children = [{ bornAt: 34 }];
               s.family.stage = kids ? 'married' : 'single';
               s.people.chief.succeeded = succeeded;
-              const e = decideEnding(s, cause);
-              for (const [word, holds] of CLAIMS)
-                if (e.body.includes(word) && !holds(s))
-                  bad.push(`${e.id}（${rank}/kids${kids}/主任${succeeded}）說了「${word}」`);
+              out.push(s);
             }
+    return out;
+  };
+
+  it('結局內文宣稱的頭銜，狀態裡都要成立', async () => {
+    const { decideEnding } = await import('../src/endings.js');
+    const bad = [];
+    for (const s of states())
+      for (const cause of ['retire', 'death']) {
+        const e = decideEnding(s, cause);
+        for (const [word, { re, holds }] of Object.entries(TITLES))
+          if (re.test(claims(e.body)) && !holds(s))
+            bad.push(
+              `${e.id}（${s.rank}/kids${s.family.kids}/主任${s.people.chief.succeeded}）說了「${word}」`,
+            );
+      }
     expect([...new Set(bad)]).toEqual([]);
+  });
+
+  it('沒有登記依據的頭銜不准出現在結局裡', async () => {
+    const { decideEnding } = await import('../src/endings.js');
+    const unknown = new Set();
+    for (const s of states())
+      for (const cause of ['retire', 'death', 'exit-specialty']) {
+        const body = decideEnding(s, cause).body;
+        for (const w of claims(body).match(TITLE_LIKE) || []) if (!(w in TITLES)) unknown.add(w);
+      }
+    expect([...unknown], '這些頭銜沒有任何 state 支撐，也沒有登記').toEqual([]);
   });
 });
 
