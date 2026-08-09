@@ -251,29 +251,35 @@ const STAGE_TRANSITION_LOGS = {
   resident: '你成為外科住院醫師。值班表寄來了:這個月,你有十一天不會看到太陽下山。',
 };
 
-export async function playYear(state, alloc, chooser) {
+export async function playYear(state, alloc, chooser, onLog) {
   alloc = validateAllocation(state, alloc);
   state.alloc = alloc;
   const stage = getStage(state);
-  const logs = [{ kind: 'year', text: `【${state.age} 歲・${stage.label}】` }];
+  const logs = [];
+  const emit = async (entry) => {
+    logs.push(entry);
+    if (onLog) await onLog(entry);
+  };
+  await emit({ kind: 'year', text: `【${state.age} 歲・${stage.label}】` });
   applyGrowth(state, alloc);
 
   for (const e of pickEvents(state)) {
     if (e.once) state.used.push(e.id);
     const text = typeof e.text === 'function' ? e.text(state) : e.text;
     if (e.choices) {
+      await emit({ kind: 'event', text });
       const choices = e.choices.filter((c) => !c.cond || c.cond(state));
       const idx = await chooser({ id: e.id, text, choices }, state);
       const c = choices[Math.max(0, Math.min(choices.length - 1, idx))];
       if (c.effects) applyEffects(state, c.effects);
       if (c.stats) applyStats(state, c.stats);
       if (c.set) c.set(state);
-      logs.push({ kind: 'event', text }, { kind: 'choice', text: c.log });
+      await emit({ kind: 'choice', text: c.log });
     } else {
       if (e.effects) applyEffects(state, e.effects);
       if (e.stats) applyStats(state, e.stats);
       if (e.set) e.set(state);
-      logs.push({ kind: 'event', text: [text, e.log].filter(Boolean).join('\n') });
+      await emit({ kind: 'event', text: [text, e.log].filter(Boolean).join('\n') });
     }
     if (state.flags.exitNow) break;
   }
@@ -281,16 +287,16 @@ export async function playYear(state, alloc, chooser) {
   const dead = settleHealth(state, alloc);
   if (dead) {
     state.ending = decideEnding(state, 'death');
-    logs.push({ kind: 'info', text: '你的身體,先於你的意志,停了下來。' });
+    await emit({ kind: 'info', text: '你的身體,先於你的意志,停了下來。' });
     return { logs, ending: state.ending };
   }
   settleMoney(state);
   const phdLog = settlePhd(state, alloc);
-  if (phdLog) logs.push({ kind: 'info', text: phdLog });
+  if (phdLog) await emit({ kind: 'info', text: phdLog });
   const grantLog = settleGrant(state, alloc);
-  if (grantLog) logs.push({ kind: 'info', text: grantLog });
+  if (grantLog) await emit({ kind: 'info', text: grantLog });
   const promo = settlePromotion(state);
-  if (promo) logs.push({ kind: 'info', text: promo });
+  if (promo) await emit({ kind: 'info', text: promo });
 
   if (state.flags.exitNow) {
     state.career = 'exited';
@@ -302,7 +308,7 @@ export async function playYear(state, alloc, chooser) {
   state.age += 1;
   const nextKey = getStage(state).key;
   if (nextKey !== prevKey && STAGE_TRANSITION_LOGS[nextKey]) {
-    logs.push({ kind: 'info', text: STAGE_TRANSITION_LOGS[nextKey] });
+    await emit({ kind: 'info', text: STAGE_TRANSITION_LOGS[nextKey] });
   }
   if (state.age > 65) {
     state.ending = decideEnding(state, 'retire');

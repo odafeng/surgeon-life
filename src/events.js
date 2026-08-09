@@ -612,7 +612,6 @@ export const EVENTS = [
   {
     id: 'a_verdict_win',
     stages: ['resident', 'attending'],
-    once: true,
     forced: (s) => s.flags.onTrial === true && s.talents.social >= 5,
     text: '纏訟多年,判決出爐:無罪。你在法庭上把當晚的處置一條一條講清楚,法官聽懂了。',
     effects: { self: 6 },
@@ -624,7 +623,6 @@ export const EVENTS = [
   {
     id: 'a_verdict_lose',
     stages: ['resident', 'attending'],
-    once: true,
     forced: (s) => s.flags.onTrial === true && s.talents.social < 5,
     text: '判決:賠償 200 萬。你在法庭上緊張得詞不達意,對造律師口若懸河。你開的刀沒有輸,你輸在說話。',
     effects: { money: -200, self: -12 },
