@@ -108,6 +108,7 @@ export const ATTENDING_SYSTEM_EVENTS = [
   // ───────────── DRG 與住院天數 ─────────────
   {
     id: 'as_drg_los',
+    once: true,
     scene: 'corridor',
     mood: 'wry',
     stages: ['attending'],

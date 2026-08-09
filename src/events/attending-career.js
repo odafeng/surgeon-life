@@ -105,6 +105,7 @@ export const ATTENDING_CAREER_EVENTS = [
   },
   {
     id: 'ac_gift_author',
+    once: true,
     scene: 'corridor',
     mood: 'wry',
     stages: ['attending'],

@@ -202,3 +202,39 @@ describe('婚禮', () => {
     expect(late).toEqual([]);
   });
 });
+
+describe('結局不會反寫玩家的選擇', () => {
+  // 有人在 65 歲明確拒絕了部主任，結局卻寫「教授、部主任、學會理事」。
+  // 結局的文字是最後一段話，玩家沒有機會反駁——它不能宣稱沒有發生的事。
+  const CLAIMS = [
+    ['部主任', (s) => s.people?.chief?.succeeded],
+    ['孩子', (s) => s.family.kids > 0],
+  ];
+
+  it('結局內文宣稱的事，狀態裡都要成立', async () => {
+    const { decideEnding } = await import('../src/endings.js');
+    const bad = [];
+    for (const kids of [0, 1])
+      for (const succeeded of [false, true])
+        for (const rank of ['vs', 'associate', 'professor'])
+          for (const clinical of [30, 80])
+            for (const cause of ['retire', 'death']) {
+              const s = createGame(1);
+              s.age = 66;
+              s.rank = rank;
+              s.attrs.clinical = clinical;
+              s.attrs.familyBond = 60;
+              s.attrs.health = 50;
+              s.attrs.self = 60;
+              s.family.kids = kids;
+              if (kids) s.family.children = [{ bornAt: 34 }];
+              s.family.stage = kids ? 'married' : 'single';
+              s.people.chief.succeeded = succeeded;
+              const e = decideEnding(s, cause);
+              for (const [word, holds] of CLAIMS)
+                if (e.body.includes(word) && !holds(s))
+                  bad.push(`${e.id}（${rank}/kids${kids}/主任${succeeded}）說了「${word}」`);
+            }
+    expect([...new Set(bad)]).toEqual([]);
+  });
+});
