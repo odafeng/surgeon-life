@@ -115,6 +115,11 @@ async function yearLoop() {
     $('textbox').classList.add('hidden');
     renderFastFlag();
 
+    // 存檔點在「這一年還沒開始做任何決定」的位置。
+    // 存在行動階段之後的話，重新載入會回到同一年的配置盤，
+    // 但行動的效果已經寫進存檔——同一年就能重刷一次能力。
+    autosave();
+
     if (!fastForwarding()) {
       const { alloc, years } = await openAllocPanel(state);
       state.alloc = alloc;
@@ -135,7 +140,6 @@ async function yearLoop() {
       renderFastFlag();
     }
 
-    autosave();
     const stageBefore = getStage(state).key;
     const { ending } = await playYear(state, state.alloc, chooser, onLog);
     renderHud(state);

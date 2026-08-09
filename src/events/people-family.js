@@ -7,6 +7,7 @@
 // 進程看的是 family.invested（累計有給時間的年數），不是某一年突然投入的數字。
 // 感情要的是持續出現。
 import { advance } from '../characters.js';
+import { getStage } from '../engine.js';
 
 const S = (s) => s.people.spouse;
 const kidAge = (s, i = 0) => (s.family.children[i] ? s.age - s.family.children[i].bornAt : -1);
@@ -106,7 +107,11 @@ export const FAMILY_ARC_EVENTS = [
         log: '她哭著答應，只提了一個條件：「每週至少一起吃一頓晚餐。」你答應了。你們都知道這個承諾有多難——從今年起，家庭時間不得低於 20%。',
       },
       {
-        label: '再等等，等升上主治穩定一點。',
+        // 求婚可能拖到主治第十年才抽到，那時候「等升上主治」已經是謊話了。
+        label: (s) =>
+          getStage(s).key === 'attending'
+            ? '再等等，等再穩定一點。'
+            : '再等等，等升上主治穩定一點。',
         effects: { self: -4, familyBond: -5 },
         bond: { spouse: -8 },
         log: '「等穩定一點」——這句話你已經說了三年。她笑了笑，把菜單遞給你。戒指又回到口袋裡。',

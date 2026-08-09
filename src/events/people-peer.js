@@ -93,6 +93,7 @@ export const PEER_EVENTS = [
   // ───────── 第 1 幕：他動搖 ─────────
   {
     id: 'p_drift',
+    once: true,
     scene: 'office',
     mood: 'wry',
     priority: true,
@@ -106,6 +107,7 @@ export const PEER_EVENTS = [
   },
   {
     id: 'p_wife',
+    once: true, // 「第一次來」只會有一次
     scene: 'home',
     mood: 'wry',
     priority: true,
@@ -237,6 +239,7 @@ export const PEER_EVENTS = [
   // ───────── 第 2 幕・stayed：他留下來 ─────────
   {
     id: 'p_stayed_backup',
+    once: true,
     scene: 'or',
     mood: 'weary',
     priority: true,

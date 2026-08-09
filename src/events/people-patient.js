@@ -17,7 +17,7 @@ export const PATIENT_EVENTS = [
     once: true,
     weight: 4,
     cond: (s) => W(s).stage === 0 && s.attrs.clinical >= 40,
-    text: '凌晨兩點，急診推上來一個腹主動脈瘤破裂的計程車司機，血壓量不到。護理師唸出名字：王慶昌，五十二歲。你的手放上去，摸到那個搏動。',
+    text: '凌晨兩點，急診推上來一個計程車司機，肚子硬得像一塊板子，血壓量不到。立位 X 光的橫膈下有一條游離氣體。護理師唸出名字：王慶昌，五十二歲。',
     choices: [
       {
         label: '不等了，直接推刀房。',
@@ -28,7 +28,7 @@ export const PATIENT_EVENTS = [
         set: (s) => {
           advance(s, 'patient', 1);
         },
-        log: '五個小時，輸了十二袋血。天亮的時候他的血壓回來了。你在更衣室脫手術衣，手抖到解不開背後那條帶子。',
+        log: '五個小時。十二指腸前壁一個一公分的洞，腹腔裡沖了八公升才乾淨。天亮的時候他的血壓回來了。你在更衣室脫手術衣，手抖到解不開背後那條帶子。',
       },
       {
         label: '照流程走，先做電腦斷層。',
@@ -73,6 +73,7 @@ export const PATIENT_EVENTS = [
   },
   {
     id: 'w_he_tells_everyone',
+    once: true,
     scene: 'corridor',
     mood: 'wry',
     priority: true,

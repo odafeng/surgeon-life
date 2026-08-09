@@ -132,6 +132,7 @@ export const CHIEF_EVENTS = [
   },
   {
     id: 'c_kpi_blocked',
+    once: true,
     scene: 'office',
     mood: 'wry',
     priority: true,

@@ -42,7 +42,13 @@ describe('EVENTS integrity', () => {
       if (e.choices) {
         expect(e.choices.length, e.id).toBeGreaterThanOrEqual(2);
         for (const c of e.choices) {
-          expect(typeof c.label, e.id).toBe('string');
+          // 標籤跟 text 一樣可以是函式，讓同一個選擇在不同職級有不同說法。
+          expect(['string', 'function'], e.id).toContain(typeof c.label);
+          if (typeof c.label === 'function') {
+            const s = createGame(1);
+            s.age = 40;
+            expect(typeof c.label(s), `${e.id} label(state)`).toBe('string');
+          }
           expect(typeof c.log, e.id).toBe('string');
           for (const k of Object.keys(c.effects || {}))
             expect(VALID_EFFECT_KEYS, e.id).toContain(k);

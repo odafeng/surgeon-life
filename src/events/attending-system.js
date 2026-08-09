@@ -248,6 +248,7 @@ export const ATTENDING_SYSTEM_EVENTS = [
     scene: 'office',
     stages: ['attending'],
     weight: 3,
+    once: true,
     text: '電子病歷改版。入院評估新增六個必填欄位：跌倒風險、壓傷風險、營養篩檢、疼痛分數、管路清單、出院準備需求。沒填完不能存檔，存不了檔病歷就逾期。',
     effects: { health: -2, self: -3 },
     log: '你在醫局按了兩百多次下拉選單。這六格每一格都有它的道理，只是沒有一格是留給你寫他今天看起來怎麼樣。',

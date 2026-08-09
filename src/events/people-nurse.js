@@ -10,6 +10,7 @@ export const NURSE_EVENTS = [
   // ───────── 第 0 幕：她救過你很多次 ─────────
   {
     id: 'n_right_instrument',
+    once: true,
     scene: 'or',
     mood: 'wry',
     priority: true,
@@ -117,6 +118,7 @@ export const NURSE_EVENTS = [
   },
   {
     id: 'n_tells_you_off',
+    once: true,
     scene: 'or',
     mood: 'weary',
     priority: true,

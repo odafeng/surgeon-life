@@ -90,7 +90,12 @@ export function openActionPanel(state) {
     const again = repeatable();
     const btn = $('btn-act-repeat');
     btn.classList.toggle('hidden', !again);
-    if (again) btn.textContent = `跟去年一樣（${again.map((a) => a.label).join('、')}）`;
+    if (again) {
+      // 會按這顆的人最不會去看卡片右上角，所以衰退要寫在按鈕上。
+      const worst = Math.min(...again.map((a) => repeatFactor(state, a)));
+      const note = worst < 1 ? `，最低剩 ${Math.round(worst * 100)}%` : '';
+      btn.textContent = `跟去年一樣（${again.map((a) => a.label).join('、')}${note}）`;
+    }
 
     $('act-done').innerHTML = logs.map((l) => `<p>${l}</p>`).join('');
     $('btn-act-end').textContent =

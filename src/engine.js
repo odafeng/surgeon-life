@@ -556,7 +556,7 @@ const STAGE_TRANSITION_LOGS = {
   resident: '你成為外科住院醫師。值班表寄來了：這個月，你有十一天不會看到太陽下山。',
   // 升等的規則要在第一年就講清楚。看不到門檻的人不是做了選擇，是十年後才發現有這回事。
   attending:
-    '你升上主治醫師。人事室給你一張表，上面寫著從今年起怎麼算你：歸類計分、教學服務分數。第一關是助理教授，300 點。',
+    '你升上主治醫師。恭喜——從今天起，你的薪水和健保點值綁在一起了。人事室另外給你一張表：升等看歸類計分與教學服務分數，第一關是助理教授，300 點。',
 };
 
 const BANKRUPT_LIMIT = -400;
@@ -583,7 +583,10 @@ export async function playYear(state, alloc, chooser, onLog) {
     const text = typeof e.text === 'function' ? e.text(state) : e.text;
     if (e.choices) {
       await emit({ kind: 'event', text, scene: e.scene, mood: e.mood });
-      const choices = e.choices.filter((c) => !c.cond || c.cond(state));
+      const choices = e.choices
+        .filter((c) => !c.cond || c.cond(state))
+        // 標籤跟 text 一樣可以是函式：同一個選擇，二十八歲和四十一歲說法不會一樣。
+        .map((c) => (typeof c.label === 'function' ? { ...c, label: c.label(state) } : c));
       const idx = await chooser({ id: e.id, text, choices, scene: e.scene, mood: e.mood }, state);
       const c = choices[Math.max(0, Math.min(choices.length - 1, idx))];
       if (c.effects) applyEffects(state, c.effects);
@@ -643,6 +646,11 @@ export async function playYear(state, alloc, chooser, onLog) {
   const prevKey = getStage(state).key;
   state.age += 1;
   const nextKey = getStage(state).key;
+  // 主治身分在跨進那一年的當下就成立，不是等年底結算才成立——
+  // 否則「你當主治的第一台刀」會演在「你升上主治醫師」前面。
+  if (nextKey === 'attending' && prevKey !== 'attending' && state.career === 'surgery') {
+    if (state.rank === 'none') state.rank = 'vs';
+  }
   if (nextKey !== prevKey && STAGE_TRANSITION_LOGS[nextKey]) {
     await emit({ kind: 'info', text: STAGE_TRANSITION_LOGS[nextKey] });
   }

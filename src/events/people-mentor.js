@@ -25,7 +25,7 @@ export const MENTOR_EVENTS = [
         bond: { mentor: 8 },
         memory: '陳文彬要你打二十個結，你打了兩百個，直到他不再說重來。',
         set: (s) => advance(s, 'mentor', 1),
-        log: '第兩百零三個，他沒有說話，轉身走了。學姊說：「他沒罵，就是過了。」',
+        log: '第二百零三個，他沒有說話，轉身走了。學姊說：「他沒罵，就是過了。」',
       },
       {
         label: '問他為什麼要這樣。',
@@ -121,6 +121,7 @@ export const MENTOR_EVENTS = [
   },
   {
     id: 'm_give_case',
+    once: true,
     scene: 'or',
     mood: 'wry',
     priority: true,

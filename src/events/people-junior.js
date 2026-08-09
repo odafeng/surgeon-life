@@ -54,6 +54,7 @@ export const JUNIOR_EVENTS = [
   // ───────── 第 1 幕：他進步了，然後他開始問 ─────────
   {
     id: 'j_improves',
+    once: true,
     scene: 'or',
     mood: 'lifted',
     priority: true,
@@ -67,6 +68,7 @@ export const JUNIOR_EVENTS = [
   },
   {
     id: 'j_asks_hours',
+    once: true,
     scene: 'office',
     mood: 'wry',
     priority: true,
