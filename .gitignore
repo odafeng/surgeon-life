@@ -6,3 +6,8 @@ node_modules/
 !.env.example
 *.key
 openai-key
+
+# 瀏覽器自動化的暫存輸出
+.playwright-mcp/
+*.png
+!assets/*.png
