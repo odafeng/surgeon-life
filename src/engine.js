@@ -610,10 +610,15 @@ export async function playYear(state, alloc, chooser, onLog) {
     const text = resolve(state, val(e.text, state));
     if (e.choices) {
       await emit({ kind: 'event', text, scene: e.scene, mood: e.mood });
+      // 玩家看得到的每一個文字欄位都要過同一道處理：先解析函式，再換代稱。
+      // 少過一個就會在卡片上看到 {她} 這種東西。
       const choices = e.choices
         .filter((c) => !c.cond || c.cond(state))
-        // 標籤跟 text 一樣可以是函式：同一個選擇，二十八歲和四十一歲說法不會一樣。
-        .map((c) => (typeof c.label === 'function' ? { ...c, label: c.label(state) } : c));
+        .map((c) => ({
+          ...c,
+          label: resolve(state, val(c.label, state)),
+          hint: resolve(state, val(c.hint, state)),
+        }));
       const idx = await chooser({ id: e.id, text, choices, scene: e.scene, mood: e.mood }, state);
       const c = choices[Math.max(0, Math.min(choices.length - 1, idx))];
       if (c.effects) applyEffects(state, c.effects);

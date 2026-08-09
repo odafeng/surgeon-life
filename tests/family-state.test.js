@@ -1,6 +1,6 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import { describe, it, expect } from 'vitest';
-import { createGame, playYear, conformAllocation } from '../src/engine.js';
+import { createGame, playYear, conformAllocation, resolve } from '../src/engine.js';
 
 // 家庭的里程碑狀態只能有一個主人。
 //
@@ -88,6 +88,57 @@ describe('第二胎', () => {
       }
       expect(hadFirst, `${gender} 有第一胎的局數`).toBeGreaterThan(10);
       expect(asked, `${gender} 被問第二胎的局數`).toBeGreaterThan(5);
+    }
+  });
+});
+
+describe('代稱解析', () => {
+  // {配偶}、{她} 這種東西只該存在於原始碼裡。任何一個漏掉解析的欄位，
+  // 玩家都會在畫面上看到大括號——第四輪的 hint 就是這樣漏出去的。
+
+  it('原始碼裡用到的每一個代稱，resolve 都認得', () => {
+    const src = readdirSync('src/events')
+      .filter((f) => f.endsWith('.js'))
+      .map((f) => readFileSync(`src/events/${f}`, 'utf8'))
+      .join('\n');
+    // 只找 {中文}，避開樣板字串的 ${...}
+    const tokens = new Set(src.match(/(?<!\$)\{[\u4e00-\u9fff]{1,4}\}/g) || []);
+    expect(tokens.size, '應該至少用到一個代稱').toBeGreaterThan(0);
+    for (const gender of ['m', 'f']) {
+      const s = createGame(1, gender);
+      for (const tok of tokens) {
+        expect(resolve(s, tok), `${tok} @${gender}`).not.toContain('{');
+      }
+    }
+  });
+
+  it('求婚那一幕的每個文字欄位都解析過，包括 hint', async () => {
+    // 靠隨機遊玩碰不到這一幕（12 個 seed 跑下來一次都沒抽到），
+    // 所以直接把狀態擺到求婚前一年。
+    for (const gender of ['m', 'f']) {
+      let seen = null;
+      for (let seed = 1; seed <= 30 && !seen; seed++) {
+        const s = createGame(seed, gender);
+        s.age = 33;
+        s.family = { stage: 'steady', kids: 0, children: [], floor: 15, invested: 6, neglect: 0 };
+        s.people.spouse.stage = 2;
+        for (let y = 0; y < 4 && !seen; y++) {
+          await playYear(
+            s,
+            { clinical: 45, teaching: 10, research: 10, family: 25, personal: 10 },
+            async (ev) => {
+              if (ev.id === 'fa_ring') seen = ev;
+              return 1; // 拒絕，讓狀態停在 steady，下一年還能再抽到
+            },
+          );
+        }
+      }
+      expect(seen, `${gender} 沒有觸發到求婚`).toBeTruthy();
+      expect(seen.text).not.toContain('{');
+      for (const c of seen.choices) {
+        expect(c.label, `${gender} label`).not.toContain('{');
+        if (c.hint) expect(c.hint, `${gender} hint`).not.toContain('{');
+      }
     }
   });
 });
