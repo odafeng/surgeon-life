@@ -238,3 +238,31 @@ describe('結局不會反寫玩家的選擇', () => {
     expect([...new Set(bad)]).toEqual([]);
   });
 });
+
+describe('分岔要分乾淨', () => {
+  // 「你正要解釋外科的訓練還有幾年」改成依職級分岔之後，正文對了，
+  // 但玩家按的那顆按鈕仍然寫著「老實講完訓練年限和值班」。
+  // 一幕戲的正文分岔了，選項與結果也必須跟著分岔——玩家看的是按鈕上的字。
+  const STAGE_WORDS = ['訓練年限', '總醫師', '還在訓練', '升上主治'];
+
+  it('正文依狀態分岔的事件，沒有寫死職級字眼的選項或結果', async () => {
+    const { EVENTS } = await import('../src/events.js');
+    const bad = [];
+    for (const e of EVENTS) {
+      if (typeof e.text !== 'function') continue;
+      const statics = [
+        ['log', e.log],
+        ['memory', e.memory],
+        ...(e.choices || []).flatMap((c, i) => [
+          [`choices[${i}].label`, c.label],
+          [`choices[${i}].log`, c.log],
+          [`choices[${i}].memory`, c.memory],
+        ]),
+      ].filter(([, v]) => typeof v === 'string');
+      for (const [where, str] of statics)
+        for (const w of STAGE_WORDS)
+          if (str.includes(w)) bad.push(`${e.id} ${where}：寫死了「${w}」`);
+    }
+    expect(bad).toEqual([]);
+  });
+});

@@ -77,7 +77,11 @@ export const FAMILY_EVENTS = [
         log: '一頓飯氣氛很好。回程的車上，{配偶}說：「謝謝你今天沒有講實話。」',
       },
       {
-        label: '老實講完訓練年限和值班。',
+        // 正文分岔了，選項也要跟著分岔——玩家看的是按鈕上的字。
+        label: (s) =>
+          ['attending', 'aesthetic'].includes(getStage(s).key)
+            ? '老實講完主治的刀表和值班。'
+            : '老實講完訓練年限和值班。',
         effects: { familyBond: -3, self: 3 },
         log: '伯父安靜了幾秒，說：「那也是一份工作嘛。」之後每次見面，他都會問你最近有沒有比較輕鬆。',
       },
