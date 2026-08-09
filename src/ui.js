@@ -18,6 +18,7 @@ import {
   renderLogPanel,
   renderEnding,
   renderCollectionNote,
+  readingTime,
 } from './view.js';
 
 let state = null;
@@ -75,7 +76,12 @@ async function runPrologue() {
   });
 }
 
-/** 事件播放。快轉時文字自動推進，但需要你決定的事件永遠會停下來。 */
+/**
+ * 事件播放。
+ * 快轉時一般敘述自動推進，停留時間跟字數成正比，中途點一下可以提早跳過。
+ * 但「你剛才那個選擇造成了什麼」永遠要等你讀完——遊戲既然停下來問你，
+ * 就沒有理由讓答案一閃而過。
+ */
 async function onLog(entry) {
   if (entry.kind === 'year') {
     remember(entry);
@@ -84,11 +90,11 @@ async function onLog(entry) {
   remember(entry);
   if (entry.scene) setScene(sceneForEvent(state, entry.scene));
   setPortrait(state.age, entry.mood);
-  if (fastForwarding()) {
-    await showText({ src: '', body: entry.text }, { wait: false });
-    await sleep(620);
-  } else {
+  const mustRead = entry.kind === 'choice' || !fastForwarding();
+  if (mustRead) {
     await showText({ src: '', body: entry.text });
+  } else {
+    await showText({ src: '', body: entry.text }, { wait: false, autoMs: readingTime(entry.text) });
   }
   renderHud(state);
 }

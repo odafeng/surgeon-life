@@ -98,15 +98,30 @@ export function renderHud(state) {
   $('nameplate').classList.remove('hidden');
 }
 
-/** 顯示一段文字，等玩家點擊後才繼續。 */
-export function showText({ src = '', body }, { wait = true } = {}) {
+/**
+ * 快轉時每段文字自動停留多久。跟字數成正比，因為長句子需要更久才讀得完，
+ * 固定 620 毫秒對三行的段落來說只是閃一下。
+ */
+export function readingTime(text) {
+  return Math.min(4200, 900 + String(text).length * 46);
+}
+
+/**
+ * 顯示一段文字。
+ *   wait: true    等玩家點擊（或按空白／Enter）
+ *   autoMs: N     最多停 N 毫秒，中途點擊可以提早跳過
+ *   兩者皆無      畫上去就回，交給呼叫端決定何時換下一段
+ */
+export function showText({ src = '', body }, { wait = true, autoMs = 0 } = {}) {
   $('tb-src').textContent = src;
   $('tb-body').textContent = body;
   $('textbox').classList.remove('hidden');
-  if (!wait) return Promise.resolve();
-  $('tb-more').classList.remove('hidden');
+  if (!wait && !autoMs) return Promise.resolve();
+  $('tb-more').classList.toggle('hidden', !wait);
   return new Promise((resolve) => {
+    let timer = null;
     const go = () => {
+      if (timer) clearTimeout(timer);
       $('textbox').removeEventListener('click', go);
       document.removeEventListener('keydown', key);
       resolve();
@@ -119,6 +134,7 @@ export function showText({ src = '', body }, { wait = true } = {}) {
     };
     $('textbox').addEventListener('click', go);
     document.addEventListener('keydown', key);
+    if (autoMs) timer = setTimeout(go, autoMs);
   });
 }
 
