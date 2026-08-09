@@ -413,9 +413,9 @@ export async function playYear(state, alloc, chooser, onLog) {
     if (e.once) state.used.push(e.id);
     const text = typeof e.text === 'function' ? e.text(state) : e.text;
     if (e.choices) {
-      await emit({ kind: 'event', text, scene: e.scene });
+      await emit({ kind: 'event', text, scene: e.scene, mood: e.mood });
       const choices = e.choices.filter((c) => !c.cond || c.cond(state));
-      const idx = await chooser({ id: e.id, text, choices, scene: e.scene }, state);
+      const idx = await chooser({ id: e.id, text, choices, scene: e.scene, mood: e.mood }, state);
       const c = choices[Math.max(0, Math.min(choices.length - 1, idx))];
       if (c.effects) applyEffects(state, c.effects);
       if (c.stats) applyStats(state, c.stats);
@@ -425,7 +425,12 @@ export async function playYear(state, alloc, chooser, onLog) {
       if (e.effects) applyEffects(state, e.effects);
       if (e.stats) applyStats(state, e.stats);
       if (e.set) e.set(state);
-      await emit({ kind: 'event', text: [text, e.log].filter(Boolean).join('\n'), scene: e.scene });
+      await emit({
+        kind: 'event',
+        text: [text, e.log].filter(Boolean).join('\n'),
+        scene: e.scene,
+        mood: e.mood,
+      });
     }
     if (state.flags.exitNow) break;
   }

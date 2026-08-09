@@ -1,5 +1,8 @@
+import { existsSync } from 'node:fs';
 import { describe, it, expect } from 'vitest';
 import { PROLOGUE, EVENTS } from '../src/events.js';
+import { decideEnding } from '../src/endings.js';
+import { createGame } from '../src/engine.js';
 
 const VALID_STAGES = ['pgy', 'resident', 'attending', 'aesthetic'];
 const VALID_EFFECT_KEYS = [
@@ -70,5 +73,55 @@ describe('EVENTS integrity', () => {
       const n = EVENTS.filter((e) => e.stages.includes(s) && !e.special).length;
       expect(n, `stage ${s}`).toBeGreaterThanOrEqual(4);
     }
+  });
+});
+
+// 引用不存在的圖檔不會讓測試變紅,只會讓玩家看到破圖——所以在這裡擋住。
+describe('美術素材引用', () => {
+  const AGES = [25, 30, 42, 60];
+  const MOODS = ['weary', 'wry', 'lifted'];
+
+  it('每個年齡段的四種表情都有檔案', () => {
+    for (const age of AGES) {
+      expect(existsSync(`assets/portrait-${age}.webp`), `${age} 平靜`).toBe(true);
+      for (const m of MOODS)
+        expect(existsSync(`assets/portrait-${age}-${m}.webp`), `${age} ${m}`).toBe(true);
+    }
+  });
+
+  it('事件引用的場景與表情都存在', () => {
+    for (const e of EVENTS) {
+      if (e.scene)
+        expect(existsSync(`assets/scene-${e.scene}.webp`), `${e.id} → ${e.scene}`).toBe(true);
+      if (e.mood) expect(MOODS, `${e.id} → ${e.mood}`).toContain(e.mood);
+    }
+  });
+
+  it('每個結局引用的場景都存在', () => {
+    const causes = ['retire', 'death', 'exit-specialty'];
+    for (const cause of causes) {
+      for (const seed of [1, 2, 3]) {
+        const s = createGame(seed);
+        const ending = decideEnding(s, cause);
+        expect(
+          existsSync(`assets/scene-${ending.scene}.webp`),
+          `${ending.id} → ${ending.scene}`,
+        ).toBe(true);
+      }
+    }
+  });
+
+  it('每個階段的預設場景都存在', () => {
+    for (const name of [
+      'corridor',
+      'or',
+      'aesthetic',
+      'oncall',
+      'office',
+      'home',
+      'clinic',
+      'court',
+    ])
+      expect(existsSync(`assets/scene-${name}.webp`), name).toBe(true);
   });
 });

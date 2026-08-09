@@ -33,9 +33,11 @@ export function portraitFor(age) {
   return 60;
 }
 
-export function setPortrait(age) {
+/** mood: weary(疲憊) / wry(苦笑) / lifted(振奮),省略則是平靜。 */
+export function setPortrait(age, mood) {
   const el = $('portrait');
-  const src = `assets/portrait-${portraitFor(age)}.webp`;
+  const base = portraitFor(age);
+  const src = mood ? `assets/portrait-${base}-${mood}.webp` : `assets/portrait-${base}.webp`;
   if (el.getAttribute('src') === src) return;
   el.setAttribute('src', src);
 }

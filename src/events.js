@@ -32,6 +32,7 @@ export const EVENTS = [
   // ───────────── PGY(25-26)─────────────
   {
     id: 'pgy_scut',
+    mood: 'weary',
     scene: 'corridor',
     stages: ['pgy'],
     weight: 3,
@@ -41,6 +42,7 @@ export const EVENTS = [
   },
   {
     id: 'pgy_first_death',
+    mood: 'weary',
     scene: 'or',
     stages: ['pgy'],
     once: true,
@@ -51,6 +53,7 @@ export const EVENTS = [
   },
   {
     id: 'pgy_mentor',
+    mood: 'lifted',
     scene: 'or',
     stages: ['pgy'],
     once: true,
@@ -61,6 +64,7 @@ export const EVENTS = [
   },
   {
     id: 'pgy_salary_talk',
+    mood: 'wry',
     scene: 'home',
     stages: ['pgy'],
     weight: 2,
@@ -105,6 +109,7 @@ export const EVENTS = [
   // ───────────── 住院醫師(27-31)─────────────
   {
     id: 'r_aortic',
+    mood: 'weary',
     stages: ['resident'],
     weight: 3,
     cond: (s) => s.alloc.clinical >= 58,
@@ -126,6 +131,7 @@ export const EVENTS = [
   },
   {
     id: 'r_mm_conf',
+    mood: 'wry',
     scene: 'office',
     stages: ['resident'],
     weight: 2,
@@ -145,6 +151,7 @@ export const EVENTS = [
   },
   {
     id: 'r_peer_quit',
+    mood: 'weary',
     scene: 'oncall',
     stages: ['resident'],
     once: true,
@@ -155,6 +162,7 @@ export const EVENTS = [
   },
   {
     id: 'r_paper_boss',
+    mood: 'wry',
     scene: 'office',
     stages: ['resident'],
     weight: 3,
@@ -175,6 +183,7 @@ export const EVENTS = [
   },
   {
     id: 'r_first_solo',
+    mood: 'lifted',
     scene: 'or',
     stages: ['resident'],
     once: true,
@@ -186,6 +195,7 @@ export const EVENTS = [
   },
   {
     id: 'r_needle',
+    mood: 'weary',
     scene: 'or',
     stages: ['resident'],
     weight: 1,
@@ -197,6 +207,7 @@ export const EVENTS = [
   // ───────────── 主治(32+)─────────────
   {
     id: 'a_point_value',
+    mood: 'wry',
     scene: 'office',
     stages: ['attending'],
     weight: 3,
@@ -206,6 +217,7 @@ export const EVENTS = [
   },
   {
     id: 'a_audit',
+    mood: 'wry',
     scene: 'office',
     stages: ['attending'],
     weight: 2,
@@ -225,6 +237,7 @@ export const EVENTS = [
   },
   {
     id: 'a_referral',
+    mood: 'wry',
     scene: 'or',
     stages: ['attending'],
     weight: 3,
@@ -246,6 +259,7 @@ export const EVENTS = [
   },
   {
     id: 'a_defensive',
+    mood: 'wry',
     scene: 'clinic',
     stages: ['attending'],
     once: true,
@@ -269,6 +283,7 @@ export const EVENTS = [
   },
   {
     id: 'a_vip',
+    mood: 'wry',
     scene: 'office',
     stages: ['attending'],
     weight: 2,
@@ -288,6 +303,7 @@ export const EVENTS = [
   },
   {
     id: 'a_student_ask',
+    mood: 'wry',
     scene: 'clinic',
     stages: ['attending'],
     weight: 2,
@@ -334,6 +350,7 @@ export const EVENTS = [
   },
   {
     id: 'a_phd_peer',
+    mood: 'wry',
     scene: 'corridor',
     stages: ['attending'],
     once: true,
@@ -344,6 +361,7 @@ export const EVENTS = [
   },
   {
     id: 'a_teaching_credit',
+    mood: 'wry',
     scene: 'office',
     stages: ['attending'],
     weight: 2,
@@ -354,6 +372,7 @@ export const EVENTS = [
   },
   {
     id: 'a_promotion_denied',
+    mood: 'wry',
     scene: 'office',
     stages: ['attending'],
     once: true,
@@ -364,6 +383,7 @@ export const EVENTS = [
   },
   {
     id: 'a_health_check',
+    mood: 'weary',
     scene: 'clinic',
     stages: ['attending', 'aesthetic'],
     weight: 2,
@@ -384,6 +404,7 @@ export const EVENTS = [
   },
   {
     id: 'a_mass_casualty',
+    mood: 'weary',
     scene: 'or',
     stages: ['attending'],
     weight: 2,
@@ -395,6 +416,7 @@ export const EVENTS = [
   },
   {
     id: 'a_reunion',
+    mood: 'wry',
     scene: 'home',
     stages: ['attending'],
     once: true,
@@ -446,6 +468,7 @@ export const EVENTS = [
   // ───────────── 醫美支線 ─────────────
   {
     id: 'ae_no_clients',
+    mood: 'weary',
     scene: 'aesthetic',
     stages: ['aesthetic'],
     weight: 3,
@@ -456,6 +479,7 @@ export const EVENTS = [
   },
   {
     id: 'ae_hot',
+    mood: 'lifted',
     scene: 'aesthetic',
     stages: ['aesthetic'],
     weight: 3,
@@ -466,6 +490,7 @@ export const EVENTS = [
   },
   {
     id: 'ae_old_patient',
+    mood: 'wry',
     scene: 'aesthetic',
     stages: ['aesthetic'],
     once: true,
@@ -485,6 +510,7 @@ export const EVENTS = [
   },
   {
     id: 'ae_news',
+    mood: 'wry',
     scene: 'aesthetic',
     stages: ['aesthetic'],
     weight: 2,
@@ -530,6 +556,7 @@ export const EVENTS = [
   },
   {
     id: 'f_steady',
+    mood: 'lifted',
     scene: 'home',
     stages: ['pgy', 'resident', 'attending', 'aesthetic'],
     weight: 3,
@@ -543,6 +570,7 @@ export const EVENTS = [
   },
   {
     id: 'f_breakup',
+    mood: 'weary',
     scene: 'oncall',
     stages: ['pgy', 'resident', 'attending', 'aesthetic'],
     weight: 4,
@@ -557,6 +585,7 @@ export const EVENTS = [
   },
   {
     id: 'f_propose',
+    mood: 'lifted',
     scene: 'home',
     stages: ['resident', 'attending', 'aesthetic'],
     weight: 3,
@@ -580,6 +609,7 @@ export const EVENTS = [
   },
   {
     id: 'f_child',
+    mood: 'lifted',
     scene: 'home',
     stages: ['resident', 'attending', 'aesthetic'],
     weight: 2,
@@ -603,6 +633,7 @@ export const EVENTS = [
   },
   {
     id: 'f_kid_stranger',
+    mood: 'weary',
     scene: 'home',
     stages: ['resident', 'attending'],
     weight: 4,
@@ -613,6 +644,7 @@ export const EVENTS = [
   },
   {
     id: 'f_anniversary',
+    mood: 'lifted',
     scene: 'home',
     stages: ['resident', 'attending', 'aesthetic'],
     weight: 2,
@@ -625,6 +657,7 @@ export const EVENTS = [
   // ───────────── 醫糾(special:由 engine 依機率注入)─────────────
   {
     id: 'a_lawsuit',
+    mood: 'weary',
     scene: 'court',
     special: true,
     stages: ['resident', 'attending'],
@@ -649,6 +682,7 @@ export const EVENTS = [
   },
   {
     id: 'a_verdict_win',
+    mood: 'lifted',
     scene: 'court',
     stages: ['resident', 'attending'],
     forced: (s) => s.flags.onTrial === true && s.talents.social >= 5,
@@ -661,6 +695,7 @@ export const EVENTS = [
   },
   {
     id: 'a_verdict_lose',
+    mood: 'weary',
     scene: 'court',
     stages: ['resident', 'attending'],
     forced: (s) => s.flags.onTrial === true && s.talents.social < 5,

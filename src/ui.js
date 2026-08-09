@@ -66,12 +66,14 @@ async function onLog(entry) {
   }
   remember(entry);
   if (entry.scene) setScene(sceneForEvent(state, entry.scene));
+  setPortrait(state.age, entry.mood);
   await showText({ src: '', body: entry.text });
   renderHud(state);
 }
 
 async function chooser(ev) {
   if (ev.scene) setScene(sceneForEvent(state, ev.scene));
+  setPortrait(state.age, ev.mood);
   await showText({ src: '', body: ev.text }, { wait: false });
   return askChoice(ev.choices);
 }
