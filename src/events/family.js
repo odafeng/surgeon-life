@@ -13,10 +13,7 @@ export const FAMILY_EVENTS = [
       {
         label: '道歉，把手機轉靜音。',
         effects: { self: 2 },
-        set: (s) => {
-          s.family.stage = 'dating';
-        },
-        log: '對方說沒關係，還說「你們很辛苦」。你們交換了聯絡方式。之後對方傳訊息的時間，都刻意避開晚上十點以後。',
+        log: '對方說沒關係，還說「你們很辛苦」。你們交換了聯絡方式，傳了兩個月的訊息，然後就慢慢沒有了。',
       },
       {
         label: '老實說今天可能得先走。',
@@ -612,6 +609,7 @@ export const FAMILY_EVENTS = [
         effects: { familyBond: -15, self: -10 },
         set: (s) => {
           s.family.stage = 'single';
+          s.people.spouse.gone = true;
         },
         log: '你搬去醫院附近的套房。第一個晚上你睡得很好，這件事讓你更難過。',
       },

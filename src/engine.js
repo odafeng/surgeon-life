@@ -76,7 +76,13 @@ export function createGame(seed) {
     rank: 'none',
     talents: rollTalents(rng),
     attrs: { clinical: 5, teaching: 0, papers: 0, self: 50, health: 88, familyBond: 50, money: 60 },
-    family: { stage: 'single', kids: 0 },
+    family: {
+      stage: 'single',
+      kids: 0, // 人數。孩子的細節在 children，這裡保留數字讓既有事件與支出公式照用
+      children: [], // [{ bornAt }]，用來算孩子現在幾歲
+      invested: 0, // 累計「有給家庭時間」的年數。感情要的是持續出現，不是某一年突然投入
+      neglect: 0, // 連續幾年沒給
+    },
     grants: { applied: false, yearsPI: 0 },
     flags: {},
     people: initPeople(),
@@ -182,6 +188,18 @@ export function remember(state, text) {
   if (text) state.memories.push({ age: state.age, text });
 }
 
+/**
+ * 讓 family.kids（人數）與 family.children（出生紀錄）保持一致。
+ * 任何事件都可能加減人數，但孩子的成長劇情要靠出生年份算年紀——
+ * 少了紀錄，那些劇情就永遠不會發生。
+ */
+export function normaliseFamily(state) {
+  const f = state.family;
+  if (!f.children) f.children = [];
+  while (f.children.length < f.kids) f.children.push({ bornAt: state.age });
+  if (f.children.length > f.kids) f.children.length = f.kids;
+}
+
 export function applyGrowth(state, alloc) {
   const stage = getStage(state);
   const t = state.talents;
@@ -203,15 +221,32 @@ export function applyGrowth(state, alloc) {
     (2 + t.research * 1.2) *
     (state.flags.phd === 'done' ? 1.5 : 1);
 
+  // 感情不會停在原地。你不投入，它就往回走，而且越久走得越快——
+  // 沒有這一條的話，一輩子只給 8% 的人也能維持一段不痛不癢的關係。
+  const drift =
+    state.family.stage !== 'single' && alloc.family < 15 ? 5 + state.family.neglect * 2 : 0;
   a.familyBond = clamp(
     a.familyBond +
       months('family', alloc.family) * 3 -
+      drift -
       (state.family.kids > 0 && alloc.family < 25 ? 12 : 0) -
       (alloc.family === 0 ? 8 : 0),
   );
+  // 單身又沒有小孩時，家庭時間給的是原生家庭，那條線有上限——
+  // 沒有自己的家的人，不該有滿格的家庭。
+  if (state.family.stage === 'single' && state.family.kids === 0)
+    a.familyBond = Math.min(a.familyBond, 62);
   a.self = clamp(
     a.self + months('personal', alloc.personal) * 2.5 - (alloc.personal === 0 ? 3 : 0),
   );
+
+  // 感情進程看的是「你有沒有一直在」，不是某一年的數字。
+  if (alloc.family >= 15) {
+    state.family.invested += 1;
+    state.family.neglect = 0;
+  } else {
+    state.family.neglect += 1;
+  }
 
   state.stats.missedDinners += Math.round(((100 - alloc.family) / 100) * 12 * 10);
   if (stage.surgical) {
@@ -533,6 +568,8 @@ export async function playYear(state, alloc, chooser, onLog) {
     }
     if (state.flags.exitNow) break;
   }
+
+  normaliseFamily(state);
 
   const dead = settleHealth(state, alloc);
   if (dead) {

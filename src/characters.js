@@ -43,6 +43,12 @@ export const PEOPLE = {
     title: '病人',
     intro: '你早年從鬼門關拉回來的人。他記得你，比你記得他久。',
   },
+  spouse: {
+    key: 'spouse',
+    name: '郁涵',
+    title: '另一半',
+    intro: '學會看你的班表，學會在你值班的晚上自己吃飯，學會不問你什麼時候下班。',
+  },
 };
 
 export function initPeople() {
@@ -53,6 +59,7 @@ export function initPeople() {
     junior: { bond: 0, stage: 0, path: null }, // path：stayed｜left
     nurse: { bond: 55, stage: 0, retired: false },
     patient: { bond: 0, stage: 0, alive: true },
+    spouse: { bond: 0, stage: 0, gone: false },
   };
 }
 
@@ -92,6 +99,9 @@ export function relationshipSummary(state) {
     out.push({ label: '你帶的人', value: `${PEOPLE.junior.name}・留在外科` });
   else if (p.junior.path === 'left')
     out.push({ label: '你帶的人', value: `${PEOPLE.junior.name}・走了` });
+  if (p.spouse?.gone) out.push({ label: '另一半', value: `${PEOPLE.spouse.name}・離開了` });
+  else if (p.spouse?.stage >= 3)
+    out.push({ label: '另一半', value: `${PEOPLE.spouse.name}・還在同一張餐桌` });
   if (p.chief.succeeded) out.push({ label: '部主任', value: '你自己' });
   return out;
 }
