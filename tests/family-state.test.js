@@ -59,3 +59,35 @@ describe('懷孕到出生', () => {
     }
   });
 });
+
+describe('第二胎', () => {
+  // 不管主角是男是女，生第二個都要是一個真的會被問到的決定，
+  // 不是藏在條件裡永遠碰不到的支線。
+  it('兩種性別都問得到，而且問的時候已經有第一個孩子', async () => {
+    for (const gender of ['m', 'f']) {
+      let asked = 0;
+      let hadFirst = 0;
+      for (let seed = 1; seed <= 25; seed++) {
+        const s = createGame(seed, gender);
+        let alloc = { clinical: 45, teaching: 10, research: 10, family: 25, personal: 10 };
+        let sawSecond = false;
+        while (!s.ending && s.age <= 65) {
+          alloc = conformAllocation(s, alloc);
+          const { ending } = await playYear(s, alloc, async (ev) => {
+            if (ev.id === 'fa_second_child') {
+              sawSecond = true;
+              expect(s.family.kids, `${gender} seed ${seed}`).toBe(1);
+              return 1; // 選「一個就好」——這裡驗的是「被問到」，不是結果
+            }
+            return 0; // 其他一律答應，才走得到有孩子的那條路
+          });
+          if (ending) break;
+        }
+        if (s.family.children.length >= 1) hadFirst++;
+        if (sawSecond) asked++;
+      }
+      expect(hadFirst, `${gender} 有第一胎的局數`).toBeGreaterThan(10);
+      expect(asked, `${gender} 被問第二胎的局數`).toBeGreaterThan(5);
+    }
+  });
+});
