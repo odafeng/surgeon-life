@@ -127,3 +127,42 @@ describe('升等門檻', () => {
     expect(forecast(s, ALLOC).warnings.find((w) => w.includes('升等到教授'))).toBeUndefined();
   });
 });
+
+describe('代稱一致性', () => {
+  // 「事件裡喊媽、結局的 memory 卻是爸」是這樣來的：text 換成了代稱，
+  // 同一個事件的 memory 沒有跟著換。同一幕的兩段文字必須用同一套詞。
+  const TOKENS = [
+    ['{爸爸}', '爸爸'],
+    ['{爸}', '爸'],
+    ['{學長}', '學長'],
+    ['{配偶}', null],
+  ];
+
+  it('同一個事件裡，text 用了代稱就不會有另一段寫死同一個詞', async () => {
+    const { EVENTS } = await import('../src/events.js');
+    const bad = [];
+    const asText = (v) => (typeof v === 'string' ? v : '');
+    for (const e of EVENTS) {
+      const text = asText(e.text);
+      const others = [
+        ['log', asText(e.log)],
+        ['memory', asText(e.memory)],
+        ...(e.choices || []).flatMap((c, i) => [
+          [`choices[${i}].log`, asText(c.log)],
+          [`choices[${i}].memory`, asText(c.memory)],
+          [`choices[${i}].label`, asText(c.label)],
+        ]),
+      ];
+      for (const [token, bare] of TOKENS) {
+        if (!bare || !text.includes(token)) continue;
+        for (const [where, str] of others) {
+          if (!str) continue;
+          const stripped = str.split(token).join('');
+          if (stripped.includes(bare))
+            bad.push(`${e.id} ${where}：text 用了 ${token}，這裡卻寫死「${bare}」`);
+        }
+      }
+    }
+    expect(bad).toEqual([]);
+  });
+});

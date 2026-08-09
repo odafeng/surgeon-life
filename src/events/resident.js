@@ -175,7 +175,7 @@ export const RESIDENT_EVENTS = [
       {
         label: '「我負責的。」',
         effects: { self: 4, teaching: 2 },
-        log: '你被電了十分鐘。學弟後來私訊你四個字：「謝謝學長。」那之後他的醫囑再也沒漏過。',
+        log: '你被電了十分鐘。學弟後來私訊你四個字：「謝謝{學長}。」那之後他的醫囑再也沒漏過。',
       },
       {
         label: '照實說。',
@@ -847,7 +847,7 @@ export const RESIDENT_EVENTS = [
     stages: ['resident'],
     weight: 3,
     cond: (s) => s.age >= 29,
-    text: '新一屆的住院醫師報到，白袍很新。其中一個問你：「學長，我第一次值班要注意什麼？」',
+    text: '新一屆的住院醫師報到，白袍很新。其中一個問你：「{學長}，我第一次值班要注意什麼？」',
     choices: [
       {
         label: '把你當年沒人教你的，全部教給他。',
@@ -868,7 +868,7 @@ export const RESIDENT_EVENTS = [
     stages: ['resident'],
     weight: 2,
     cond: (s) => s.age >= 30,
-    text: '學弟值完班，眼睛紅著問你：「學長，你會後悔選外科嗎？」',
+    text: '學弟值完班，眼睛紅著問你：「{學長}，你會後悔選外科嗎？」',
     choices: [
       {
         label: '「不會。」',
@@ -878,7 +878,7 @@ export const RESIDENT_EVENTS = [
       {
         label: '「有時候會。」',
         effects: { self: -2, teaching: 3 },
-        log: '他沉默很久，然後說：「謝謝學長，這樣我比較放心。」你不太確定他放心的是什麼。',
+        log: '他沉默很久，然後說：「謝謝{學長}，這樣我比較放心。」你不太確定他放心的是什麼。',
       },
     ],
   },

@@ -292,7 +292,7 @@ export const FAMILY_ARC_EVENTS = [
     cond: (s) => kidAge(s) >= 7 && kidAge(s) <= 12 && s.alloc.family >= 20,
     text: '小學運動會。你請了假，站在跑道邊。孩子跑最後一棒，經過你面前的時候大喊了一聲「{爸}」。',
     effects: { familyBond: 14, self: 10 },
-    memory: '小學運動會，孩子跑最後一棒，經過你面前時大喊了一聲爸。',
+    memory: '小學運動會，孩子跑最後一棒，經過你面前時大喊了一聲{爸}。',
     log: '他們班第四名。回家路上他一直講那一段，你一句都沒有聽膩。',
   },
   {
@@ -327,7 +327,8 @@ export const FAMILY_ARC_EVENTS = [
     stages: ['attending', 'aesthetic'],
     once: true,
     weight: 6,
-    cond: (s) => kidAge(s) >= 13 && kidAge(s) <= 17,
+    // 台灣是十六歲上高中。十三歲那年演這一幕，孩子其實還在念國一。
+    cond: (s) => kidAge(s) >= 16 && kidAge(s) <= 18,
     text: '孩子上高中之後話變少了。你問他今天怎麼樣，他說「還好」。你想不出下一句要問什麼。',
     choices: [
       {

@@ -111,7 +111,7 @@ export const NURSE_EVENTS = [
     stages: ['attending'],
     weight: 3,
     cond: (s) => N(s).stage === 1,
-    text: '排程把你的刀塞成一天七台，最後一台排在晚上八點。阿蘭姐直接打電話去改：「他八點那台我不開，人要睡覺。」',
+    text: '排程把你的刀塞成一天七台，最後一台排在晚上八點。阿蘭姐直接打電話去改：「{他}八點那台我不開，人要睡覺。」',
     effects: { health: 3, self: 3 },
     bond: { nurse: 6 },
     log: '對方說這是主任的意思。她說：「那請主任八點來刷手。」那台刀後來排到隔週三。',
