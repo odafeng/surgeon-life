@@ -111,8 +111,7 @@ button.primary:disabled {
     opacity: 1;
   }
 }
-#choice-box button,
-#choice-box .exam-choice {
+#choice-box button {
   display: block;
   width: 100%;
   margin: 0.5rem 0;

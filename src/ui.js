@@ -13,6 +13,7 @@ const $ = (id) => document.getElementById(id);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 let state = null;
 let alloc = null;
+const printedLive = new Set();
 
 function show(id) {
   for (const s of document.querySelectorAll('.screen')) s.classList.add('hidden');
@@ -84,6 +85,7 @@ async function runPrologue() {
 
 function askChoice(ev) {
   addLog('event', ev.text);
+  printedLive.add(ev.text);
   return new Promise((resolve) => {
     const box = $('choice-box');
     box.innerHTML = '';
@@ -93,6 +95,8 @@ function askChoice(ev) {
       b.textContent = c.label;
       b.onclick = () => {
         box.classList.add('hidden');
+        addLog('choice', c.log);
+        printedLive.add(c.log);
         resolve(i);
       };
       box.appendChild(b);
@@ -168,10 +172,13 @@ async function yearLoop() {
       resolve();
     };
   });
+  printedLive.clear();
+  const yearHeader = `【${state.age} 歲・${getStage(state).label}】`;
+  addLog('year', yearHeader);
+  printedLive.add(yearHeader);
   const { logs, ending } = await playYear(state, alloc, askChoice);
   for (const l of logs) {
-    if (l.kind === 'event' && document.querySelector(`#log p:last-child`)?.textContent === l.text)
-      continue; // askChoice 已即時印出事件文字,避免重複
+    if (printedLive.has(l.text)) continue; // 年份標頭、事件文字與選擇結果已即時印出
     addLog(l.kind, l.text);
     await sleep(650);
   }
