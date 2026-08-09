@@ -1,5 +1,7 @@
 import { createRng } from './rng.js';
 import { rollTalents } from './talents.js';
+import { EVENTS } from './events.js';
+import { decideEnding } from './endings.js';
 
 export const ALLOC_KEYS = ['clinical', 'teaching', 'research', 'family', 'personal'];
 
@@ -217,4 +219,94 @@ export function malpracticeChance(state) {
   p -= state.talents.social * 0.02;
   if (state.flags.defensive) p -= 0.03;
   return Math.min(0.45, Math.max(0.005, p));
+}
+
+export function pickEvents(state) {
+  const stageKey = getStage(state).key;
+  const rng = state.rng;
+  const eligible = EVENTS.filter(
+    (e) =>
+      !e.special &&
+      e.stages.includes(stageKey) &&
+      !(e.once && state.used.includes(e.id)) &&
+      (!e.cond || e.cond(state)),
+  );
+  const picked = eligible.filter((e) => e.forced && e.forced(state));
+  if (rng.chance(malpracticeChance(state))) {
+    picked.push(EVENTS.find((e) => e.id === 'a_lawsuit'));
+  }
+  // 有 forced 屬性的事件只走 forced 通道,永不進隨機池(否則沒被告也可能抽到判決)
+  const pool = eligible.filter((e) => !e.forced);
+  for (let i = 0; i < 2 && pool.length > 0; i++) {
+    const total = pool.reduce((s, e) => s + (e.weight || 1), 0);
+    let r = rng.next() * total;
+    let idx = pool.findIndex((e) => (r -= e.weight || 1) < 0);
+    if (idx === -1) idx = pool.length - 1;
+    picked.push(pool.splice(idx, 1)[0]);
+  }
+  return picked;
+}
+
+const STAGE_TRANSITION_LOGS = {
+  resident: '你成為外科住院醫師。值班表寄來了:這個月,你有十一天不會看到太陽下山。',
+};
+
+export async function playYear(state, alloc, chooser) {
+  alloc = validateAllocation(state, alloc);
+  state.alloc = alloc;
+  const stage = getStage(state);
+  const logs = [{ kind: 'year', text: `【${state.age} 歲・${stage.label}】` }];
+  applyGrowth(state, alloc);
+
+  for (const e of pickEvents(state)) {
+    if (e.once) state.used.push(e.id);
+    const text = typeof e.text === 'function' ? e.text(state) : e.text;
+    if (e.choices) {
+      const choices = e.choices.filter((c) => !c.cond || c.cond(state));
+      const idx = await chooser({ id: e.id, text, choices }, state);
+      const c = choices[Math.max(0, Math.min(choices.length - 1, idx))];
+      if (c.effects) applyEffects(state, c.effects);
+      if (c.stats) applyStats(state, c.stats);
+      if (c.set) c.set(state);
+      logs.push({ kind: 'event', text }, { kind: 'choice', text: c.log });
+    } else {
+      if (e.effects) applyEffects(state, e.effects);
+      if (e.stats) applyStats(state, e.stats);
+      if (e.set) e.set(state);
+      logs.push({ kind: 'event', text: [text, e.log].filter(Boolean).join('\n') });
+    }
+    if (state.flags.exitNow) break;
+  }
+
+  const dead = settleHealth(state, alloc);
+  if (dead) {
+    state.ending = decideEnding(state, 'death');
+    logs.push({ kind: 'info', text: '你的身體,先於你的意志,停了下來。' });
+    return { logs, ending: state.ending };
+  }
+  settleMoney(state);
+  const phdLog = settlePhd(state, alloc);
+  if (phdLog) logs.push({ kind: 'info', text: phdLog });
+  const grantLog = settleGrant(state, alloc);
+  if (grantLog) logs.push({ kind: 'info', text: grantLog });
+  const promo = settlePromotion(state);
+  if (promo) logs.push({ kind: 'info', text: promo });
+
+  if (state.flags.exitNow) {
+    state.career = 'exited';
+    state.ending = decideEnding(state, state.flags.exitCause);
+    return { logs, ending: state.ending };
+  }
+
+  const prevKey = getStage(state).key;
+  state.age += 1;
+  const nextKey = getStage(state).key;
+  if (nextKey !== prevKey && STAGE_TRANSITION_LOGS[nextKey]) {
+    logs.push({ kind: 'info', text: STAGE_TRANSITION_LOGS[nextKey] });
+  }
+  if (state.age > 65) {
+    state.ending = decideEnding(state, 'retire');
+    return { logs, ending: state.ending };
+  }
+  return { logs, ending: null };
 }
