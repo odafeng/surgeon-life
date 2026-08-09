@@ -174,13 +174,40 @@ export const FAMILY_ARC_EVENTS = [
         set: (s) => {
           s.flags.expectingChild = true;
         },
-        log: '你們開始準備。你把接下來三個月的刀表拿出來看，第一次覺得那些格子太滿了。',
+        log: '幾個月後的那個早上，餐桌上放著驗孕棒，兩條線。你盯著看了三秒，然後開始算預產期會落在哪一個月的班表上。算完才想起來要抱她一下——這個順序，你事後想了很久。',
       },
       {
         label: '「等生活穩定一點。」',
         effects: { familyBond: -6 },
         bond: { spouse: -6 },
         log: '你們都笑了——因為彼此都知道，那一天不會自己到來。',
+      },
+    ],
+  },
+  {
+    // 產檢是懷孕與出生之間唯一那一幕。它跟出生共用同一個旗標，
+    // 所以不可能出現「懷了孕但六年後又問要不要生」那種平行狀態。
+    id: 'fa_prenatal',
+    scene: 'clinic',
+    mood: 'weary',
+    stages: ['resident', 'attending', 'aesthetic'],
+    once: true,
+    // 跟出生同一年，但宣告在前面，所以先演產檢再演生產。
+    // 交給抽籤的話它會被 forced 的出生蓋過去，一輩子演不到。
+    forced: (s) => s.flags.expectingChild && s.family.kids === 0,
+    text: '高層次超音波，這個假你三個禮拜前就請了。臨時來了一台急刀，你打電話說：「你先進去，我盡量趕過去。」',
+    choices: [
+      {
+        label: '把刀交給別人，趕過去。',
+        effects: { familyBond: 12, self: -3, clinical: -1 },
+        bond: { spouse: 8 },
+        log: '你趕到時檢查剛結束。她把照片轉給你看：「醫師說手指頭都數得出來。」你盯著那張黑白的圖看了很久。',
+      },
+      {
+        label: '開完刀再說。',
+        effects: { familyBond: -10, self: -5 },
+        bond: { spouse: -8 },
+        log: '刀開了五個小時。你回撥時是晚上九點，她說：「沒關係，我有錄影。」那段影片你到現在都沒有看。',
       },
     ],
   },

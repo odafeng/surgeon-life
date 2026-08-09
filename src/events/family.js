@@ -35,6 +35,7 @@ export const FAMILY_EVENTS = [
   },
   {
     id: 'f_shift_calendar',
+    once: true,
     scene: 'home',
     mood: 'lifted',
     stages: ['pgy', 'resident', 'attending', 'aesthetic'],
@@ -89,28 +90,6 @@ export const FAMILY_EVENTS = [
     ],
   },
   {
-    id: 'f_wedding_call',
-    scene: 'home',
-    mood: 'wry',
-    stages: ['resident', 'attending'],
-    once: true,
-    weight: 2,
-    cond: (s) => s.family.stage === 'married',
-    text: '婚禮當天，敬酒到第三桌，你的手機響了。是科裡打來的。',
-    choices: [
-      {
-        label: '不接。今天不接。',
-        effects: { familyBond: 10, self: 3 },
-        log: '你把手機交給旁邊的人。晚上回撥時，事情已經有人處理好了。你想了很久，為什麼自己會覺得這件事需要愧疚。',
-      },
-      {
-        label: '走到外面接。',
-        effects: { familyBond: -8, self: -4 },
-        log: '你在飯店走廊上講了十二分鐘。回到宴會廳時音樂換了一首，你的位置上放著一碗涼掉的湯。',
-      },
-    ],
-  },
-  {
     id: 'f_honeymoon_late',
     scene: 'home',
     mood: 'wry',
@@ -121,75 +100,6 @@ export const FAMILY_EVENTS = [
     text: '蜜月從婚後第一年延到第三年，再延到「等升等以後」。旅行社的專員換了兩個，最後那位直接說：「醫師，這個檔期我先幫你保留，你確定了再說。」',
     effects: { familyBond: -6, self: -4 },
     log: '那個檔期後來過期了。你們最後去了三天兩夜的宜蘭，回程在雪隧裡塞了兩個小時——那是你們那幾年最長的一次獨處。',
-  },
-  {
-    id: 'f_pregnancy_news',
-    scene: 'home',
-    mood: 'lifted',
-    stages: ['resident', 'attending', 'aesthetic'],
-    once: true,
-    weight: 3,
-    cond: (s) =>
-      s.family.stage === 'married' &&
-      s.family.kids === 0 &&
-      !s.flags.expecting &&
-      s.alloc.family >= 15,
-    text: '你值完班回家的那個早上，餐桌上放著驗孕棒，兩條線。你盯著看了三秒，然後開始算預產期會落在哪一個月的班表上。',
-    effects: { familyBond: 10, self: 5 },
-    set: (s) => {
-      s.flags.expecting = true;
-    },
-    log: '你算出來是七月。算完才想起來要抱一下對方。這個順序，你事後想了很久。',
-  },
-  {
-    id: 'f_prenatal_missed',
-    scene: 'clinic',
-    mood: 'weary',
-    stages: ['resident', 'attending', 'aesthetic'],
-    weight: 3,
-    cond: (s) => s.flags.expecting === true,
-    text: '高層次超音波，這個假你三個禮拜前就請了。臨時來了一台急刀，你打電話說：「你先進去，我盡量趕過去。」',
-    choices: [
-      {
-        label: '把刀交給別人，趕過去。',
-        effects: { familyBond: 12, self: -3, clinical: -1 },
-        log: '你趕到時檢查剛結束。對方把照片轉給你看：「醫師說手指頭都數得出來。」你盯著那張黑白的圖看了很久。',
-      },
-      {
-        label: '開完刀再說。',
-        effects: { familyBond: -10, self: -5 },
-        log: '刀開了五個小時。你回撥時是晚上九點，對方說：「沒關係，我有錄影。」那段影片你到現在都沒有看。',
-      },
-    ],
-  },
-  {
-    id: 'f_birth_in_or',
-    scene: 'or',
-    mood: 'wry',
-    stages: ['resident', 'attending', 'aesthetic'],
-    weight: 4,
-    cond: (s) => s.flags.expecting === true,
-    text: '產房打來的時候，你正在關腹。護理師把手機貼到你耳邊，你聽見哭聲，然後聽見自己說：「我這邊還有二十分鐘。」',
-    choices: [
-      {
-        label: '請人代刀，趕去產房。',
-        effects: { familyBond: 15, self: 3 },
-        set: (s) => {
-          s.family.kids = Math.max(1, s.family.kids);
-          s.flags.expecting = false;
-        },
-        log: '你剪臍帶的時候手在抖，比你開任何一台刀都抖。主任後來說：「小孩只生一次，刀天天有。」他說得對，但那天你也確實欠了別人一台刀。',
-      },
-      {
-        label: '關完腹再去。',
-        effects: { familyBond: -8, self: -3 },
-        set: (s) => {
-          s.family.kids = Math.max(1, s.family.kids);
-          s.flags.expecting = false;
-        },
-        log: '你在恢復室外面換下手術衣。孩子的第一張照片是護理師拍的，時間戳記顯示，你們差了四十七分鐘。',
-      },
-    ],
   },
   {
     id: 'f_kid_first',
@@ -325,31 +235,6 @@ export const FAMILY_EVENTS = [
     text: '孩子搬出去住。房間空下來那天，你在門口站了一會兒，才發現這是你第一次好好看這個房間。',
     effects: { familyBond: -5, self: -5 },
     log: '牆上還貼著小學的獎狀。你看了上面的日期，那幾年你在拚升等。',
-  },
-  {
-    id: 'f_second_kid',
-    scene: 'home',
-    mood: 'wry',
-    stages: ['attending', 'aesthetic'],
-    once: true,
-    weight: 2,
-    cond: (s) => s.family.stage === 'married' && s.family.kids === 1 && s.alloc.family >= 20,
-    text: '「要不要再生一個？」這句話在餐桌上飄了三秒，然後你們同時低頭去看手機上的行事曆。',
-    choices: [
-      {
-        label: '生。',
-        effects: { familyBond: 10, money: -30 },
-        set: (s) => {
-          s.family.kids = 2;
-        },
-        log: '老二出生那天你在場。抱著他的時候你想起老大出生時你在關腹，然後你發現那件事補不回來，只能不要再欠一次。',
-      },
-      {
-        label: '不生。',
-        effects: { familyBond: -3, self: -2 },
-        log: '你們算了保母費、學費，還有你們兩個人各自剩下的時間。算完之後，誰都沒有再提。',
-      },
-    ],
   },
   {
     id: 'f_spouse_career',
@@ -580,38 +465,6 @@ export const FAMILY_EVENTS = [
         label: '自己開藥吃。',
         effects: { health: -3, self: -3 },
         log: '你用自己的名字開了降血壓藥。這在醫院很常見，常見到沒有人覺得奇怪。',
-      },
-    ],
-  },
-  {
-    id: 'f_divorce_papers',
-    scene: 'home',
-    mood: 'weary',
-    stages: ['attending', 'aesthetic'],
-    once: true,
-    weight: 3,
-    cond: (s) => s.family.stage === 'married' && s.attrs.familyBond < 30,
-    text: '餐桌上放著一份文件，不是帳單。對方說：「我不是要吵架，我只是想確認，我們現在這樣算什麼。」',
-    choices: [
-      {
-        label: '請對方再給你一年。',
-        effects: { familyBond: 5, self: -5 },
-        log: '對方問：「一年以後會不一樣嗎？」你說會。你們都聽得出來，這句話你三年前也說過。',
-      },
-      {
-        label: '把值班表推掉，兩個人好好談。',
-        cond: (s) => s.alloc.family >= 20,
-        effects: { familyBond: 12, self: 3, health: -2 },
-        log: '你們談了六個小時，中間哭了兩次。什麼問題都沒有解決，但那份文件被收回抽屜裡了。',
-      },
-      {
-        label: '簽。',
-        effects: { familyBond: -15, self: -10 },
-        set: (s) => {
-          s.family.stage = 'single';
-          s.people.spouse.gone = true;
-        },
-        log: '你搬去醫院附近的套房。第一個晚上你睡得很好，這件事讓你更難過。',
       },
     ],
   },
