@@ -58,9 +58,11 @@ surgeon-life/
 ### Task 1: 專案腳手架(工具鏈 + CI + ADR)
 
 **Files:**
+
 - Create: `package.json`, `eslint.config.js`, `.prettierrc.json`, `.gitignore`, `.github/workflows/ci.yml`, `.husky/pre-commit`, `docs/adr/0001-vanilla-js-no-build.md`, `tests/rng.test.js`(先放一個必敗測試佔位,Task 2 會實作)
 
 **Interfaces:**
+
 - Produces: `npm test`(vitest run)、`npx eslint .`、`npx prettier --check .` 三道檢查;pre-commit hook 跑 lint-staged。
 
 - [ ] **Step 1: 建立 package.json**
@@ -219,10 +221,12 @@ git commit -m "chore: scaffold tooling, CI, ADR 0001"
 ### Task 2: 可播種 RNG(`src/rng.js`)
 
 **Files:**
+
 - Create: `src/rng.js`
 - Test: `tests/rng.test.js`(擴充 Task 1 的檔案)
 
 **Interfaces:**
+
 - Produces: `createRng(seed:number) → { next():number(0..1), int(min:number,max:number):number(含兩端), chance(p:number):boolean, pick(arr:T[]):T }`
 
 - [ ] **Step 1: 擴充失敗測試**
@@ -299,10 +303,12 @@ git commit -m "feat: add seedable rng (mulberry32)"
 ### Task 3: 天賦擲骰(`src/talents.js`)
 
 **Files:**
+
 - Create: `src/talents.js`
 - Test: `tests/talents.test.js`
 
 **Interfaces:**
+
 - Consumes: `createRng` 產生的 rng 物件(只用 `int`)。
 - Produces:
   - `rollTalents(rng) → { exam:9, dexterity:1..10, research:1..10, charisma:1..10, social:1..10, constitution:1..10 }`
@@ -390,10 +396,12 @@ git commit -m "feat: talent roll with fixed exam talent"
 ### Task 4: Engine 核心 — state、職涯階段、配置驗證(`src/engine.js` 第一部分)
 
 **Files:**
+
 - Create: `src/engine.js`
 - Test: `tests/engine-core.test.js`
 
 **Interfaces:**
+
 - Consumes: `createRng`(Task 2)、`rollTalents`(Task 3)。
 - Produces(後續任務都依賴這些簽名):
   - `ALLOC_KEYS = ['clinical','teaching','research','family','personal']`
@@ -621,7 +629,8 @@ export function validateAllocation(state, alloc) {
   const out = {};
   for (const k of ALLOC_KEYS) {
     const v = alloc[k];
-    if (!Number.isInteger(v) || v < 0) throw new Error(`「${AXIS_LABELS[k]}」必須是 0 以上的整數月數`);
+    if (!Number.isInteger(v) || v < 0)
+      throw new Error(`「${AXIS_LABELS[k]}」必須是 0 以上的整數月數`);
     out[k] = v;
   }
   const sum = ALLOC_KEYS.reduce((s, k) => s + out[k], 0);
@@ -663,10 +672,12 @@ git commit -m "feat: engine core state, stages, allocation validation"
 ### Task 5: Engine 結算 — 成長、健康、薪水、升等、醫糾機率(`src/engine.js` 第二部分)
 
 **Files:**
+
 - Modify: `src/engine.js`(追加函式)
 - Test: `tests/engine-settle.test.js`
 
 **Interfaces:**
+
 - Consumes: Task 4 的 state 與 `getStage`/`clamp`。
 - Produces:
   - `applyGrowth(state, alloc)` — 時間 × 天賦斜率 → 能力成長,累加 stats 計數
@@ -709,7 +720,13 @@ import {
   malpracticeChance,
 } from '../src/engine.js';
 
-const alloc = (c, t, r, f, p) => ({ clinical: c, teaching: t, research: r, family: f, personal: p });
+const alloc = (c, t, r, f, p) => ({
+  clinical: c,
+  teaching: t,
+  research: r,
+  family: f,
+  personal: p,
+});
 
 describe('applyGrowth', () => {
   it('dexterity steepens the clinical growth curve', () => {
@@ -987,7 +1004,9 @@ const RANK_BONUS = { none: 0, vs: 0, assistant: 10, associate: 20, professor: 30
 export function settleMoney(state) {
   const stage = getStage(state);
   const salary =
-    stage.key === 'aesthetic' ? 60 + state.talents.social * 45 : stage.salary + RANK_BONUS[state.rank];
+    stage.key === 'aesthetic'
+      ? 60 + state.talents.social * 45
+      : stage.salary + RANK_BONUS[state.rank];
   const expenses = 40 + state.family.kids * 40 + (state.family.stage === 'married' ? 20 : 0);
   state.attrs.money += salary - expenses;
 }
@@ -1005,7 +1024,10 @@ export function settleGrant(state, alloc) {
   if (state.career !== 'surgery' || getStage(state).key !== 'attending') return null;
   if (alloc.research < 3) return null;
   state.grants.applied = true; // 申請紀錄本身就是副教授送審的門票
-  const p = Math.min(0.5, 0.1 + state.talents.research * 0.03 + (state.flags.phd === 'done' ? 0.1 : 0));
+  const p = Math.min(
+    0.5,
+    0.1 + state.talents.research * 0.03 + (state.flags.phd === 'done' ? 0.1 : 0),
+  );
   if (state.rng.chance(p)) {
     state.grants.yearsPI += 1;
     return `你的部級研究計畫通過了,今年以主持人身分執行(累計 ${state.grants.yearsPI} 年)。經費不多,但升等表上那一格,終於能填了。`;
@@ -1041,7 +1063,8 @@ export function settlePromotion(state) {
 
 export function malpracticeChance(state) {
   const stage = getStage(state);
-  if (state.career !== 'surgery' || (stage.key !== 'resident' && stage.key !== 'attending')) return 0;
+  if (state.career !== 'surgery' || (stage.key !== 'resident' && stage.key !== 'attending'))
+    return 0;
   let p = stage.key === 'attending' ? 0.08 : 0.04;
   p += Math.max(0, 65 - state.attrs.clinical) * 0.004;
   p -= state.talents.social * 0.02;
@@ -1067,10 +1090,12 @@ git commit -m "feat: growth, health, salary, promotion, malpractice formulas"
 ### Task 6: 事件資料(`src/events.js`)+ 資料完整性測試
 
 **Files:**
+
 - Create: `src/events.js`
 - Test: `tests/events-data.test.js`
 
 **Interfaces:**
+
 - Consumes: state 形狀(Task 4)。事件的 `cond`/`text`/`set` 都收 `state`;規劃結果經由 `state.alloc` 取得。
 - Produces:
   - `PROLOGUE: Array<{age:number, text:string, exam?:true, choices?:string[], outcome?:string}>`
@@ -1098,7 +1123,15 @@ import { describe, it, expect } from 'vitest';
 import { PROLOGUE, EVENTS } from '../src/events.js';
 
 const VALID_STAGES = ['pgy', 'resident', 'attending', 'aesthetic'];
-const VALID_EFFECT_KEYS = ['clinical', 'teaching', 'papers', 'self', 'health', 'familyBond', 'money'];
+const VALID_EFFECT_KEYS = [
+  'clinical',
+  'teaching',
+  'papers',
+  'self',
+  'health',
+  'familyBond',
+  'money',
+];
 const VALID_STAT_KEYS = ['surgeries', 'livesSaved', 'lawsuits', 'missedDinners'];
 
 describe('PROLOGUE', () => {
@@ -1129,7 +1162,8 @@ describe('EVENTS integrity', () => {
         for (const c of e.choices) {
           expect(typeof c.label, e.id).toBe('string');
           expect(typeof c.log, e.id).toBe('string');
-          for (const k of Object.keys(c.effects || {})) expect(VALID_EFFECT_KEYS, e.id).toContain(k);
+          for (const k of Object.keys(c.effects || {}))
+            expect(VALID_EFFECT_KEYS, e.id).toContain(k);
           for (const k of Object.keys(c.stats || {})) expect(VALID_STAT_KEYS, e.id).toContain(k);
         }
       } else {
@@ -1174,8 +1208,14 @@ Expected: FAIL(module 不存在)
 // stats 可用鍵:surgeries/livesSaved/lawsuits/missedDinners
 
 export const PROLOGUE = [
-  { age: 16, text: '16 歲。模擬考成績單發下來,你又是全校前三。導師在成績單上寫:「醫學系沒問題。」' },
-  { age: 17, text: '17 歲。過年圍爐,親戚輪流拍你的肩:「當醫生好啊,穩定,又賺錢。」你扒著飯,沒有說話。' },
+  {
+    age: 16,
+    text: '16 歲。模擬考成績單發下來,你又是全校前三。導師在成績單上寫:「醫學系沒問題。」',
+  },
+  {
+    age: 17,
+    text: '17 歲。過年圍爐,親戚輪流拍你的肩:「當醫生好啊,穩定,又賺錢。」你扒著飯,沒有說話。',
+  },
   {
     age: 18,
     exam: true,
@@ -1185,7 +1225,10 @@ export const PROLOGUE = [
   },
   { age: 19, text: '19 歲。白袍典禮,你宣讀醫師誓詞。台下的家長舉著手機,閃光燈此起彼落。' },
   { age: 21, text: '21 歲。大體解剖第一課,你們向大體老師鞠躬。從那天起,背書到凌晨三點成了日常。' },
-  { age: 23, text: '23 歲。醫院見習。你第一次進開刀房,看主治醫師把腫瘤從人體裡取出來。你在口罩後面,起了雞皮疙瘩。' },
+  {
+    age: 23,
+    text: '23 歲。醫院見習。你第一次進開刀房,看主治醫師把腫瘤從人體裡取出來。你在口罩後面,起了雞皮疙瘩。',
+  },
   { age: 24, text: '24 歲。國考通過,你拿到醫師執照。從這一刻起——你的人生,才真正開始要你自己選。' },
 ];
 
@@ -1223,8 +1266,16 @@ export const EVENTS = [
     weight: 2,
     text: '大學同學會。念資工的室友剛拿到新加坡的 offer,年薪是你的三倍。他問你:「你們醫師很賺吧?」',
     choices: [
-      { label: '笑著說還好', effects: { self: -2 }, log: '你笑得很得體。你在醫院練得最好的,常常是這個。' },
-      { label: '老實講薪水', effects: { self: 2 }, log: '整桌安靜了三秒。然後有人說:「可是你們是在救人啊。」你點點頭。這句話你之後會聽到很多次,通常在別人不想付錢的時候。' },
+      {
+        label: '笑著說還好',
+        effects: { self: -2 },
+        log: '你笑得很得體。你在醫院練得最好的,常常是這個。',
+      },
+      {
+        label: '老實講薪水',
+        effects: { self: 2 },
+        log: '整桌安靜了三秒。然後有人說:「可是你們是在救人啊。」你點點頭。這句話你之後會聽到很多次,通常在別人不想付錢的時候。',
+      },
     ],
   },
   {
@@ -1530,8 +1581,16 @@ export const EVENTS = [
     weight: 2,
     text: '醫學系同學會。當年成績在你後面的同學,現在是醫美診所院長,鑰匙圈上掛著新車的牌子。他真心地問你:「還在開大刀喔?辛苦欸。」',
     choices: [
-      { label: '有點羨慕。', effects: { self: -5 }, log: '回家的捷運上,你算了一下你們的時薪。然後你把手機收起來,決定不要再算了。' },
-      { label: '真心替他高興。', effects: { self: 2 }, log: '他過得好,你替他高興。你們只是選了不同的路——只是你的這條,是制度預設裡最虧的那條。' },
+      {
+        label: '有點羨慕。',
+        effects: { self: -5 },
+        log: '回家的捷運上,你算了一下你們的時薪。然後你把手機收起來,決定不要再算了。',
+      },
+      {
+        label: '真心替他高興。',
+        effects: { self: 2 },
+        log: '他過得好,你替他高興。你們只是選了不同的路——只是你的這條,是制度預設裡最虧的那條。',
+      },
       {
         label: '跟他多聊了幾句「行情」。',
         set: (s) => {
@@ -1588,8 +1647,16 @@ export const EVENTS = [
     once: true,
     text: '一位你當年從鬼門關拉回來的病人走進診所,是來打雷射的。她認出了你,愣住:「醫師……你怎麼在這裡?」',
     choices: [
-      { label: '笑著轉移話題。', effects: { self: -8 }, log: '她沒有再問。結帳時她多說了一句:「那時候,謝謝你。」你在診間坐了很久。' },
-      { label: '老實說:「我累了。」', effects: { self: -3 }, log: '她點點頭:「你們也是人。」這句話,你等了十幾年,結果是在這裡聽到的。' },
+      {
+        label: '笑著轉移話題。',
+        effects: { self: -8 },
+        log: '她沒有再問。結帳時她多說了一句:「那時候,謝謝你。」你在診間坐了很久。',
+      },
+      {
+        label: '老實說:「我累了。」',
+        effects: { self: -3 },
+        log: '她點點頭:「你們也是人。」這句話,你等了十幾年,結果是在這裡聽到的。',
+      },
     ],
   },
   {
@@ -1598,8 +1665,16 @@ export const EVENTS = [
     weight: 2,
     text: '新聞:「外科人力荒,急診壅塞,病患苦等 14 小時。」你在候診室的電視上看到老東家的名字。',
     choices: [
-      { label: '轉台。', effects: { self: -4 }, log: '下一台是美食節目。候診的客人們聊著醫美療程,沒有人抬頭。' },
-      { label: '看完整則報導。', effects: { self: -1 }, log: '記者訪問了你以前的學弟。他的黑眼圈,隔著螢幕都看得到。' },
+      {
+        label: '轉台。',
+        effects: { self: -4 },
+        log: '下一台是美食節目。候診的客人們聊著醫美療程,沒有人抬頭。',
+      },
+      {
+        label: '看完整則報導。',
+        effects: { self: -1 },
+        log: '記者訪問了你以前的學弟。他的黑眼圈,隔著螢幕都看得到。',
+      },
     ],
   },
 
@@ -1643,7 +1718,8 @@ export const EVENTS = [
     id: 'f_breakup',
     stages: ['pgy', 'resident', 'attending', 'aesthetic'],
     weight: 4,
-    cond: (s) => (s.family.stage === 'dating' || s.family.stage === 'steady') && s.alloc.family === 0,
+    cond: (s) =>
+      (s.family.stage === 'dating' || s.family.stage === 'steady') && s.alloc.family === 0,
     text: '你已經一個多月沒有回覆超過三個字的訊息。對方留下最後一句話:「你救得了病人,救不了我們。」',
     set: (s) => {
       s.family.stage = 'single';
@@ -1782,10 +1858,12 @@ git commit -m "feat: prologue and event data with integrity tests"
 ### Task 7: 結局系統(`src/endings.js`)
 
 **Files:**
+
 - Create: `src/endings.js`
 - Test: `tests/endings.test.js`
 
 **Interfaces:**
+
 - Consumes: state 形狀(Task 4)。
 - Produces: `decideEnding(state, cause) → { id, title, body, filterLine:string|null, filterKind:'gray'|'peace'|null, settlement:[{label,value}] }`
   - `cause`: `'death' | 'exit-specialty' | 'retire'`
@@ -1987,10 +2065,12 @@ git commit -m "feat: ending resolution with self filter and life settlement"
 ### Task 8: 回合主流程 `playYear`(`src/engine.js` 第三部分)
 
 **Files:**
+
 - Modify: `src/engine.js`(追加 `pickEvents` 與 `playYear`;新增 import `EVENTS`、`decideEnding`)
 - Test: `tests/play-year.test.js`
 
 **Interfaces:**
+
 - Consumes: `EVENTS`(Task 6)、`decideEnding`(Task 7)、Task 4/5 全部函式。
 - Produces:
   - `pickEvents(state) → Event[]`(強制事件 + 醫糾機率注入 + 隨機加權抽最多 2 個)
@@ -2006,7 +2086,13 @@ import { describe, it, expect } from 'vitest';
 import { createGame, playYear, pickEvents } from '../src/engine.js';
 
 const first = async () => 0;
-const alloc = (c, t, r, f, p) => ({ clinical: c, teaching: t, research: r, family: f, personal: p });
+const alloc = (c, t, r, f, p) => ({
+  clinical: c,
+  teaching: t,
+  research: r,
+  family: f,
+  personal: p,
+});
 
 describe('pickEvents', () => {
   it('forces the specialty event at age 26', () => {
@@ -2217,9 +2303,11 @@ git commit -m "feat: yearly turn loop with event picking and endings"
 ### Task 9: Smoke test — 隨機策略自動玩完 N 場
 
 **Files:**
+
 - Test: `tests/smoke.test.js`
 
 **Interfaces:**
+
 - Consumes: `createGame`、`playYear`、`getStage`、`ALLOC_KEYS`。
 
 - [ ] **Step 1: 寫測試 `tests/smoke.test.js`**
@@ -2293,9 +2381,11 @@ git commit -m "test: random playthrough smoke tests"
 ### Task 10: UI(`index.html` + `style.css` + `src/ui.js`)
 
 **Files:**
+
 - Create: `index.html`, `style.css`, `src/ui.js`
 
 **Interfaces:**
+
 - Consumes: `createGame`、`playYear`、`getStage`、`ALLOC_KEYS`、`AXIS_LABELS`(engine.js);`TALENT_LABELS`(talents.js);`PROLOGUE`(events.js)。
 - Produces: 完整可玩流程:開始畫面 → 天賦擲骰 → 序章(含 18 歲聯考假選擇)→ 每年「規劃 → 進行」→ 結局 + 結算單 + 重開。
 
@@ -2785,6 +2875,7 @@ git commit -m "feat: playable single-page UI"
 ### Task 11: README、部署說明、最終驗證
 
 **Files:**
+
 - Create: `README.md`
 
 - [ ] **Step 1: 撰寫 `README.md`**
