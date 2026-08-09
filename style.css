@@ -1019,3 +1019,39 @@ body {
   color: var(--seal);
   font-weight: 600;
 }
+
+/* ───────── 結局圖鑑 ───────── */
+#codex {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(calc(var(--u) * 21), 1fr));
+  gap: calc(var(--u) * 0.4) calc(var(--u) * 1.4);
+  margin-top: calc(var(--u) * 0.6);
+}
+.cdx {
+  font-size: calc(var(--u) * 1.1) !important;
+  line-height: 1.6 !important;
+  padding: calc(var(--u) * 0.25) 0;
+}
+.cdx b {
+  display: block;
+  font-weight: 600;
+  color: var(--ink);
+}
+.cdx s {
+  text-decoration: none;
+  display: block;
+  color: #7d745f;
+  font-size: calc(var(--u) * 0.98);
+}
+.cdx.locked b,
+.cdx.locked s {
+  color: #a9a08b;
+}
+.cdx.now b {
+  color: var(--seal);
+}
+.cdx.now b::after {
+  content: '　← 這一局';
+  font-size: calc(var(--u) * 0.95);
+  font-weight: 400;
+}

@@ -244,7 +244,8 @@ export const CORE_EVENTS = [
     scene: 'aesthetic',
     stages: ['attending'],
     once: true,
-    cond: (s) => s.flags.aestheticCurious === true || s.attrs.money < 100,
+    // 主治第一年就被挖角不合理。要嘛你自己動過念頭，要嘛你真的欠錢。
+    cond: (s) => s.age >= 36 && (s.flags.aestheticCurious === true || s.attrs.money < 0),
     text: '醫美集團的獵頭約你喝咖啡，開出的保障月薪是你現在的三倍，「而且不用值班，沒有醫糾。」',
     choices: [
       {

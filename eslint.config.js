@@ -10,7 +10,14 @@ export default [
     rules: { 'no-irregular-whitespace': ['error', { skipTemplates: true, skipStrings: true }] },
   },
   {
-    files: ['src/ui.js', 'src/view.js', 'src/alloc-panel.js', 'src/action-panel.js', 'src/save.js'],
+    files: [
+      'src/ui.js',
+      'src/view.js',
+      'src/alloc-panel.js',
+      'src/action-panel.js',
+      'src/save.js',
+      'src/collection.js',
+    ],
     languageOptions: {
       globals: {
         document: 'readonly',

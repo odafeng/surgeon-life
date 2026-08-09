@@ -17,6 +17,7 @@ import {
   renderStatusPanel,
   renderLogPanel,
   renderEnding,
+  renderCollectionNote,
 } from './view.js';
 
 let state = null;
@@ -155,6 +156,7 @@ function refreshContinueButton() {
   if (info) btn.textContent = `繼續上次的人生（${info.age} 歲）`;
 }
 refreshContinueButton();
+renderCollectionNote();
 
 $('btn-start').onclick = async () => {
   state = createGame(Date.now() >>> 0);

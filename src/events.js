@@ -10,6 +10,11 @@ import { AESTHETIC_EVENTS } from './events/aesthetic.js';
 import { FAMILY_EVENTS } from './events/family.js';
 import { CORE_EVENTS } from './events/core.js';
 import { MENTOR_EVENTS } from './events/people-mentor.js';
+import { PEER_EVENTS } from './events/people-peer.js';
+import { JUNIOR_EVENTS } from './events/people-junior.js';
+import { NURSE_EVENTS } from './events/people-nurse.js';
+import { CHIEF_EVENTS } from './events/people-chief.js';
+import { PATIENT_EVENTS } from './events/people-patient.js';
 
 export const EVENTS = [
   ...PGY_EVENTS,
@@ -20,4 +25,9 @@ export const EVENTS = [
   ...FAMILY_EVENTS,
   ...CORE_EVENTS,
   ...MENTOR_EVENTS,
+  ...PEER_EVENTS,
+  ...JUNIOR_EVENTS,
+  ...NURSE_EVENTS,
+  ...CHIEF_EVENTS,
+  ...PATIENT_EVENTS,
 ];

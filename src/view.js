@@ -2,6 +2,7 @@
 import { getStage, AXIS_LABELS, ALLOC_KEYS, nextPromotionGate } from './engine.js';
 import { TALENT_LABELS } from './talents.js';
 import { PEOPLE } from './characters.js';
+import { ALL_ENDINGS, markSeen, collectionProgress } from './collection.js';
 
 export const $ = (id) => document.getElementById(id);
 export const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -302,7 +303,26 @@ export function renderEnding(ending) {
   $('settlement').innerHTML = ending.settlement
     .map((r) => `<tr><td>${escapeHtml(r.label)}</td><td>${escapeHtml(r.value)}</td></tr>`)
     .join('');
+  markSeen(ending.id);
+  const { seen, total, ids } = collectionProgress();
+  $('codex-title').textContent = `結局圖鑑　${seen} ／ ${total}`;
+  $('codex').innerHTML = ALL_ENDINGS.map((e) => {
+    const got = ids.has(e.id);
+    const now = e.id === ending.id;
+    return (
+      `<p class="cdx ${got ? '' : 'locked'} ${now ? 'now' : ''}">` +
+      `<b>${got ? escapeHtml(e.title) : '？？？'}</b>` +
+      `<s>${got ? escapeHtml(e.hint) : '尚未走到'}</s></p>`
+    );
+  }).join('');
+
   $('screen-ending').classList.remove('hidden');
+}
+
+export function renderCollectionNote() {
+  const { seen, total } = collectionProgress();
+  $('collection-note').textContent =
+    seen > 0 ? `你已經走過 ${seen} 種結局，還有 ${total - seen} 種沒有見過。` : '';
 }
 
 export { AXIS_LABELS };

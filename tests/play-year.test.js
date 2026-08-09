@@ -87,7 +87,12 @@ describe('playYear', () => {
   it('first attending year logs the vs promotion', async () => {
     const s = createGame(1);
     s.age = 32;
-    const { logs } = await playYear(s, alloc(50, 20, 20, 5, 5), first);
+    // 一律選第一個會誤踩到離開外科的選項，這裡明確留在外科
+    const stay = async (ev) => {
+      const bail = ev.choices.findIndex((c) => /醫美|離開|走。你累了/.test(c.label));
+      return bail === 0 ? 1 : 0;
+    };
+    const { logs } = await playYear(s, alloc(50, 20, 20, 5, 5), stay);
     expect(logs.some((l) => l.text.includes('主治醫師'))).toBe(true);
     expect(s.rank).toBe('vs');
   });
