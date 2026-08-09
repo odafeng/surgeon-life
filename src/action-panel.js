@@ -4,6 +4,8 @@ import {
   availableActions,
   runAction,
   descOf,
+  repeatFactor,
+  settleStreaks,
   ACTIONS,
   ACTION_GROUPS,
 } from './actions.js';
@@ -66,10 +68,16 @@ export function openActionPanel(state) {
         items
           .map((a) => {
             const afford = usable.includes(a);
+            // 衰退要看得見。玩家可以決定繼續做，但不能是不知情地變弱。
+            const k = repeatFactor(state, a);
+            const streak = (state.actionStreak || {})[a.id] || 0;
             return (
               `<button class="act ${afford ? '' : 'poor'}" data-id="${a.id}" ${afford ? '' : 'disabled'}>` +
               `<span class="act-cost">${a.cost}</span>` +
               (fresh.has(a.id) ? `<i class="act-new">新</i>` : '') +
+              (k < 1
+                ? `<i class="act-worn">連做 ${streak} 年・剩 ${Math.round(k * 100)}%</i>`
+                : '') +
               `<span class="act-name">${a.label}</span>` +
               `<span class="act-desc">${descOf(a, state)}</span>` +
               `</button>`
@@ -119,6 +127,7 @@ export function openActionPanel(state) {
       $('btn-act-end').removeEventListener('click', end);
       $('act').classList.add('hidden');
       state.lastActions = [...done];
+      settleStreaks(state, done);
       resolve(logs);
     };
     $('act-list').addEventListener('click', onClick);

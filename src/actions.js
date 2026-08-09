@@ -26,6 +26,33 @@ export function descOf(action, state) {
   return typeof action.desc === 'function' ? action.desc(state) : action.desc;
 }
 
+/**
+ * 連續做同一件事，收穫會衰退。
+ *
+ * 沒有這條的話，每年的最優解都一樣（練刀＋讀期刊＋運動），
+ * 行動階段就不是決策，是雜務——試玩到第七年就有人開始按快轉。
+ * 只有 decays 的行動吃這條：陪家人、去看恩師這種，重複本身就是重點。
+ */
+const DECAY = [1, 0.75, 0.55, 0.45];
+
+export function repeatFactor(state, action) {
+  if (!action.decays) return 1;
+  const n = (state.actionStreak || {})[action.id] || 0;
+  return DECAY[Math.min(n, DECAY.length - 1)];
+}
+
+/** 這一年結束後結算連續次數。做了 +1，沒做 −2——停兩年就回到全效。 */
+export function settleStreaks(state, doneIds) {
+  state.actionStreak = state.actionStreak || {};
+  for (const a of ACTIONS) {
+    if (!a.decays) continue;
+    const n = state.actionStreak[a.id] || 0;
+    const next = doneIds.includes(a.id) ? n + 1 : Math.max(0, n - 2);
+    if (next === 0) delete state.actionStreak[a.id];
+    else state.actionStreak[a.id] = next;
+  }
+}
+
 export const ACTIONS = [
   // ── 精進 ──
   {
@@ -34,8 +61,9 @@ export const ACTIONS = [
     desc: '大體工作坊、模擬器、一個人在刀房打結。',
     cost: 2,
     cond: surgical,
-    apply: (s) => {
-      const gain = 2 + s.talents.dexterity * 0.35;
+    decays: true,
+    apply: (s, k) => {
+      const gain = (2 + s.talents.dexterity * 0.35) * k;
       s.attrs.clinical = clamp(s.attrs.clinical + gain);
       s.attrs.health = clamp(s.attrs.health - 1);
       return `你多練了一個週末。手感這種東西，停一個月要花三個月補回來。（臨床 +${gain.toFixed(1)}）`;
@@ -47,10 +75,12 @@ export const ACTIONS = [
     desc: '跟一台不是你的刀，站在旁邊看資深的怎麼處理。',
     cost: 2,
     cond: surgical,
-    apply: (s) => {
-      s.attrs.clinical = clamp(s.attrs.clinical + 2.5);
+    decays: true,
+    apply: (s, k) => {
+      const gain = 2.5 * k;
+      s.attrs.clinical = clamp(s.attrs.clinical + gain);
       s.attrs.self = clamp(s.attrs.self + 2);
-      return '你站了七個小時，什麼都沒做，但看懂了那個轉折怎麼過。（臨床 +2.5　自我 +2）';
+      return `你站了七個小時，什麼都沒做，但看懂了那個轉折怎麼過。（臨床 +${gain.toFixed(1)}　自我 +2）`;
     },
   },
   {
@@ -58,10 +88,12 @@ export const ACTIONS = [
     label: '讀期刊',
     desc: '把積了半年的文獻補一補。',
     cost: 1,
-    apply: (s) => {
-      s.attrs.clinical = clamp(s.attrs.clinical + 1);
-      s.attrs.papers += 6;
-      return '你在通勤時讀完三篇。有一篇的結論和你的做法相反，你想了很久。（臨床 +1　計分 +6）';
+    decays: true,
+    apply: (s, k) => {
+      s.attrs.clinical = clamp(s.attrs.clinical + k);
+      const gain = Math.round(6 * k);
+      s.attrs.papers += gain;
+      return `你在通勤時讀完三篇。有一篇的結論和你的做法相反，你想了很久。（臨床 +${k.toFixed(1)}　計分 +${gain}）`;
     },
   },
   {
@@ -70,11 +102,12 @@ export const ACTIONS = [
     desc: '自費出國看一週。回來還要跟刀、送資格審查，才輪得到你自己上。',
     cost: 4,
     cond: (s) => surgical(s) && s.attrs.clinical >= 45,
-    apply: (s) => {
-      s.attrs.clinical = clamp(s.attrs.clinical + 7);
+    decays: true,
+    apply: (s, k) => {
+      s.attrs.clinical = clamp(s.attrs.clinical + 7 * k);
       s.attrs.health = clamp(s.attrs.health - 3);
       s.attrs.money -= 45;
-      return '你自費四十五萬去看了一週，回來又跟了十台、補齊了認證。醫院很高興，補助的部分是零。（臨床 +7　存款 −45 萬）';
+      return `你自費四十五萬去看了一週，回來又跟了十台、補齊了認證。醫院很高興，補助的部分是零。（臨床 +${(7 * k).toFixed(1)}　存款 −45 萬）`;
     },
   },
 
@@ -88,8 +121,9 @@ export const ACTIONS = [
         ? '關掉一週的刀表，把那篇卡了兩年的稿子寫完。'
         : '值班室的空檔、下刀後的深夜，一段一段把它擠出來。',
     cost: 3,
-    apply: (s) => {
-      const gain = 14 + s.talents.research * 3;
+    decays: true,
+    apply: (s, k) => {
+      const gain = (14 + s.talents.research * 3) * k;
       s.attrs.papers += gain;
       s.attrs.health = clamp(s.attrs.health - 2);
       return `連續三個週末的醫局，只剩你的螢幕亮著。（計分 +${Math.round(gain)}　健康 −2）`;
@@ -140,8 +174,9 @@ export const ACTIONS = [
     label: '認真帶學生',
     desc: '不是點名，是真的教。',
     cost: 2,
-    apply: (s) => {
-      const gain = 5 + s.talents.charisma * 0.8;
+    decays: true,
+    apply: (s, k) => {
+      const gain = (5 + s.talents.charisma * 0.8) * k;
       s.attrs.teaching = clamp(s.attrs.teaching + gain);
       s.attrs.self = clamp(s.attrs.self + 2);
       return `有個學生下刀後追出來問問題，你們在樓梯間站著講了半小時。（教學 +${gain.toFixed(1)}　自我 +2）`;
@@ -152,10 +187,11 @@ export const ACTIONS = [
     label: '補教學檔案',
     desc: '把做過的教學登錄成可以計分的格式。',
     cost: 1,
-    apply: (s) => {
-      s.attrs.teaching = clamp(s.attrs.teaching + 4);
+    decays: true,
+    apply: (s, k) => {
+      s.attrs.teaching = clamp(s.attrs.teaching + 4 * k);
       s.attrs.self = clamp(s.attrs.self - 2);
-      return '晨會報告、床邊教學、實習醫學生的評核表——你一筆一筆補進系統。教學是真的，表格也是真的，兩者關係不大。（教學 +4　自我 −2）';
+      return `晨會報告、床邊教學、實習醫學生的評核表——你一筆一筆補進系統。教學是真的，表格也是真的，兩者關係不大。（教學 +${(4 * k).toFixed(1)}　自我 −2）`;
     },
   },
   {
@@ -163,11 +199,12 @@ export const ACTIONS = [
     label: '跑學會',
     desc: '年會、口頭報告、走廊上的握手。',
     cost: 2,
-    apply: (s) => {
-      s.attrs.teaching = clamp(s.attrs.teaching + 3);
+    decays: true,
+    apply: (s, k) => {
+      s.attrs.teaching = clamp(s.attrs.teaching + 3 * k);
       s.attrs.money -= 18;
       s.flags.network = (s.flags.network || 0) + 1;
-      return '你報了十二分鐘，台下六個人。但茶敘時有人記住了你的名字。（教學 +3　存款 −18 萬）';
+      return `你報了十二分鐘，台下六個人。但茶敘時有人記住了你的名字。（教學 +${(3 * k).toFixed(1)}　存款 −18 萬）`;
     },
   },
   {
@@ -369,5 +406,5 @@ export function availableActions(state, energyLeft, done) {
 }
 
 export function runAction(state, action) {
-  return action.apply(state);
+  return action.apply(state, repeatFactor(state, action));
 }

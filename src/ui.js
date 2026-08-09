@@ -3,6 +3,7 @@ import { createGame, playYear, getStage, conformAllocation } from './engine.js';
 import { PROLOGUE } from './events.js';
 import { openAllocPanel } from './alloc-panel.js';
 import { openActionPanel } from './action-panel.js';
+import { settleStreaks } from './actions.js';
 import { save, load, hasSave, clearSave, describeSave } from './save.js';
 import {
   $,
@@ -126,6 +127,8 @@ async function yearLoop() {
       renderHud(state);
     } else {
       autoYears -= 1;
+      // 快轉跳過行動階段，等於這一年什麼都沒做——連續次數也該跟著退。
+      settleStreaks(state, []);
       // 換階段時停下來。臨床下限變了，去年的配置未必還合法，
       // 而且升上住院醫師或主治本來就是該重新想一次的時刻。
       state.alloc = conformAllocation(state, state.alloc);

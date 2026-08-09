@@ -944,6 +944,17 @@ body {
   border-style: solid;
   border-color: var(--seal);
 }
+.act-worn {
+  position: absolute;
+  top: calc(var(--u) * 0.5);
+  right: calc(var(--u) * 0.5);
+  font-style: normal;
+  font-size: calc(var(--u) * 0.85);
+  letter-spacing: 0.04em;
+  color: #8a7f68;
+  border: 1px solid #ded3ba;
+  padding: 0 calc(var(--u) * 0.35);
+}
 .act-new {
   position: absolute;
   top: calc(var(--u) * 0.5);
