@@ -209,7 +209,7 @@ export const FAMILY_EVENTS = [
     stages: ['resident', 'attending'],
     weight: 3,
     cond: (s) => s.family.kids > 0,
-    text: '孩子燒到三十九度八，對方在急診等叫號。你人在開刀房，隔著門聽助理轉述訊息：「他說沒關係，你忙。」',
+    text: '孩子燒到三十九度八，對方在急診等叫號。你人在開刀房，隔著門聽助理轉述訊息：「她說沒關係，你忙。」',
     choices: [
       {
         label: '刀一結束就衝去急診。',

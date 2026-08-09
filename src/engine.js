@@ -554,6 +554,9 @@ export function pickEvents(state) {
 
 const STAGE_TRANSITION_LOGS = {
   resident: '你成為外科住院醫師。值班表寄來了：這個月，你有十一天不會看到太陽下山。',
+  // 升等的規則要在第一年就講清楚。看不到門檻的人不是做了選擇，是十年後才發現有這回事。
+  attending:
+    '你升上主治醫師。人事室給你一張表，上面寫著從今年起怎麼算你：歸類計分、教學服務分數。第一關是助理教授，300 點。',
 };
 
 const BANKRUPT_LIMIT = -400;
@@ -572,6 +575,10 @@ export async function playYear(state, alloc, chooser, onLog) {
   applyGrowth(state, alloc);
 
   for (const e of pickEvents(state)) {
+    // 條件是抽籤那一刻算的，但事件是一幕一幕演的——前一幕可能讓後一幕失去前提。
+    // （孩子都出生了，才問「要不要有個孩子」。）演之前再驗一次，不成立就跳過。
+    if (e.cond && !e.cond(state)) continue;
+    if (e.forced && !e.forced(state)) continue;
     if (e.once) state.used.push(e.id);
     const text = typeof e.text === 'function' ? e.text(state) : e.text;
     if (e.choices) {

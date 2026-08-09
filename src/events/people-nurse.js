@@ -91,8 +91,9 @@ export const NURSE_EVENTS = [
     priority: true,
     stages: ['attending'],
     once: true,
-    weight: 4,
-    cond: (s) => N(s).stage === 0,
+    // 「第一台刀」只有在真的是第一年才成立。交給抽籤的話，
+    // 它可能在你當了三年主治之後才演，那句台詞就變成謊話。
+    forced: (s) => N(s).stage === 0 && !N(s).retired,
     text: '你當主治的第一台刀。阿蘭姐把器械台推到一個角度，說：「跟你以前一樣。」',
     effects: { clinical: 2, self: 6 },
     bond: { nurse: 6 },

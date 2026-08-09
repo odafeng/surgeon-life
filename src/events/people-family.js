@@ -187,10 +187,10 @@ export const FAMILY_ARC_EVENTS = [
     stages: ['resident', 'attending', 'aesthetic'],
     once: true,
     forced: (s) => s.flags.expectingChild && s.family.kids === 0,
-    text: '孩子出生那天，你在開刀。護理師把手機舉到無影燈旁邊給你看照片。',
+    text: '孩子出生那天，你在開刀。護理師站在無菌範圍外，把手機螢幕轉過來，隔著兩公尺給你看了照片。',
     effects: { familyBond: 8, self: 6 },
     bond: { spouse: 5 },
-    memory: '孩子出生那天你在開刀。護理師把手機舉到無影燈旁邊給你看照片。',
+    memory: '孩子出生那天你在開刀。護理師隔著兩公尺，把手機螢幕轉過來給你看。',
     set: (s) => {
       s.family.kids = 1;
       s.family.children.push({ bornAt: s.age });
@@ -199,7 +199,7 @@ export const FAMILY_ARC_EVENTS = [
       s.family.floor = s.flags.unwed ? 10 : 25;
       s.flags.expectingChild = false;
     },
-    log: '你隔著口罩笑了，眼睛有點酸。那台刀你多花了二十分鐘，因為手一直在抖。',
+    log: '你隔著口罩笑了，眼睛有點酸。然後你退開兩步，讓學弟接手收尾——手在抖的時候還硬要關腹，那不是敬業，是拿病人賭。',
   },
   {
     id: 'fa_first_steps',
@@ -462,7 +462,7 @@ export const FAMILY_ARC_EVENTS = [
         effects: { self: 8, health: -6, familyBond: 8 },
         bond: { spouse: 16 },
         memory: '郁涵有一個等很久的外派機會，你說：你去，孩子我來想辦法。',
-        log: '你把刀表改成早班為主，接送、聯絡簿、發燒的夜晚都是你。那三年你瘦了七公斤，但你們兩個都沒有後悔。',
+        log: '你把刀表改成早班為主。接送、聯絡簿、發燒的夜晚，從這個月起都是你的。送她上飛機那天，你們兩個誰都沒有說後悔。',
       },
       {
         label: '什麼都沒說。',
