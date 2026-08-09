@@ -1,5 +1,6 @@
 // 結局判定。順序即優先序：越特殊的越前面。
 // 每個結局都要留下代價，不存在「全拿」的結局——這是整個遊戲的主旨。
+import { relationshipSummary, PEOPLE } from './characters.js';
 
 /** 有沒有孩子，結局文字要講對——結算單就在下面，講錯馬上穿幫。 */
 function kin(state) {
@@ -52,6 +53,46 @@ function baseEnding(state, cause) {
       title: '診所的租金又漲了',
       scene: 'aesthetic',
       body: '你以為離開健保就是出路。但你不擅長招呼客人，不擅長直播，不擅長把療程包裝成夢想。你的技術在這裡值不了錢——你這才發現，原來在哪裡都一樣：這個世界從來沒有打算為技術本身付錢。',
+    };
+
+  // 你接下了黃振邦的位置，然後開始說他當年說過的話
+  if (state.people?.chief?.succeeded)
+    return {
+      id: 'became_him',
+      title: '你坐上了那張椅子',
+      scene: 'office',
+      body: '你當了部主任。你要年輕人交論文、顧績效、別惹事，因為你現在知道不交會怎樣。有一天你在會議上聽見自己的聲音，發現那是黃振邦的語氣。你曾經很討厭那個語氣。你現在懂了，但懂了也沒有比較好受——你成為了那個你二十年前發誓不要成為的人，而且你是為了保護底下的人才成為的。',
+    };
+
+  // 恩師成了你的病人，而你親手開了那台刀
+  if (state.flags?.mentorOperated && state.flags?.mentorSurvived)
+    return {
+      id: 'his_hands',
+      title: '他教你的那雙手',
+      scene: 'or',
+      body: `你這一生開過的所有刀裡，最重的那一台，病人是${PEOPLE.mentor.name}。你用他教你的每一個動作，把他從你們都很熟悉的那個地方拉回來。退休那天你收拾櫃子，翻到他留給你的筆記，最後一頁寫著「這一台，我沒有把握」。你在旁邊補了一行：我也是。然後你把本子放進紙箱，帶回家。`,
+    };
+
+  // 你親手開了那台刀，而他沒有下手術台
+  if (state.flags?.mentorDiedOnTable)
+    return {
+      id: 'on_my_table',
+      title: '他死在我的手上',
+      scene: 'or',
+      body: `你這一生救回過幾百個人，沒有一個抵得過那一個。${PEOPLE.mentor.name}死在你的手術台上，而你做了所有他教過你的事。從那之後你還是開刀，開得比以前更謹慎，也更久——你不敢停下來，因為一停下來，你就會回到那第七個小時。有人說你後來變得沉默。他們不知道你是在聽，聽有沒有人講到他的名字。`,
+    };
+
+  // 你留到最後，而同梯和學弟都走了
+  if (
+    state.people?.peer?.path !== 'stayed' &&
+    state.people?.junior?.path === 'left' &&
+    a.clinical >= 65
+  )
+    return {
+      id: 'last_one',
+      title: '最後一個還在的人',
+      scene: 'corridor',
+      body: `${PEOPLE.peer.name}走了，${PEOPLE.junior.name}也走了。你查房的時候會經過他們以前的位置，那裡現在坐著你叫不出名字的人。你還在開刀，刀還是開得很好。只是晨會的時候你環顧一圈，發現整個科裡，記得十年前那些事的人，只剩下你一個。你成為了資歷最深的那個人——這不是成就，這是倖存。`,
     };
 
   if (state.rank === 'professor' && a.clinical < 60)
@@ -112,6 +153,22 @@ function baseEnding(state, cause) {
   };
 }
 
+/**
+ * 從一生的定義性時刻裡挑出要唸回來的。
+ * 太多會失焦，所以取前中後——開頭是你怎麼開始的，中間是你變成什麼樣，最後是你留下什麼。
+ */
+function pickMemories(state, max = 8) {
+  const all = state.memories ?? [];
+  if (all.length <= max) return all;
+  const head = all.slice(0, 2);
+  const tail = all.slice(-3);
+  const middle = all.slice(2, -3);
+  const need = max - head.length - tail.length;
+  const step = middle.length / need;
+  const mid = Array.from({ length: need }, (_, i) => middle[Math.floor(i * step)]);
+  return [...head, ...mid, ...tail];
+}
+
 const RANK_LABELS = {
   none: '未升主治',
   vs: '主治醫師',
@@ -146,6 +203,7 @@ export function decideEnding(state, cause) {
     { label: '負債的年份', value: state.stats.debtYears ? `${state.stats.debtYears} 年` : '無' },
     { label: '最終存款', value: `${Math.round(a.money)} 萬` },
     { label: '孩子', value: state.family.kids > 0 ? `${state.family.kids} 個` : '無' },
+    ...relationshipSummary(state),
   ];
-  return { ...e, filterKind, filterLine, settlement };
+  return { ...e, filterKind, filterLine, settlement, memories: pickMemories(state) };
 }

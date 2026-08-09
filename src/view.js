@@ -1,6 +1,7 @@
 // DOM 渲染層。只碰畫面，不碰規則。
 import { getStage, AXIS_LABELS, ALLOC_KEYS, nextPromotionGate } from './engine.js';
 import { TALENT_LABELS } from './talents.js';
+import { PEOPLE } from './characters.js';
 
 export const $ = (id) => document.getElementById(id);
 export const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -224,6 +225,36 @@ export function renderStatusPanel(state) {
     .map(([k, v]) => `<li><span>${escapeHtml(k)}</span><span>${escapeHtml(v)}</span></li>`)
     .join('');
 
+  // 人際。只顯示已經登場的人——還沒遇到的不該提前劇透。
+  const bondWord = (v) =>
+    v >= 80 ? '極深' : v >= 60 ? '深' : v >= 40 ? '普通' : v >= 20 ? '疏遠' : '幾乎斷了';
+  const met = Object.values(PEOPLE).filter((p) => {
+    const st = state.people?.[p.key];
+    return st && (st.stage > 0 || st.bond > 0);
+  });
+  $('sp-people').innerHTML = met.length
+    ? met
+        .map((p) => {
+          const st = state.people[p.key];
+          const note = st.gone
+            ? '已故'
+            : st.retired
+              ? '已退休'
+              : st.path === 'left'
+                ? '離開外科'
+                : st.path === 'broken'
+                  ? '撐不住了'
+                  : st.path === 'stayed'
+                    ? '還在'
+                    : bondWord(st.bond);
+          return (
+            `<li><span>${escapeHtml(p.title)}・${escapeHtml(p.name)}</span>` +
+            `<span>${escapeHtml(note)}</span></li>`
+          );
+        })
+        .join('')
+    : '<li><span>還沒有誰在你的人生裡留下來</span><span></span></li>';
+
   const gate = nextPromotionGate(state);
   $('sp-gate').textContent = gate
     ? `下一關：${gate.label}。需要歸類計分 ${gate.papers} 點(目前 ${Math.round(a.papers)})、教學服務 70 分(目前 ${Math.round(a.teaching)})${
@@ -257,6 +288,17 @@ export function renderEnding(ending) {
   const f = $('ending-filter');
   f.textContent = ending.filterLine || '';
   f.className = ending.filterKind || '';
+  const mem = $('ending-memories');
+  if (ending.memories?.length) {
+    mem.innerHTML =
+      `<h4>你記得的事</h4>` +
+      ending.memories
+        .map((m) => `<p class="mem"><b>${escapeHtml(m.age)} 歲</b>${escapeHtml(m.text)}</p>`)
+        .join('');
+  } else {
+    mem.innerHTML = '';
+  }
+
   $('settlement').innerHTML = ending.settlement
     .map((r) => `<tr><td>${escapeHtml(r.label)}</td><td>${escapeHtml(r.value)}</td></tr>`)
     .join('');

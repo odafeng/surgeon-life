@@ -9,6 +9,7 @@ import { ATTENDING_CAREER_EVENTS } from './events/attending-career.js';
 import { AESTHETIC_EVENTS } from './events/aesthetic.js';
 import { FAMILY_EVENTS } from './events/family.js';
 import { CORE_EVENTS } from './events/core.js';
+import { MENTOR_EVENTS } from './events/people-mentor.js';
 
 export const EVENTS = [
   ...PGY_EVENTS,
@@ -18,4 +19,5 @@ export const EVENTS = [
   ...AESTHETIC_EVENTS,
   ...FAMILY_EVENTS,
   ...CORE_EVENTS,
+  ...MENTOR_EVENTS,
 ];

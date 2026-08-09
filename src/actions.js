@@ -1,6 +1,7 @@
 // 回合內指令。分完時間之後，你還有幾點精力可以花在具體的事情上。
 // 精力綁在「個人」這一軸：不留時間給自己的人，一年裡什麼都擠不出來做。
 import { effective, getStage, clamp } from './engine.js';
+import { adjustBond, PEOPLE } from './characters.js';
 
 /**
  * 今年的精力點數。
@@ -244,6 +245,60 @@ export const ACTIONS = [
       s.attrs.health = clamp(s.attrs.health + 2);
       s.attrs.money -= 12;
       return '醫師問你上一次覺得自己做得不錯是什麼時候。你想了很久，沒有答案。但你下個月又去了。（自我 +12　健康 +2）';
+    },
+  },
+
+  // ── 人 ──
+  // 關係不會自己長出來。你不去，就是不去。
+  {
+    id: 'act_visit_mentor',
+    label: '去看陳文彬',
+    desc: '帶一盒他愛吃的，聽他講以前的刀。',
+    cost: 1,
+    cond: (s) => s.people?.mentor && !s.people.mentor.gone && s.people.mentor.stage >= 2,
+    apply: (s) => {
+      adjustBond(s, 'mentor', 8);
+      s.attrs.self = clamp(s.attrs.self + 4);
+      return `你陪${PEOPLE.mentor.name}坐了一個下午。他講的那台刀你聽過三次了，你還是聽完。（自我 +4）`;
+    },
+  },
+  {
+    id: 'act_drink_peer',
+    label: '找林致遠喝一杯',
+    desc: '不聊升等，不聊點值，就喝酒。',
+    cost: 1,
+    cond: (s) => s.people?.peer && s.people.peer.stage >= 1,
+    apply: (s) => {
+      adjustBond(s, 'peer', 8);
+      s.attrs.self = clamp(s.attrs.self + 5);
+      s.attrs.health = clamp(s.attrs.health - 1);
+      return `你們喝到兩點，講的都是十幾年前的事。他說：「還好那時候有你。」你說：「彼此。」（自我 +5）`;
+    },
+  },
+  {
+    id: 'act_mentor_junior',
+    label: '帶許士杰開一台',
+    desc: '把主刀讓給他，你站對面。',
+    cost: 2,
+    cond: (s) => s.people?.junior && s.people.junior.stage >= 1 && getStage(s).surgical,
+    apply: (s) => {
+      adjustBond(s, 'junior', 10);
+      s.attrs.teaching = clamp(s.attrs.teaching + 6);
+      s.attrs.self = clamp(s.attrs.self + 3);
+      return `${PEOPLE.junior.name}的手在抖，你說：「我在這裡。」那句話你也聽過。（教學 +6　自我 +3）`;
+    },
+  },
+  {
+    id: 'act_or_team',
+    label: '請刀房喝飲料',
+    desc: '不是慶功，就是想請。',
+    cost: 1,
+    cond: (s) => s.people?.nurse && !s.people.nurse.retired && getStage(s).surgical,
+    apply: (s) => {
+      adjustBond(s, 'nurse', 8);
+      s.attrs.self = clamp(s.attrs.self + 3);
+      s.attrs.money -= 4;
+      return `${PEOPLE.nurse.name}說你浪費錢，然後把單子收進口袋。下次你的刀，器械遞得比誰都快。（自我 +3）`;
     },
   },
 

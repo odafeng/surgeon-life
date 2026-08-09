@@ -2,6 +2,7 @@ import { createRng } from './rng.js';
 import { rollTalents } from './talents.js';
 import { EVENTS } from './events.js';
 import { decideEnding } from './endings.js';
+import { initPeople, adjustBond } from './characters.js';
 
 export const ALLOC_KEYS = ['clinical', 'teaching', 'research', 'family', 'personal'];
 
@@ -78,6 +79,8 @@ export function createGame(seed) {
     family: { stage: 'single', kids: 0 },
     grants: { applied: false, yearsPI: 0 },
     flags: {},
+    people: initPeople(),
+    memories: [], // 定義性時刻，結局會把它們唸回給你聽
     used: [],
     recent: [], // 最近抽過的事件，見 pickEvents 的冷卻機制
     stats: { surgeries: 0, livesSaved: 0, lawsuits: 0, missedDinners: 0, debtYears: 0 },
@@ -165,6 +168,18 @@ export function applyStats(state, stats) {
   for (const [k, v] of Object.entries(stats)) {
     state.stats[k] = (state.stats[k] || 0) + v;
   }
+}
+
+export function applyBond(state, bond) {
+  for (const [k, v] of Object.entries(bond)) adjustBond(state, k, v);
+}
+
+/**
+ * 記下一個定義性時刻。結局的「你記得的事」會把它們原樣唸回來——
+ * 那不是統計數字，是你自己做過的決定。
+ */
+export function remember(state, text) {
+  if (text) state.memories.push({ age: state.age, text });
 }
 
 export function applyGrowth(state, alloc) {
@@ -443,7 +458,20 @@ export function pickEvents(state) {
   const recent = state.recent || [];
   const fresh = base.filter((e) => !e.forced && !recent.includes(e.id));
   // 冷卻期把池子清空時就放寬，寧可重複也不能沒有事件
-  const pool = fresh.length > 0 ? fresh : base.filter((e) => !e.forced);
+  const all = fresh.length > 0 ? fresh : base.filter((e) => !e.forced);
+
+  // 人物弧線是故事的骨幹，不能跟三百個一般事件搶同一個抽獎機——
+  // 只靠運氣的話，一輩子都遇不到那台你替恩師開的刀。
+  // 每年先保證推進一幕人物戲，剩下的名額才給一般事件。
+  const spine = all.filter((e) => e.priority);
+  const pool = all.filter((e) => !e.priority);
+  if (spine.length > 0) {
+    const total = spine.reduce((s2, e) => s2 + (e.weight || 1), 0);
+    let r = rng.next() * total;
+    let idx = spine.findIndex((e) => (r -= e.weight || 1) < 0);
+    if (idx === -1) idx = spine.length - 1;
+    picked.push(spine[idx]);
+  }
 
   for (let i = 0; i < 2 && pool.length > 0; i++) {
     const total = pool.reduce((s, e) => s + (e.weight || 1), 0);
@@ -486,11 +514,15 @@ export async function playYear(state, alloc, chooser, onLog) {
       const c = choices[Math.max(0, Math.min(choices.length - 1, idx))];
       if (c.effects) applyEffects(state, c.effects);
       if (c.stats) applyStats(state, c.stats);
+      if (c.bond) applyBond(state, c.bond);
+      if (c.memory) remember(state, c.memory);
       if (c.set) c.set(state);
       await emit({ kind: 'choice', text: c.log });
     } else {
       if (e.effects) applyEffects(state, e.effects);
       if (e.stats) applyStats(state, e.stats);
+      if (e.bond) applyBond(state, e.bond);
+      if (e.memory) remember(state, e.memory);
       if (e.set) e.set(state);
       await emit({
         kind: 'event',
