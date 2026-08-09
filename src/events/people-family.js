@@ -94,6 +94,7 @@ export const FAMILY_ARC_EVENTS = [
     choices: [
       {
         label: '今天，求婚。',
+        hint: '家庭 ≥ 20%（她會提這個條件）',
         effects: { familyBond: 15, self: 8 },
         bond: { spouse: 15 },
         memory: '你把手機交給同事代班，然後求婚了。她只提一個條件：每週至少一起吃一頓晚餐。',
@@ -162,6 +163,7 @@ export const FAMILY_ARC_EVENTS = [
     choices: [
       {
         label: '要。',
+        hint: '孩子出生後家庭 ≥ 25%，存款每年持續消耗',
         effects: { familyBond: 10, self: 4 },
         bond: { spouse: 8 },
         set: (s) => {
@@ -381,6 +383,7 @@ export const FAMILY_ARC_EVENTS = [
     choices: [
       {
         label: '把明年的刀表拿出來，當場刪掉三分之一。',
+        hint: '家庭 ≥ 20%（有孩子則 25%）',
         effects: { familyBond: 18, self: 6, money: -60 },
         bond: { spouse: 14 },
         memory: '郁涵把離婚協議書放在桌上，你當場刪掉了明年三分之一的刀。',

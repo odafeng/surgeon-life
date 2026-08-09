@@ -201,6 +201,7 @@ export const FAMILY_BRANCH_EVENTS = [
     choices: [
       {
         label: '「那我們結婚吧。」',
+        hint: '家庭 ≥ 20%，孩子出生後 25%',
         effects: { familyBond: 12, self: 5 },
         bond: { spouse: 12 },
         set: (s) => {
@@ -213,6 +214,7 @@ export const FAMILY_BRANCH_EVENTS = [
       },
       {
         label: '「孩子我會負責，婚我們再想。」',
+        hint: '家庭 ≥ 10%',
         effects: { self: -2 },
         bond: { spouse: -4 },
         memory: '她懷孕了，你說孩子你會負責，婚再想。你們一直沒有再想。',

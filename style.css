@@ -914,6 +914,47 @@ body {
   gap: calc(var(--u) * 0.8);
   margin-top: calc(var(--u) * 1.4);
 }
+.act-group {
+  grid-column: 1 / -1;
+  margin: calc(var(--u) * 0.6) 0 calc(var(--u) * -0.2);
+  font-size: calc(var(--u) * 1.05);
+  letter-spacing: 0.28em;
+  color: #8a7f68;
+  border-bottom: 1px solid #ded3ba;
+  padding-bottom: calc(var(--u) * 0.3);
+}
+.act-group:first-child {
+  margin-top: 0;
+}
+.act-repeat {
+  display: block;
+  width: 100%;
+  margin-top: calc(var(--u) * 1.2);
+  padding: calc(var(--u) * 0.7);
+  font-family: inherit;
+  font-size: calc(var(--u) * 1.15);
+  letter-spacing: 0.08em;
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px dashed #a9997c;
+  cursor: pointer;
+}
+.act-repeat:hover {
+  background: #fff;
+  border-style: solid;
+  border-color: var(--seal);
+}
+.act-new {
+  position: absolute;
+  top: calc(var(--u) * 0.5);
+  right: calc(var(--u) * 0.5);
+  font-style: normal;
+  font-size: calc(var(--u) * 0.9);
+  letter-spacing: 0.1em;
+  color: var(--paper);
+  background: var(--seal);
+  padding: 0 calc(var(--u) * 0.4);
+}
 .act {
   position: relative;
   text-align: left;

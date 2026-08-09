@@ -225,7 +225,7 @@ export function decideEnding(state, cause) {
 
   const papers = Math.round(a.papers);
   const settlement = [
-    { label: '執刀次數', value: state.stats.surgeries },
+    { label: '累計刀量（含跟刀）', value: state.stats.surgeries },
     { label: '救回的人', value: state.stats.livesSaved },
     { label: '被告次數', value: state.stats.lawsuits },
     { label: '最終職級', value: RANK_LABELS[state.rank] || '—' },

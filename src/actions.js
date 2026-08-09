@@ -18,6 +18,13 @@ export function energyFor(state) {
 
 const surgical = (s) => getStage(s).surgical;
 const attending = (s) => getStage(s).key === 'attending' && s.career === 'surgery';
+/** 有主治級的自主權——能報備支援、能決定自己的刀表。 */
+const senior = (s) => ['attending', 'aesthetic'].includes(getStage(s).key);
+
+/** 說明文可以隨職級改寫：同一件事，PGY 做和主治做不是同一回事。 */
+export function descOf(action, state) {
+  return typeof action.desc === 'function' ? action.desc(state) : action.desc;
+}
 
 export const ACTIONS = [
   // ── 精進 ──
@@ -60,14 +67,14 @@ export const ACTIONS = [
   {
     id: 'act_newtech',
     label: '學新術式',
-    desc: '自費出國進修一週，回來要能上刀。',
+    desc: '自費出國看一週。回來還要跟刀、送資格審查，才輪得到你自己上。',
     cost: 4,
     cond: (s) => surgical(s) && s.attrs.clinical >= 45,
     apply: (s) => {
       s.attrs.clinical = clamp(s.attrs.clinical + 7);
       s.attrs.health = clamp(s.attrs.health - 3);
       s.attrs.money -= 45;
-      return '你自費四十五萬去學了新的做法。醫院很高興，補助的部分是零。（臨床 +7　存款 −45 萬）';
+      return '你自費四十五萬去看了一週，回來又跟了十台、補齊了認證。醫院很高興，補助的部分是零。（臨床 +7　存款 −45 萬）';
     },
   },
 
@@ -75,7 +82,11 @@ export const ACTIONS = [
   {
     id: 'act_write',
     label: '寫論文',
-    desc: '關掉刀表，把那篇卡了兩年的稿子寫完。',
+    // 能不能「關掉刀表」是職級問題。住院醫師只能撿時間，主治才排得動自己的表。
+    desc: (s) =>
+      senior(s)
+        ? '關掉一週的刀表，把那篇卡了兩年的稿子寫完。'
+        : '值班室的空檔、下刀後的深夜，一段一段把它擠出來。',
     cost: 3,
     apply: (s) => {
       const gain = 14 + s.talents.research * 3;
@@ -144,7 +155,7 @@ export const ACTIONS = [
     apply: (s) => {
       s.attrs.teaching = clamp(s.attrs.teaching + 4);
       s.attrs.self = clamp(s.attrs.self - 2);
-      return '你把去年帶過的刀一台一台補進系統。教學是真的，表格也是真的，兩者關係不大。（教學 +4　自我 −2）';
+      return '晨會報告、床邊教學、實習醫學生的評核表——你一筆一筆補進系統。教學是真的，表格也是真的，兩者關係不大。（教學 +4　自我 −2）';
     },
   },
   {
@@ -272,7 +283,7 @@ export const ACTIONS = [
       adjustBond(s, 'peer', 8);
       s.attrs.self = clamp(s.attrs.self + 5);
       s.attrs.health = clamp(s.attrs.health - 1);
-      return `你們喝到兩點，講的都是十幾年前的事。他說：「還好那時候有你。」你說：「彼此。」（自我 +5）`;
+      return `你們喝到兩點，講的都是還在當住院醫師時候的事。他說：「還好那時候有你。」你說：「彼此。」（自我 +5）`;
     },
   },
   {
@@ -298,7 +309,7 @@ export const ACTIONS = [
       adjustBond(s, 'nurse', 8);
       s.attrs.self = clamp(s.attrs.self + 3);
       s.attrs.money -= 4;
-      return `${PEOPLE.nurse.name}說你浪費錢，然後把單子收進口袋。下次你的刀，器械遞得比誰都快。（自我 +3）`;
+      return `${PEOPLE.nurse.name}說你浪費錢，然後把單子收進口袋。她記得你慣用哪一支持針器——那跟飲料沒有關係，是她十二年的職業習慣。（自我 +3）`;
     },
   },
 
@@ -318,10 +329,11 @@ export const ACTIONS = [
   },
   {
     id: 'act_moonlight',
-    label: '兼差假日刀',
-    desc: '別家醫院的週末，或是醫美診所的晚上。',
+    label: '報備支援',
+    desc: '向院方報備，去別家醫院的假日刀，或診所的夜診。',
     cost: 3,
-    cond: (s) => s.career === 'surgery' && getStage(s).key !== 'pgy',
+    // 住院醫師是受訓身分，兼職受限也還沒有獨立執業的資格。主治才有這一格。
+    cond: senior,
     apply: (s) => {
       const gain = 95 + s.talents.social * 10;
       s.attrs.money += gain;
@@ -330,6 +342,23 @@ export const ACTIONS = [
       return `你把僅剩的週末賣掉了。（存款 +${gain} 萬　健康 −6　家庭 −6）`;
     },
   },
+];
+
+/**
+ * 面板分組。順序就是顯示順序。
+ * 每個行動剛好屬於一組——有測試把關，新增行動時漏掉會紅燈。
+ */
+export const ACTION_GROUPS = [
+  { title: '精進', ids: ['act_drill', 'act_assist', 'act_journal', 'act_newtech'] },
+  { title: '學術', ids: ['act_write', 'act_submit', 'act_grant'] },
+  { title: '教學與人際', ids: ['act_teach', 'act_portfolio', 'act_conference', 'act_drink'] },
+  { title: '家庭', ids: ['act_dinner', 'act_trip', 'act_school'] },
+  { title: '自己', ids: ['act_gym', 'act_sleep', 'act_therapy'] },
+  {
+    title: '那些人',
+    ids: ['act_visit_mentor', 'act_drink_peer', 'act_mentor_junior', 'act_or_team'],
+  },
+  { title: '錢', ids: ['act_talk', 'act_moonlight'] },
 ];
 
 /** 這一年還能選的行動。已經做過的、精力不夠的、條件不符的都排除。 */

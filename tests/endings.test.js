@@ -75,7 +75,7 @@ describe('decideEnding', () => {
     s.stats.surgeries = 1234;
     s.attrs.papers = 400; // 歸類計分 400 點 ≈ 10 篇
     const labels = decideEnding(s, 'retire').settlement.map((x) => x.label);
-    expect(labels).toContain('執刀次數');
+    expect(labels).toContain('累計刀量（含跟刀）');
     expect(labels).toContain('錯過的家庭晚餐');
     const cited = decideEnding(s, 'retire').settlement.find((x) => x.label.includes('引用'));
     expect(cited.value).toBe('3 篇');

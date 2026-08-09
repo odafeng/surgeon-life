@@ -1,5 +1,12 @@
 // 行動面板。分完時間之後的第二層決策：這一年你還想做點什麼。
-import { energyFor, availableActions, runAction, ACTIONS } from './actions.js';
+import {
+  energyFor,
+  availableActions,
+  runAction,
+  descOf,
+  ACTIONS,
+  ACTION_GROUPS,
+} from './actions.js';
 import { $ } from './view.js';
 
 /**
@@ -14,6 +21,17 @@ export function openActionPanel(state) {
 
   $('act-title').textContent = `${state.age} 歲　這一年你還想做什麼`;
 
+  // 「新」只在第一次出現的那一年標記。看過就不再標——
+  // 玩到第十五年還每項都亮「新」，等於沒有標。
+  state.seenActions = state.seenActions || [];
+  const openNow = () => ACTIONS.filter((a) => !done.includes(a.id) && (!a.cond || a.cond(state)));
+  const fresh = new Set(
+    openNow()
+      .map((a) => a.id)
+      .filter((id) => !state.seenActions.includes(id)),
+  );
+  state.seenActions.push(...fresh);
+
   function pips() {
     return (
       `<em>精力</em>` +
@@ -25,25 +43,56 @@ export function openActionPanel(state) {
     );
   }
 
+  /** 去年做過、今年還做得到、而且精力剛好夠的那一組。 */
+  function repeatable() {
+    const last = state.lastActions || [];
+    const picks = last
+      .map((id) => ACTIONS.find((a) => a.id === id))
+      .filter((a) => a && !done.includes(a.id) && (!a.cond || a.cond(state)));
+    const cost = picks.reduce((sum, a) => sum + a.cost, 0);
+    return cost > 0 && cost <= left ? picks : null;
+  }
+
   function draw() {
     $('act-energy').innerHTML = pips();
     const usable = availableActions(state, left, done);
-    const shown = ACTIONS.filter((a) => !done.includes(a.id) && (!a.cond || a.cond(state)));
-    $('act-list').innerHTML = shown
-      .map((a) => {
-        const afford = usable.includes(a);
-        return (
-          `<button class="act ${afford ? '' : 'poor'}" data-id="${a.id}" ${afford ? '' : 'disabled'}>` +
-          `<span class="act-cost">${a.cost}</span>` +
-          `<span class="act-name">${a.label}</span>` +
-          `<span class="act-desc">${a.desc}</span>` +
-          `</button>`
-        );
-      })
-      .join('');
+    const shown = openNow();
+
+    $('act-list').innerHTML = ACTION_GROUPS.map((g) => {
+      const items = g.ids.map((id) => shown.find((a) => a.id === id)).filter(Boolean);
+      if (items.length === 0) return '';
+      return (
+        `<h4 class="act-group">${g.title}</h4>` +
+        items
+          .map((a) => {
+            const afford = usable.includes(a);
+            return (
+              `<button class="act ${afford ? '' : 'poor'}" data-id="${a.id}" ${afford ? '' : 'disabled'}>` +
+              `<span class="act-cost">${a.cost}</span>` +
+              (fresh.has(a.id) ? `<i class="act-new">新</i>` : '') +
+              `<span class="act-name">${a.label}</span>` +
+              `<span class="act-desc">${descOf(a, state)}</span>` +
+              `</button>`
+            );
+          })
+          .join('')
+      );
+    }).join('');
+
+    const again = repeatable();
+    const btn = $('btn-act-repeat');
+    btn.classList.toggle('hidden', !again);
+    if (again) btn.textContent = `跟去年一樣（${again.map((a) => a.label).join('、')}）`;
+
     $('act-done').innerHTML = logs.map((l) => `<p>${l}</p>`).join('');
     $('btn-act-end').textContent =
       left > 0 ? `剩下的精力就這樣放著（還有 ${left} 點）` : '精力用完了，過這一年';
+  }
+
+  function perform(action) {
+    left -= action.cost;
+    done.push(action.id);
+    logs.push(`${action.label}——${runAction(state, action)}`);
   }
 
   draw();
@@ -55,18 +104,25 @@ export function openActionPanel(state) {
       if (!btn || btn.disabled) return;
       const action = ACTIONS.find((a) => a.id === btn.dataset.id);
       if (!action || action.cost > left) return;
-      left -= action.cost;
-      done.push(action.id);
-      logs.push(`${action.label}——${runAction(state, action)}`);
+      perform(action);
+      draw();
+    };
+    const onRepeat = () => {
+      const again = repeatable();
+      if (!again) return;
+      again.forEach(perform);
       draw();
     };
     const end = () => {
       $('act-list').removeEventListener('click', onClick);
+      $('btn-act-repeat').removeEventListener('click', onRepeat);
       $('btn-act-end').removeEventListener('click', end);
       $('act').classList.add('hidden');
+      state.lastActions = [...done];
       resolve(logs);
     };
     $('act-list').addEventListener('click', onClick);
+    $('btn-act-repeat').addEventListener('click', onRepeat);
     $('btn-act-end').addEventListener('click', end);
   });
 }

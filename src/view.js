@@ -148,7 +148,7 @@ const EFFECT_LABELS = {
   money: '存款',
 };
 const STAT_LABELS = {
-  surgeries: '執刀',
+  surgeries: '刀量',
   livesSaved: '救回',
   lawsuits: '被告',
 };
@@ -295,7 +295,7 @@ export function renderStatusPanel(state) {
     ['自我', Math.round(a.self)],
     ['家庭', Math.round(a.familyBond)],
     ['存款', `${Math.round(a.money)} 萬`],
-    ['執刀次數', state.stats.surgeries],
+    ['累計刀量', state.stats.surgeries],
     ['被告次數', state.stats.lawsuits],
   ];
   $('sp-attrs').innerHTML = rows
@@ -341,7 +341,18 @@ export function renderStatusPanel(state) {
             ? '、計畫主持滿 2 年'
             : ''
       }。`
-    : '升等這條路上，你沒有下一關了。';
+    : noGateLine(state);
+}
+
+/**
+ * 沒有下一關，可能是三種完全不同的處境。
+ * 訓練還沒走完的人看到「沒有下一關」會以為職涯到頂了——那是誤導。
+ */
+function noGateLine(state) {
+  const stage = getStage(state);
+  if (state.career !== 'surgery') return '你不在教職升等這條路上了。';
+  if (stage.key !== 'attending') return `你還在${stage.label}，教職升等要等升上主治才開始算。`;
+  return '教職升等這條路，你已經走到最後一關了。';
 }
 
 export function renderLogPanel(entries) {
