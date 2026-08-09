@@ -30,8 +30,9 @@ const PROLOGUE_SCENE = {
   16: 'home',
   17: 'home',
   18: 'home',
-  19: 'corridor',
-  21: 'office',
+  19: 'home', // 大一還在教室裡，離醫院很遠
+  21: 'or', // 解剖室
+  22: 'corridor', // 授袍之後，你才第一次走進醫院
   23: 'or',
   24: 'corridor',
 };
@@ -55,7 +56,7 @@ function autosave() {
 async function runPrologue() {
   for (const step of PROLOGUE) {
     setScene(PROLOGUE_SCENE[step.age] || 'corridor');
-    if (step.age >= 23) setPortrait(25);
+    if (step.age >= 22) setPortrait(25); // 授袍之後才有白袍
     remember({ kind: 'event', text: step.text });
 
     if (step.exam) {
