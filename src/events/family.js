@@ -4,6 +4,7 @@
 // 用主角的年齡當條件的話，32 歲生的孩子會在主角 45 歲那年「上國中」，
 // 然後在 49 歲那年第一次扶著沙發站起來。
 import { spouseAway } from '../characters.js';
+import { getStage } from '../engine.js';
 
 const kidAge = (s) => (s.family.children?.[0] ? s.age - s.family.children[0].bornAt : -1);
 const kidBetween = (lo, hi) => (s) => {
@@ -64,7 +65,11 @@ export const FAMILY_EVENTS = [
     once: true,
     weight: 2,
     cond: (s) => s.family.stage === 'steady',
-    text: '第一次到{配偶}家吃飯。伯父問：「醫師好啊，以後是不是就穩定了？」你正要解釋外科的訓練還有幾年，桌子底下被踢了一下。',
+    // 主治第六年才第一次去伴侶家的人，沒有「訓練還有幾年」可以解釋。
+    text: (s) =>
+      getStage(s).key === 'attending' || getStage(s).key === 'aesthetic'
+        ? '第一次到{配偶}家吃飯。伯父問：「醫師好啊，現在應該穩定了吧？」你正要解釋主治只是換一種忙法，桌子底下被踢了一下。'
+        : '第一次到{配偶}家吃飯。伯父問：「醫師好啊，以後是不是就穩定了？」你正要解釋外科的訓練還有幾年，桌子底下被踢了一下。',
     choices: [
       {
         label: '順著說會越來越穩定。',
@@ -86,7 +91,11 @@ export const FAMILY_EVENTS = [
     once: true,
     weight: 3,
     cond: (s) => s.family.stage === 'married' && s.age <= 42,
-    text: '婚宴訂了三次，延了三次：第一次是總醫師的班表，第二次是評鑑，第三次是你的老師開刀住院。飯店的訂金已經轉了兩次期。',
+    // 延期的第一個理由要對得上你當時的職級。三十二歲就升主治的人沒有總醫師的班表。
+    text: (s) =>
+      getStage(s).key === 'attending' || getStage(s).key === 'aesthetic'
+        ? '婚宴訂了三次，延了三次：第一次是你接下的那台大刀，第二次是評鑑，第三次是你的老師開刀住院。飯店的訂金已經轉了兩次期。'
+        : '婚宴訂了三次，延了三次：第一次是總醫師的班表，第二次是評鑑，第三次是你的老師開刀住院。飯店的訂金已經轉了兩次期。',
     choices: [
       {
         label: '這次無論如何都辦。',

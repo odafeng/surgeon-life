@@ -210,6 +210,7 @@ export const FAMILY_BRANCH_EVENTS = [
         bond: { spouse: 12 },
         set: (s) => {
           s.family.stage = 'married';
+          s.family.marriedAt = s.age; // 婚禮那一幕要靠這個，不然會拖到已婚十年後才辦
           s.family.floor = 20;
           advance(s, 'spouse', 3);
           s.flags.expectingChild = true;
@@ -255,6 +256,7 @@ export const FAMILY_BRANCH_EVENTS = [
         bond: { spouse: 10 },
         set: (s) => {
           s.family.stage = 'married';
+          s.family.marriedAt = s.age; // 婚禮那一幕要靠這個，不然會拖到已婚十年後才辦
           s.family.floor = Math.max(s.family.floor, 25);
           s.flags.unwed = false;
         },

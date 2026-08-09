@@ -166,3 +166,39 @@ describe('代稱一致性', () => {
     expect(bad).toEqual([]);
   });
 });
+
+describe('婚禮', () => {
+  // 一開始只看配偶的 stage，於是有人結婚十一年、演完結婚紀念日之後又辦了一次婚禮。
+  // 收成兩年窗口之後又太窄，八成的人一輩子沒辦成——所以它跟出生一樣走 forced。
+  it('每個結了婚的人都辦得成，而且就在答應的隔年', async () => {
+    let married = 0;
+    let wed = 0;
+    const late = [];
+    for (const gender of ['m', 'f']) {
+      for (let seed = 1; seed <= 15; seed++) {
+        const s = createGame(seed, gender);
+        const intent = { clinical: 41, teaching: 12, research: 12, family: 25, personal: 10 };
+        let at = null;
+        while (!s.ending && s.age <= 65) {
+          const alloc = conformAllocation(s, intent);
+          const { ending } = await playYear(s, alloc, async (ev) => {
+            if (ev.id === 'fa_wedding') at = s.age;
+            return 0;
+          });
+          if (ending) break;
+        }
+        if (s.family.marriedAt !== undefined) {
+          married += 1;
+          if (at !== null) {
+            wed += 1;
+            if (at - s.family.marriedAt !== 1)
+              late.push(`${gender}/${seed}: 差 ${at - s.family.marriedAt} 年`);
+          }
+        }
+      }
+    }
+    expect(married).toBeGreaterThan(20);
+    expect(wed).toBe(married);
+    expect(late).toEqual([]);
+  });
+});

@@ -67,12 +67,12 @@ describe('第二胎', () => {
     for (const gender of ['m', 'f']) {
       let asked = 0;
       let hadFirst = 0;
-      for (let seed = 1; seed <= 25; seed++) {
+      for (let seed = 1; seed <= 40; seed++) {
         const s = createGame(seed, gender);
-        let alloc = { clinical: 45, teaching: 10, research: 10, family: 25, personal: 10 };
+        const intent = { clinical: 45, teaching: 10, research: 10, family: 25, personal: 10 };
         let sawSecond = false;
         while (!s.ending && s.age <= 65) {
-          alloc = conformAllocation(s, alloc);
+          const alloc = conformAllocation(s, intent);
           const { ending } = await playYear(s, alloc, async (ev) => {
             if (ev.id === 'fa_second_child') {
               sawSecond = true;
@@ -86,8 +86,8 @@ describe('第二胎', () => {
         if (s.family.children.length >= 1) hadFirst++;
         if (sawSecond) asked++;
       }
-      expect(hadFirst, `${gender} 有第一胎的局數`).toBeGreaterThan(10);
-      expect(asked, `${gender} 被問第二胎的局數`).toBeGreaterThan(5);
+      expect(hadFirst, `${gender} 有第一胎的局數`).toBeGreaterThan(25);
+      expect(asked, `${gender} 被問第二胎的局數`).toBeGreaterThan(15);
     }
   });
 });

@@ -102,6 +102,7 @@ export const FAMILY_ARC_EVENTS = [
         memory: '你把手機交給同事代班，然後求婚了。{她}只提一個條件：每週至少一起吃一頓晚餐。',
         set: (s) => {
           s.family.stage = 'married';
+          s.family.marriedAt = s.age; // 婚禮那一幕要靠這個，不然會拖到已婚十年後才辦
           s.family.floor = 20;
           advance(s, 'spouse', 3);
         },
@@ -126,8 +127,11 @@ export const FAMILY_ARC_EVENTS = [
     mood: 'wry',
     stages: ['resident', 'attending', 'aesthetic'],
     once: true,
-    weight: 5,
-    cond: (s) => s.family.stage === 'married' && S(s).stage >= 3 && S(s).stage < 4 && !S(s).gone,
+    // 婚禮是里程碑，辦在答應的隔年，不跟其他事件搶抽籤。
+    // 原本只看配偶的 stage，於是有人在結婚十一年、演完結婚紀念日之後又辦了一次；
+    // 改成只看窗口又太窄，八成的人一輩子沒辦成——所以走 forced。
+    forced: (s) =>
+      s.family.stage === 'married' && !S(s).gone && s.age - (s.family.marriedAt ?? -99) === 1,
     text: '婚禮當天，你的手機在敬酒到第三桌時響了。是急診，車禍多重外傷，需要人手。',
     choices: [
       {
