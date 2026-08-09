@@ -18,7 +18,7 @@
 - 屬性數值範圍 0-100(`papers` 與 `money` 例外:papers ≥ 0 無上限,money 可為負)。
 - 金額單位:萬元(新台幣)。
 - 手機優先響應式;深色主題。
-- 每個任務結束時 `npx vitest run` 全綠、`npx eslint .` 無錯誤才可 commit。
+- 每個任務結束時 `npx vitest run` 全綠、`npx eslint .` 無錯誤才可 commit(唯一例外:Task 1 的佔位測試刻意留紅,作為 Task 2 的 TDD 起點)。
 
 ## File Structure
 
@@ -2123,7 +2123,8 @@ export function pickEvents(state) {
   if (rng.chance(malpracticeChance(state))) {
     picked.push(EVENTS.find((e) => e.id === 'a_lawsuit'));
   }
-  const pool = eligible.filter((e) => !e.forced || !e.forced(state));
+  // 有 forced 屬性的事件只走 forced 通道,永不進隨機池(否則沒被告也可能抽到判決)
+  const pool = eligible.filter((e) => !e.forced);
   for (let i = 0; i < 2 && pool.length > 0; i++) {
     const total = pool.reduce((s, e) => s + (e.weight || 1), 0);
     let r = rng.next() * total;
