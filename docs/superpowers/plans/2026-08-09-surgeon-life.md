@@ -130,6 +130,12 @@ export default [
 node_modules/
 ```
 
+`.prettierignore`(避免 prettier 掃到 SDD 工作區的暫存報告):
+
+```
+.superpowers/
+```
+
 - [ ] **Step 5: 設定 husky pre-commit**
 
 Run: `npx husky init && printf 'npx lint-staged\n' > .husky/pre-commit`
@@ -1817,7 +1823,6 @@ export const EVENTS = [
   {
     id: 'a_verdict_win',
     stages: ['resident', 'attending'],
-    once: true,
     forced: (s) => s.flags.onTrial === true && s.talents.social >= 5,
     text: '纏訟多年,判決出爐:無罪。你在法庭上把當晚的處置一條一條講清楚,法官聽懂了。',
     effects: { self: 6 },
@@ -1829,7 +1834,6 @@ export const EVENTS = [
   {
     id: 'a_verdict_lose',
     stages: ['resident', 'attending'],
-    once: true,
     forced: (s) => s.flags.onTrial === true && s.talents.social < 5,
     text: '判決:賠償 200 萬。你在法庭上緊張得詞不達意,對造律師口若懸河。你開的刀沒有輸,你輸在說話。',
     effects: { money: -200, self: -12 },
@@ -2074,7 +2078,7 @@ git commit -m "feat: ending resolution with self filter and life settlement"
 - Consumes: `EVENTS`(Task 6)、`decideEnding`(Task 7)、Task 4/5 全部函式。
 - Produces:
   - `pickEvents(state) → Event[]`(強制事件 + 醫糾機率注入 + 隨機加權抽最多 2 個)
-  - `async playYear(state, alloc, chooser) → { logs:[{kind:'year'|'event'|'choice'|'info', text:string}], ending:Object|null }`
+  - `async playYear(state, alloc, chooser, onLog?) → { logs:[{kind:'year'|'event'|'choice'|'info', text:string}], ending:Object|null }`——`onLog: async (entry) => void` 為可選,每筆 log 產生當下即時呼叫(事件文字在 chooser 之前送出,選擇結果在之後),UI 藉此照 engine 順序即時渲染
   - `chooser: async ({ id, text, choices:[{label}] }, state) → number`(選項索引)
 
 流程:validate → applyGrowth → 逐事件(choices 先過 cond 過濾,await chooser,套用 effects/stats/set;自動事件直接套用;`flags.exitNow` 中斷)→ settleHealth(死亡→ ending)→ settleMoney → settlePromotion(有 log 就推入)→ exitNow → ending;age+1;跨階段推轉場 log;age>65 → retire ending。
@@ -2225,29 +2229,36 @@ const STAGE_TRANSITION_LOGS = {
   resident: '你成為外科住院醫師。值班表寄來了:這個月,你有十一天不會看到太陽下山。',
 };
 
-export async function playYear(state, alloc, chooser) {
+export async function playYear(state, alloc, chooser, onLog) {
   alloc = validateAllocation(state, alloc);
   state.alloc = alloc;
   const stage = getStage(state);
-  const logs = [{ kind: 'year', text: `【${state.age} 歲・${stage.label}】` }];
+  const logs = [];
+  // 每筆 log 在產生當下即時經 onLog 送出,UI 全程照 engine 順序渲染(無 onLog 時行為同純陣列)
+  const emit = async (entry) => {
+    logs.push(entry);
+    if (onLog) await onLog(entry);
+  };
+  await emit({ kind: 'year', text: `【${state.age} 歲・${stage.label}】` });
   applyGrowth(state, alloc);
 
   for (const e of pickEvents(state)) {
     if (e.once) state.used.push(e.id);
     const text = typeof e.text === 'function' ? e.text(state) : e.text;
     if (e.choices) {
+      await emit({ kind: 'event', text });
       const choices = e.choices.filter((c) => !c.cond || c.cond(state));
       const idx = await chooser({ id: e.id, text, choices }, state);
       const c = choices[Math.max(0, Math.min(choices.length - 1, idx))];
       if (c.effects) applyEffects(state, c.effects);
       if (c.stats) applyStats(state, c.stats);
       if (c.set) c.set(state);
-      logs.push({ kind: 'event', text }, { kind: 'choice', text: c.log });
+      await emit({ kind: 'choice', text: c.log });
     } else {
       if (e.effects) applyEffects(state, e.effects);
       if (e.stats) applyStats(state, e.stats);
       if (e.set) e.set(state);
-      logs.push({ kind: 'event', text: [text, e.log].filter(Boolean).join('\n') });
+      await emit({ kind: 'event', text: [text, e.log].filter(Boolean).join('\n') });
     }
     if (state.flags.exitNow) break;
   }
@@ -2255,16 +2266,16 @@ export async function playYear(state, alloc, chooser) {
   const dead = settleHealth(state, alloc);
   if (dead) {
     state.ending = decideEnding(state, 'death');
-    logs.push({ kind: 'info', text: '你的身體,先於你的意志,停了下來。' });
+    await emit({ kind: 'info', text: '你的身體,先於你的意志,停了下來。' });
     return { logs, ending: state.ending };
   }
   settleMoney(state);
   const phdLog = settlePhd(state, alloc);
-  if (phdLog) logs.push({ kind: 'info', text: phdLog });
+  if (phdLog) await emit({ kind: 'info', text: phdLog });
   const grantLog = settleGrant(state, alloc);
-  if (grantLog) logs.push({ kind: 'info', text: grantLog });
+  if (grantLog) await emit({ kind: 'info', text: grantLog });
   const promo = settlePromotion(state);
-  if (promo) logs.push({ kind: 'info', text: promo });
+  if (promo) await emit({ kind: 'info', text: promo });
 
   if (state.flags.exitNow) {
     state.career = 'exited';
@@ -2276,7 +2287,7 @@ export async function playYear(state, alloc, chooser) {
   state.age += 1;
   const nextKey = getStage(state).key;
   if (nextKey !== prevKey && STAGE_TRANSITION_LOGS[nextKey]) {
-    logs.push({ kind: 'info', text: STAGE_TRANSITION_LOGS[nextKey] });
+    await emit({ kind: 'info', text: STAGE_TRANSITION_LOGS[nextKey] });
   }
   if (state.age > 65) {
     state.ending = decideEnding(state, 'retire');
@@ -2723,11 +2734,8 @@ async function runPrologue() {
   }
 }
 
-const printedLive = new Set();
-
 function askChoice(ev) {
-  addLog('event', ev.text);
-  printedLive.add(ev.text);
+  // 不印任何文字:事件文字由 engine 經 onLog 在 chooser 之前送出,選擇結果在之後
   return new Promise((resolve) => {
     const box = $('choice-box');
     box.innerHTML = '';
@@ -2737,8 +2745,6 @@ function askChoice(ev) {
       b.textContent = c.label;
       b.onclick = () => {
         box.classList.add('hidden');
-        addLog('choice', c.log);
-        printedLive.add(c.log);
         resolve(i);
       };
       box.appendChild(b);
@@ -2814,16 +2820,10 @@ async function yearLoop() {
       resolve();
     };
   });
-  printedLive.clear();
-  const yearHeader = `【${state.age} 歲・${getStage(state).label}】`;
-  addLog('year', yearHeader);
-  printedLive.add(yearHeader);
-  const { logs, ending } = await playYear(state, alloc, askChoice);
-  for (const l of logs) {
-    if (printedLive.has(l.text)) continue; // 年份標頭、事件文字與選擇結果已即時印出
+  const { ending } = await playYear(state, alloc, askChoice, async (l) => {
     addLog(l.kind, l.text);
-    await sleep(650);
-  }
+    await sleep(l.kind === 'year' ? 300 : 650);
+  });
   renderStatus();
   if (ending) {
     await sleep(1200);
@@ -2850,7 +2850,7 @@ $('btn-restart').onclick = () => {
 };
 ```
 
-實作提醒:`askChoice` 在等待選擇時已即時把事件文字與選擇結果印上畫面,年份標頭也在 `playYear` 之前印出——`printedLive` Set 記錄這些已印文字,flush 迴圈以 `printedLive.has(l.text)` 跳過,避免重複與時序錯亂。
+實作提醒:所有 log 渲染統一走 `playYear` 的 `onLog` callback,UI 不自行印 log——engine 在事件解析當下即時發射,順序天然正確,無需任何去重。
 
 - [ ] **Step 4: Lint 與全測試**
 
@@ -2864,7 +2864,7 @@ Run: `python3 -m http.server 8080 --directory /home/odafeng/surgeon-life &`,瀏�
 1. 開始畫面 →「開始人生」→ 天賦畫面,考試能力固定 9 顆點,其他隨機。
 2. 序章逐行出現;18 歲聯考出現三個選項,任選一個都得到「你都填了醫學系」。
 3. 25 歲出現規劃面板;把臨床減到 5 以下不可能(按鈕擋住);分配未滿 12 時「就這樣過這一年」不可按。
-4. 26 歲必出現選科事件;選「別科」直接進結局「你提早看清了一切」。
+4. 26 歲必出現選科事件;選「別科」直接進結局「另一條路」。
 5. 重開,選外科,連續玩幾年:狀態列數字有變化;事件選項可點;年度 log 逐行浮現。
 6. 手機寬度(DevTools 375px)下版面不破。
 7. 玩到任一結局:標題、內文、結算單、「再活一次」正常。
