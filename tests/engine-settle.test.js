@@ -10,6 +10,7 @@ import {
   malpracticeChance,
   projectCollapse,
   forecast,
+  conformAllocation,
 } from '../src/engine.js';
 
 const alloc = (c, t, r, f, p) => ({
@@ -287,5 +288,39 @@ describe('projectCollapse', () => {
     const fallAt = projectCollapse(s, alloc);
     const warned = forecast(s, alloc).warnings.find((w) => w.includes('倒下'));
     expect(warned).toContain(String(fallAt));
+  });
+});
+
+describe('conformAllocation', () => {
+  // 下限提高時，原本 research 排在捐贈者第一順位，會被一路抽到 0 而其他軸不動。
+  // 快轉會把壓過的結果寫回 state.alloc，於是研究軸再也回不來——
+  // 學術線那一整批事件因此對玩家消失，而畫面上沒有任何提示。
+  it('提高下限時按比例跟每一軸拿，不會把單一軸抽乾', () => {
+    const s = createGame(1);
+    s.age = 33;
+    s.family.floor = 25;
+    const out = conformAllocation(s, {
+      clinical: 30,
+      teaching: 15,
+      research: 32,
+      family: 8,
+      personal: 15,
+    });
+    expect(out.family).toBe(25);
+    expect(out.research).toBeGreaterThan(0);
+    expect(out.teaching).toBeLessThan(15); // 教學也要出一份
+    expect(Object.values(out).reduce((a, b) => a + b, 0)).toBe(100);
+  });
+
+  it('每年從玩家的意圖重算，不會一層一層越削越少', () => {
+    const s = createGame(1);
+    s.age = 33;
+    s.family.floor = 20;
+    const intent = { clinical: 30, teaching: 15, research: 32, family: 8, personal: 15 };
+    const once = conformAllocation(s, intent);
+    const twice = conformAllocation(s, once); // 拿結果再壓一次會繼續削
+    expect(twice.research).toBeLessThanOrEqual(once.research);
+    // 從意圖重算永遠得到同一個答案
+    expect(conformAllocation(s, intent)).toEqual(once);
   });
 });

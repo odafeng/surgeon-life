@@ -124,6 +124,9 @@ async function yearLoop() {
     if (!fastForwarding()) {
       const { alloc, years } = await openAllocPanel(state);
       state.alloc = alloc;
+      // 玩家講的是這個。快轉時要從這裡重新套下限，不能拿上次壓過的結果再壓一次——
+      // 那樣每經過一個新的下限就會再削一層，研究軸幾年後就歸零了。
+      state.intent = { ...alloc };
       autoYears = years - 1;
       renderHud(state);
       renderFastFlag();
@@ -137,7 +140,7 @@ async function yearLoop() {
       settleStreaks(state, []);
       // 換階段時停下來。臨床下限變了，去年的配置未必還合法，
       // 而且升上住院醫師或主治本來就是該重新想一次的時刻。
-      state.alloc = conformAllocation(state, state.alloc);
+      state.alloc = conformAllocation(state, state.intent || state.alloc);
       renderFastFlag();
     }
 

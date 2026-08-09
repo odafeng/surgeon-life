@@ -164,15 +164,29 @@ export function conformAllocation(state, alloc) {
   const min = getStage(state).minClinicalPct;
   const floor = state.family.floor || 0;
   const out = { ...alloc };
+  // 按比例跟每一軸拿，不要照順序把第一個捐贈者抽乾。
+  // 原本 research 排第一順位，所以「臨床下限提高」或「家庭承諾生效」時
+  // 它會被抽到 0 而 teaching、personal 一動不動——快轉會把這個結果寫回 state.alloc，
+  // 於是研究軸再也回不來，整條學術線就此對玩家消失。
   const raise = (key, target, donors) => {
     if (out[key] >= target) return;
     let need = target - out[key];
     out[key] = target;
+    const pool = donors.reduce((sum, k) => sum + out[k], 0);
+    if (pool <= 0) return;
     for (const k of donors) {
+      if (need <= 0) break;
+      const share = Math.min(out[k], Math.round((out[k] / pool) * (target - (out[key] - need))));
+      const take = Math.min(need, share);
+      out[k] -= take;
+      need -= take;
+    }
+    // 四捨五入可能還差一點，剩下的從還有餘裕的軸補齊
+    for (const k of donors) {
+      if (need <= 0) break;
       const take = Math.min(need, out[k]);
       out[k] -= take;
       need -= take;
-      if (need <= 0) break;
     }
   };
   raise('clinical', min, ['research', 'teaching', 'personal', 'family']);
