@@ -1,63 +1,89 @@
-# 素材生成計畫
+# 美術素材與生成管線
 
-## 第一步:風格測試(3 張,先決定長相再量產)
+風格定案:**S1 水墨淡彩**——水彩暈染加墨線、宣紙質地,克制的青綠與墨黑,單一朱砂點綴。
 
-同一個主體「42 歲台灣外科主治醫師,刷手服,疲憊」,用三種風格各生一張,你挑一種。
+## 生成管線(已驗證)
 
-| #   | 風格                   | prompt(英文,gpt-image-1 對英文較穩)                                                                                                                                                                                                                                                                                                                                      |
-| --- | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| S1  | 水墨手繪(最接近活俠傳) | `Traditional Chinese ink-wash painting portrait, half-body, a 42-year-old Taiwanese male surgeon in teal scrub top and surgical cap, mask pulled down around neck, exhausted expression with dark circles, visible brush strokes and ink bleed on rice paper texture, muted teal and warm grey palette, hand-painted game character art, plain dark background, no text` |
-| S2  | 厚塗寫實(較有重量感)   | `Digital painted half-body portrait, semi-realistic painterly style with visible brush texture, a 42-year-old Taiwanese male surgeon in teal scrubs and surgical cap, mask around neck, tired eyes, dramatic overhead surgical lighting, desaturated cool palette, video game character art, dark plain background, no text`                                             |
-| S3  | 扁平向量(最省、最一致) | `Flat vector illustration, half-body portrait of a 42-year-old Taiwanese male surgeon in teal scrubs and surgical cap, simplified geometric shapes, limited 5-color palette of teal slate cream and muted red, clean editorial style, flat dark background, no text, no gradients`                                                                                       |
-
-生成指令(key 從檔案讀,不會印出來):
-
-```bash
-OPENAI_API_KEY=$(cat ~/.config/openai-key) \
-  curl -s https://api.openai.com/v1/images/generations \
-    -H "Authorization: Bearer $OPENAI_API_KEY" \
-    -H "Content-Type: application/json" \
-    -d '{"model":"gpt-image-1","prompt":"...","size":"1024x1536","quality":"medium","n":1}'
+```
+gpt-image-2(純白底) → tools/cutout.py 去背 → 轉 WebP → assets/
 ```
 
-用 curl 不用 CLI 的原因:CLI 只吃 `-m -p -n -s`,沒有 `background`、`quality` 參數。
-立繪需要 `"background":"transparent"` 才能去背疊在場景上,只有直接打 API 拿得到。
+```bash
+# 立繪(直式)
+tools/gen-art.sh out/p42.png 1024x1536 medium tools/prompts/p42.txt
+python3 tools/cutout.py out/p42.png out/p42-cut.png 8
 
-## 第二步:量產清單(風格定案後)
+# 場景(橫式,不需去背)
+tools/gen-art.sh out/s_or.png 1536x1024 medium tools/prompts/s_or.txt
+```
 
-**立繪 12 張** — 4 個年齡段 × 3 種表情,透明背景,1024×1536
+API key 從專案根目錄 `.env` 的 `OPENAI_API_KEY` 讀取。`.env` 已在 `.gitignore` 內。
 
-| 年齡段      | 外觀要點                 | 表情                       |
-| ----------- | ------------------------ | -------------------------- |
-| 25 PGY      | 白袍過大、瀏海、眼神還亮 | 緊張 / 專注 / 強笑         |
-| 30 住院醫師 | 刷手服、明顯黑眼圈、鬍渣 | 疲憊 / 麻木 / 短暫的成就感 |
-| 42 主治     | 刷手服＋識別證、鬢角灰白 | 沉穩 / 忍耐 / 苦笑         |
-| 60 資深     | 白髮、老花眼鏡、白袍     | 平靜 / 疏離 / 和解         |
+## 三個踩過的坑
 
-**場景 8 張** — 1536×1024,不透明
+**一、模型不是選最新的就好。**
 
-1. 開刀房(無影燈、手術台、器械台)
-2. 值班室(上下舖、沒開燈、窗外天正在亮)
-3. 醫局深夜(螢幕唯一光源、論文與泡麵)
-4. 門診間(排隊號碼機、下午四點的光)
-5. 醫院走廊(清晨五點、空無一人)
-6. 法庭(醫糾、木質長桌、冷光)
-7. 醫美診所(落地窗、明亮、與前面所有場景形成刺眼對比)
-8. 家裡餐桌(飯菜蓋著、留了一盞燈、沒有人)
+| 模型          | 去背       | 人種與畫風                            |
+| ------------- | ---------- | ------------------------------------- |
+| gpt-image-2   | **不支援** | 台灣人臉、畫風最貼近 S1 ✅            |
+| gpt-image-1   | 支援       | 偏炭筆速寫、西方臉、會長出無關物件 ❌ |
+| gpt-image-1.5 | 支援       | 水彩乾淨但明顯西方臉、透明邊有白暈 ❌ |
 
-**UI 素材 4 張** — 宣紙材質、印章紅底、木軸捲軸兩端、狀態列底紋
+支援去背的兩個模型都畫不出台灣人臉。所以改成「用 gpt-image-2 生在純白底,再自己去背」——
+水墨本來就畫在白紙上,白底轉透明是這個媒材最自然的切法。
 
-## 成本估算
+**二、去背容差必須小。** `cutout.py` 從畫布四邊做 BFS,只吃與邊界相連的白色,
+所以口罩、識別證這些「人物身上的白」會保留。但白袍是接近白的,容差一大就會從
+反鋸齒邊緣滲進去把整件袍子吃掉。實測:
 
-gpt-image-1 medium quality:1024×1536 約 US$0.04/張,1536×1024 同價。
-24 張 ≈ **US$1** 左右。風格測試 3 張 ≈ US$0.12。這比我原本估的「幾美元」還低。
+| 容差 | 透明比例 | 結果            |
+| ---- | -------- | --------------- |
+| 8    | 35%      | 白袍完整 ✅     |
+| 22   | 46%      | 白袍開始破洞    |
+| 36   | 59%      | 白袍大半消失 ❌ |
 
-## 你要做的事(不要把 key 貼進對話)
+**三、獨立生成不保證是同一個人。** 四個年齡段分開生成時,25 歲那張畫成了另一個
+偏動漫的角色。解法是拿 42 歲那張當基準,改用 `/v1/images/edits` 帶參考圖生其他年齡:
 
-用你自己的編輯器(不要透過這個 session,免得 key 進到對話紀錄):
+```bash
+curl https://api.openai.com/v1/images/edits \
+  -H "Authorization: Bearer $KEY" \
+  -F model=gpt-image-2 -F "image[]=@assets-src/p42.png" \
+  -F size=1024x1536 -F quality=medium \
+  -F prompt="Using the reference image as the definitive face of this character, paint the SAME man at age 25 ..."
+```
 
-1. 建立檔案 `~/.config/openai-key`,內容只有那一行 key,不要有引號或換行以外的東西
-2. `chmod 600 ~/.config/openai-key`
-3. 回來跟我說一聲
+## 已完成
 
-我會用 `$(cat ~/.config/openai-key)` 帶入,全程不印出內容。
+**立繪 4 張**(720×1080 WebP,去背)
+
+| 檔案                      | 年齡段    | 外觀                             |
+| ------------------------- | --------- | -------------------------------- |
+| `assets/portrait-25.webp` | PGY       | 過大的白袍、聽診器、眼神還亮     |
+| `assets/portrait-30.webp` | 住院醫師  | 皺的刷手服、黑眼圈、鬍渣         |
+| `assets/portrait-42.webp` | 主治      | 刷手服＋識別證、鬢角灰白(基準圖) |
+| `assets/portrait-60.webp` | 資深/退休 | 白髮、老花眼鏡、針織背心         |
+
+**場景 4 張**(1400×933 WebP)
+
+| 檔案                       | 場景                                   |
+| -------------------------- | -------------------------------------- |
+| `assets/scene-or.webp`     | 開刀房(無影燈、空的手術台、監視器綠光) |
+| `assets/scene-oncall.webp` | 值班室(上下舖、時鐘四點十五、天剛要亮) |
+| `assets/scene-office.webp` | 醫局深夜(論文堆、桌燈與螢幕是唯一光源) |
+| `assets/scene-home.webp`   | 家裡餐桌(菜罩著、留一盞燈、沒有人)     |
+
+合計 1.13 MB(原始 PNG 22 MB,轉 WebP 後降到 5%)。
+
+## 待生成
+
+**立繪表情差分 8 張** — 4 個年齡段各再加「疲憊」「苦笑」兩種,全部用 edits 帶參考圖確保同一人。
+
+**場景 4 張** — 門診間、醫院走廊(清晨五點)、法庭、醫美診所(明亮,與其他場景形成刺眼對比)。
+
+**UI 材質 4 張** — 宣紙底、印章紅底、捲軸木軸、狀態列底紋。
+
+## 成本
+
+gpt-image-2 medium 每張輸出約 1500–1600 tokens,edits 帶參考圖約 3100 tokens。
+實際單價請查 OpenAI 用量頁面——gpt-image-2 在我的知識截止之後發布,我無法確認它的定價。
