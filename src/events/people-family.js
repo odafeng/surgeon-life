@@ -27,7 +27,8 @@ export const FAMILY_ARC_EVENTS = [
     text: '朋友介紹你認識了郁涵。第一次見面，她問：「聽說你們醫師都很忙？」你發現自己已經三年沒有跟不是同事的人吃過飯。',
     choices: [
       {
-        label: '認真試試看。（家庭時間從此不得低於 15%）',
+        label: '認真試試看。',
+        hint: '家庭 ≥ 15%',
         bond: { spouse: 10 },
         memory: '你對郁涵說了實話：忙到沒有自己的時間。她笑了，說至少你誠實。',
         set: (s) => {
@@ -191,7 +192,9 @@ export const FAMILY_ARC_EVENTS = [
     set: (s) => {
       s.family.kids = 1;
       s.family.children.push({ bornAt: s.age });
-      s.family.floor = 25; // 孩子不因你在值班就不用陪
+      // 婚生的孩子有一張紙替他把你的時間鎖住；未婚生的沒有。
+      // 這個差別不是道德判斷，是制度的實況，而後果會落在孩子身上。
+      s.family.floor = s.flags.unwed ? 10 : 25;
       s.flags.expectingChild = false;
     },
     log: '你隔著口罩笑了，眼睛有點酸。那台刀你多花了二十分鐘，因為手一直在抖。',
@@ -389,7 +392,8 @@ export const FAMILY_ARC_EVENTS = [
         log: '你真的刪了。年底的績效掉到全科最後，主任找你談話。那份協議書後來被拿去墊桌腳。',
       },
       {
-        label: '「再撐一下，等我升上去。」（承諾降到 10%）',
+        label: '「再撐一下，等我升上去。」',
+        hint: '承諾降為 10%',
         effects: { familyBond: -12, self: -8 },
         bond: { spouse: -14 },
         set: (s) => {
@@ -420,7 +424,9 @@ export const FAMILY_ARC_EVENTS = [
     set: (s) => {
       s.people.spouse.gone = true;
       s.family.stage = 'single';
-      s.family.floor = s.family.kids > 0 ? 20 : 0; // 婚沒了，孩子還在
+      // 孩子跟著她走了。你變成週末才出現的那個人，
+      // 沒有人再規定你要回去幾次——這正是問題開始的地方。
+      s.family.floor = s.family.kids > 0 ? 10 : 0;
     },
     log: '你想反駁，但值班鈴響了。等你忙完，已讀不回的人變成了你。',
   },
@@ -499,7 +505,8 @@ export const FAMILY_ARC_EVENTS = [
     text: '你算了一下下半年的行程：升等送審、兩個計畫、加開的刀。怎麼排都排不出時間。郁涵在客廳等你講話，她已經知道你要說什麼了。',
     choices: [
       {
-        label: '「這一年真的不行，讓我拚完。」（承諾降到 10%）',
+        label: '「這一年真的不行，讓我拚完。」',
+        hint: '承諾降為 10%',
         effects: { self: -6, familyBond: -8 },
         bond: { spouse: -10 },
         memory: '你跟郁涵說，這一年真的不行，讓你拚完。她說好。',

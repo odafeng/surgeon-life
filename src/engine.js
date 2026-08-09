@@ -321,13 +321,30 @@ export function yearlyIncome(state, alloc = state.alloc) {
  * 年支出。房貸、孩子、逐漸老去的父母——一年比一年重，
  * 而且和你開幾台刀無關。
  */
+/**
+ * 一個孩子每年吃掉多少。這條線一路往上走：保母、安親、補習、學費、出國。
+ * 你賺得比別人多，但你的錢也不是你的。
+ */
+export function childCost(state) {
+  return (state.family.children || []).reduce((sum, c) => {
+    const age = state.age - c.bornAt;
+    if (age < 0) return sum;
+    if (age <= 6) return sum + 26; // 保母與幼兒園
+    if (age <= 12) return sum + 34; // 安親班與才藝
+    if (age <= 18) return sum + 48; // 補習與升學
+    if (age <= 24) return sum + 64; // 大學與研究所
+    return sum + 10; // 成年之後偶爾還是要貼
+  }, 0);
+}
+
 export function yearlyExpenses(state) {
   return Math.round(
     92 +
-      state.family.kids * 68 +
+      childCost(state) +
       (state.family.stage === 'married' ? 34 : 0) +
       Math.max(0, state.age - 30) * 3.4 +
-      (state.flags.parentCare ? 96 : 0), // 父母長照，由事件觸發後每年扣
+      (state.flags.parentCare ? 96 : 0) + // 父母長照，由事件觸發後每年扣
+      (state.flags.beingDrained ? 165 : 0), // 有人在你身上花錢，而你選擇不去細想
   );
 }
 

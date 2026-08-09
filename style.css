@@ -1055,3 +1055,33 @@ body {
   font-size: calc(var(--u) * 0.95);
   font-weight: 400;
 }
+
+/* ───────── 選項卡的代價預覽 ───────── */
+/* 代價貼在自己那張卡下面，寬度鎖在卡片內，否則兩張卡的字會疊在一起 */
+.card-cost {
+  position: absolute;
+  left: 50%;
+  top: calc(100% + var(--u) * 0.5);
+  transform: translateX(-50%);
+  width: calc(var(--u) * 7.5);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(var(--u) * 0.2);
+  white-space: normal;
+  text-align: center;
+}
+.card-cost s {
+  text-decoration: none;
+  font-size: calc(var(--u) * 1);
+  letter-spacing: 0.04em;
+  color: #8fa262;
+  text-shadow: 0 1px 3px #000;
+}
+.card-cost s.bad {
+  color: #c4574a;
+}
+#cards {
+  padding-bottom: calc(var(--u) * 6.5);
+  gap: calc(var(--u) * 2.8); /* 留給下面的代價文字 */
+}

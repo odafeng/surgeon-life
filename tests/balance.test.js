@@ -10,6 +10,7 @@ import {
   nextPromotionGate,
   yearlyExpenses,
   yearlyIncome,
+  childCost,
 } from '../src/engine.js';
 
 const alloc = (c, t, r, f, p) => ({
@@ -114,7 +115,21 @@ describe('settleMoney — 負債會咬人', () => {
     old.age = 55;
     old.family.stage = 'married';
     old.family.kids = 2;
+    old.family.children = [{ bornAt: 34 }, { bornAt: 37 }];
     expect(yearlyExpenses(old)).toBeGreaterThan(yearlyExpenses(young) + 150);
+  });
+
+  it('孩子的花費隨年齡往上走，大學那幾年最兇', () => {
+    const s = createGame(1);
+    s.family.children = [{ bornAt: 34 }];
+    s.family.kids = 1;
+    const at = (age) => {
+      s.age = age;
+      return childCost(s);
+    };
+    expect(at(38)).toBeLessThan(at(48)); // 幼兒園 → 補習
+    expect(at(48)).toBeLessThan(at(56)); // 補習 → 大學
+    expect(at(62)).toBeLessThan(at(56)); // 出社會之後才降下來
   });
 });
 

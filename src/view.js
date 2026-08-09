@@ -138,6 +138,59 @@ export function showText({ src = '', body }, { wait = true, autoMs = 0 } = {}) {
   });
 }
 
+const EFFECT_LABELS = {
+  clinical: '臨床',
+  teaching: '教學',
+  papers: '計分',
+  self: '自我',
+  health: '健康',
+  familyBond: '家庭',
+  money: '存款',
+};
+const STAT_LABELS = {
+  surgeries: '執刀',
+  livesSaved: '救回',
+  lawsuits: '被告',
+};
+const BOND_LABELS = {
+  mentor: '恩師',
+  peer: '同梯',
+  chief: '主任',
+  junior: '學弟',
+  nurse: '護理長',
+  patient: '病人',
+  spouse: '另一半',
+};
+
+// 負號用真正的減號 U+2212，不是連字號——中文排版裡那兩個看起來差很多
+const sign = (v) => (v > 0 ? `+${v}` : `−${Math.abs(v)}`);
+
+/**
+ * 把一個選項的代價寫在卡片上。
+ *
+ * 直接從 effects 推導，不手寫——四百個事件手寫一定會跟實際效果對不上，
+ * 而一個會說謊的預覽比沒有預覽更糟。寫在 set() 裡的後果推導不出來，
+ * 那種要靠事件自己標 hint。
+ */
+export function describeChoice(choice) {
+  const parts = [];
+  for (const [k, v] of Object.entries(choice.effects || {})) {
+    if (!v) continue;
+    const unit = k === 'money' ? ' 萬' : '';
+    parts.push(`${EFFECT_LABELS[k] ?? k} ${sign(v)}${unit}`);
+  }
+  for (const [k, v] of Object.entries(choice.stats || {})) {
+    if (!v || !STAT_LABELS[k]) continue;
+    parts.push(`${STAT_LABELS[k]} ${sign(v)}`);
+  }
+  for (const [k, v] of Object.entries(choice.bond || {})) {
+    if (!v) continue;
+    parts.push(`${BOND_LABELS[k] ?? k} ${sign(v)}`);
+  }
+  if (choice.hint) parts.push(choice.hint);
+  return parts;
+}
+
 /** 直排選項卡。回傳被選中的索引。 */
 export function askChoice(choices) {
   const box = $('cards');
@@ -149,16 +202,23 @@ export function askChoice(choices) {
       const b = document.createElement('button');
       b.className = 'card';
       b.type = 'button';
-      if (c.hint) {
-        const cost = document.createElement('span');
-        cost.className = 'cost';
-        cost.textContent = c.hint;
-        b.appendChild(cost);
-      }
       const vt = document.createElement('span');
       vt.className = 'vt';
       vt.textContent = c.label;
       b.appendChild(vt);
+
+      const costs = describeChoice(c);
+      if (costs.length) {
+        const cost = document.createElement('span');
+        cost.className = 'card-cost';
+        for (const part of costs) {
+          const chip = document.createElement('s');
+          chip.textContent = part;
+          if (part.includes('−')) chip.className = 'bad';
+          cost.appendChild(chip);
+        }
+        b.appendChild(cost);
+      }
       b.onclick = () => {
         box.classList.add('hidden');
         box.innerHTML = '';

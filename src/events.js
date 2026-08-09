@@ -16,6 +16,7 @@ import { NURSE_EVENTS } from './events/people-nurse.js';
 import { CHIEF_EVENTS } from './events/people-chief.js';
 import { PATIENT_EVENTS } from './events/people-patient.js';
 import { FAMILY_ARC_EVENTS } from './events/people-family.js';
+import { FAMILY_BRANCH_EVENTS } from './events/people-family-branches.js';
 
 export const EVENTS = [
   ...PGY_EVENTS,
@@ -32,4 +33,5 @@ export const EVENTS = [
   ...CHIEF_EVENTS,
   ...PATIENT_EVENTS,
   ...FAMILY_ARC_EVENTS,
+  ...FAMILY_BRANCH_EVENTS,
 ];

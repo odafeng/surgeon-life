@@ -41,8 +41,17 @@ describe('decideEnding', () => {
 
   it('the balanced life is merely ordinary — and that is the point', () => {
     const s = createGame(1);
+    // 有家庭才談得上平衡；單身高自我是另一個結局
+    s.family = { ...s.family, stage: 'married', kids: 1, children: [{ bornAt: 34 }] };
+    s.people.spouse.stage = 3;
     s.attrs = { ...s.attrs, clinical: 55, familyBond: 70, health: 60, self: 60 };
     expect(decideEnding(s, 'retire').id).toBe('ordinary');
+  });
+
+  it('a life nobody ever walked into is its own ending, not a leftover', () => {
+    const s = createGame(1);
+    s.attrs = { ...s.attrs, clinical: 55, familyBond: 55, health: 60, self: 70 };
+    expect(decideEnding(s, 'retire').id).toBe('alone_on_purpose');
   });
 
   it('low self paints every ending gray', () => {
