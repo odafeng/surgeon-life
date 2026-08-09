@@ -414,6 +414,7 @@ state 形狀:
   talents: {...rollTalents},
   attrs: { clinical: 5, teaching: 0, papers: 0, self: 50, health: 88, familyBond: 50, money: 10 },
   family: { stage: 'single', kids: 0 },   // stage: 'single'|'dating'|'steady'|'married'
+  grants: { applied: false, yearsPI: 0 }, // 部級計畫:申請紀錄 / 通過並主持年數
   flags: {},
   used: [],                 // once 事件 id
   stats: { surgeries: 0, livesSaved: 0, lawsuits: 0, missedDinners: 0 },
@@ -594,6 +595,7 @@ export function createGame(seed) {
     talents: rollTalents(rng),
     attrs: { clinical: 5, teaching: 0, papers: 0, self: 50, health: 88, familyBond: 50, money: 10 },
     family: { stage: 'single', kids: 0 },
+    grants: { applied: false, yearsPI: 0 },
     flags: {},
     used: [],
     stats: { surgeries: 0, livesSaved: 0, lawsuits: 0, missedDinners: 0 },
@@ -671,19 +673,25 @@ git commit -m "feat: engine core state, stages, allocation validation"
   - `settleHealth(state, alloc) → boolean`(true = 死亡)
   - `settleMoney(state)` — 薪資入帳(職級決定,醫美看社交)
   - `settlePhd(state, alloc) → string|null` — 博士班進度結算,畢業時回傳繁中 log
+  - `settleGrant(state, alloc) → string|null` — 部級研究計畫申請/通過結算,有事發生時回傳繁中 log
   - `settlePromotion(state) → string|null` — 升等判定,回傳繁中 log 或 null
   - `malpracticeChance(state) → number`(0..0.45)
 
 規則(數字為最終定案,直接照抄):
 
-- 成長:`clinical += alloc.clinical * (0.4 + dexterity*0.16) * stage.clinicalMult`;醫美時 clinical 每年再 -3。`teaching += alloc.teaching * (0.5 + charisma*0.15) * stage.teachingMult`。`papers += alloc.research * (0.3 + research*0.12) * (flags.phd==='done' ? 1.5 : 1)`(保留小數;博士=論文生產線)。
+- 成長:`clinical += alloc.clinical * (0.4 + dexterity*0.16) * stage.clinicalMult`;醫美時 clinical 每年再 -3。`teaching += alloc.teaching * (0.5 + charisma*0.15) * stage.teachingMult`。`papers += alloc.research * (2 + research*1.2) * (flags.phd==='done' ? 1.5 : 1)`(保留小數)——`papers` 的語意是**歸類計分點數**(陽明交大醫學院細則:每篇=期刊等級×性質×作者排名,遊戲抽象化為時間×天賦累積;研究天賦 5 的人投 4 個月/年 ≈ 32 點/年,離 300 點門檻約十年——這個慢,就是諷刺本體)。博士 ×1.5 = 論文生產線。
 - 家庭:`familyBond += alloc.family*3`;若 `kids>0 && alloc.family<3` 再 -12;若 `alloc.family===0` 再 -8。
 - 自我:`self += alloc.personal*2.5`;若 `alloc.personal===0` 再 -3。
 - 計數:`missedDinners += (12-alloc.family)*10`;surgical 階段 `surgeries += alloc.clinical*surgeriesPerMonth`、`livesSaved += round(該值*0.1)`。
 - 健康:`ageBase = 1 + (age>=40?1.5:0) + (age>=55?1.5:0)`;`factor = 1.5 - constitution*0.08`;`overwork = max(0, clinical+research-8)*1.2`;`recovery = personal*1.8`;`health = clamp(health - (ageBase+overwork)*factor + recovery)`;health===0 → 死亡。
 - 薪水:surgery 依 stage.salary;rank 加給 assistant+10 / associate+20 / professor+30(諷刺:教授加給一個月一萬)。醫美:`60 + social*45`。支出:`40 + kids*40 + (married?20:0)`。`money += salary - expenses`。
-- 博士班:`flags.phd` 為 `undefined | 'studying' | 'declined' | 'done'`(由事件觸發就讀或婉拒,見 Task 6)。`settlePhd(state, alloc)`:非 `'studying'` 回傳 null;就讀中 `flags.phdProgress += alloc.research`,每年額外 `health -2`(在職進修);`phdProgress >= 15` → `flags.phd='done'`,回傳畢業 log。**博士不是升等的必要條件**,是加速器:研究產出 ×1.5(見成長公式)+ 論文門檻打折(見下)。
-- 升等(僅 surgery 且 attending):rank none→vs(第一年自動)。論文門檻依有無博士打折:vs→assistant 需 `papers >= (phd==='done' ? 20 : 30) && teaching>=40`;assistant→associate 需 `papers >= (phd==='done' ? 45 : 60) && teaching>=60`;associate→professor 需 `papers >= (phd==='done' ? 80 : 100) && teaching>=75`。**手術技能不在任何條件裡。**
+- 博士班:`flags.phd` 為 `undefined | 'studying' | 'declined' | 'done'`(由事件觸發就讀或婉拒,見 Task 6)。`settlePhd(state, alloc)`:非 `'studying'` 回傳 null;就讀中 `flags.phdProgress += alloc.research`,每年額外 `health -2`(在職進修);`phdProgress >= 15` → `flags.phd='done'`,回傳畢業 log。**博士不是升等的必要條件**,是加速器(依細則真實條文「以學位送審者,不在此限」):(1) 助理教授可以學位送審,免歸類計分門檻;(2) 研究產出 ×1.5(見成長公式)。
+- 研究計畫:`settleGrant(state, alloc)`——非 attending 或非 surgery 回傳 null。`alloc.research >= 3` 時:`grants.applied = true`(申請紀錄),並擲 `rng.chance(min(0.5, 0.1 + research*0.03 + (phd==='done'?0.1:0)))`:通過 → `grants.yearsPI += 1`,回傳通過 log;未通過 → 回傳被拒 log(審查意見:「創新性不足。」)。`alloc.research < 3` 回傳 null。
+- 升等(僅 surgery 且 attending;數字取自陽明交大醫學院細則):rank none→vs(第一年自動)。**教學及格線 70(教學服務審查,未達不得送件)適用所有升等**:
+  - vs→assistant:`teaching >= 70` 且(`papers >= 300` **或** `flags.phd === 'done'`(以學位送審,不受計分門檻限制))
+  - assistant→associate:`teaching >= 70 && papers >= 400 && grants.applied`(5 年內部級計畫申請紀錄,未具備者不收件)
+  - associate→professor:`teaching >= 70 && papers >= 500 && grants.yearsPI >= 2`(通過計畫且主持二年以上,未具備者不收件)
+  - **手術技能不在任何條件裡。**升等 log 可帶外審敘事(外審五人、80 分及格、通過不得低於四人)。
 - 醫糾:非 surgery 或非 resident/attending → 0。`base = attending?0.08:0.04`;`+ max(0,65-clinical)*0.004`;`- social*0.02`;`flags.defensive` 再 -0.03;夾在 0.005..0.45。
 
 - [ ] **Step 1: 寫失敗測試 `tests/engine-settle.test.js`**
@@ -696,6 +704,7 @@ import {
   settleHealth,
   settleMoney,
   settlePhd,
+  settleGrant,
   settlePromotion,
   malpracticeChance,
 } from '../src/engine.js';
@@ -800,32 +809,88 @@ describe('settlePromotion', () => {
     expect(s.rank).toBe('vs');
   });
 
-  it('promotion looks only at papers and teaching — never clinical', () => {
+  it('assistant professorship needs 300 points and passing teaching — never clinical', () => {
     const s = createGame(1);
     s.age = 40;
     s.rank = 'vs';
     s.attrs.clinical = 100;
-    s.attrs.papers = 29;
+    s.attrs.papers = 299;
     s.attrs.teaching = 100;
-    expect(settlePromotion(s)).toBeNull(); // 差 1 篇 paper,刀神也沒用
-    s.attrs.papers = 30;
-    s.attrs.teaching = 40;
+    expect(settlePromotion(s)).toBeNull(); // 歸類計分差 1 點,刀神也沒用
+    s.attrs.papers = 300;
     expect(settlePromotion(s)).toMatch(/助理教授/);
     expect(s.rank).toBe('assistant');
   });
 
-  it('a PhD discounts the paper threshold — same papers, the degree goes first', () => {
+  it('teaching below 70 blocks submission entirely (教學服務不及格,不得送件)', () => {
+    const s = createGame(1);
+    s.age = 40;
+    s.rank = 'vs';
+    s.attrs.papers = 500;
+    s.attrs.teaching = 69;
+    expect(settlePromotion(s)).toBeNull();
+  });
+
+  it('a PhD lets you submit by degree — no point threshold (以學位送審者,不在此限)', () => {
     const withPhd = createGame(1);
     const without = createGame(1);
     for (const s of [withPhd, without]) {
       s.age = 40;
       s.rank = 'vs';
-      s.attrs.papers = 20;
-      s.attrs.teaching = 50;
+      s.attrs.papers = 50;
+      s.attrs.teaching = 70;
     }
     withPhd.flags.phd = 'done';
-    expect(settlePromotion(without)).toBeNull(); // 20 篇,沒學位:再等等
-    expect(settlePromotion(withPhd)).toMatch(/助理教授/); // 20 篇,有學位:先升
+    expect(settlePromotion(without)).toBeNull(); // 50 點,沒學位:繼續刻
+    expect(settlePromotion(withPhd)).toMatch(/助理教授/); // 以學位送審,直接過
+  });
+
+  it('associate needs a grant application record; professor needs 2+ years as PI (未具備者不收件)', () => {
+    const s = createGame(1);
+    s.age = 50;
+    s.rank = 'assistant';
+    s.attrs.papers = 450;
+    s.attrs.teaching = 80;
+    expect(settlePromotion(s)).toBeNull(); // 沒有計畫申請紀錄:不收件
+    s.grants.applied = true;
+    expect(settlePromotion(s)).toMatch(/副教授/);
+    s.attrs.papers = 600;
+    s.grants.yearsPI = 1;
+    expect(settlePromotion(s)).toBeNull(); // 主持未滿二年:不收件
+    s.grants.yearsPI = 2;
+    expect(settlePromotion(s)).toMatch(/教授/);
+  });
+});
+
+describe('settleGrant', () => {
+  it('research >= 3 months leaves an application record regardless of outcome', () => {
+    const s = createGame(1);
+    s.age = 40;
+    s.rank = 'vs';
+    s.rng = { chance: () => false, next: () => 0.99 };
+    const log = settleGrant(s, alloc(4, 0, 3, 3, 2));
+    expect(s.grants.applied).toBe(true);
+    expect(s.grants.yearsPI).toBe(0);
+    expect(log).toMatch(/創新性不足/); // 被拒的審查意見,一行
+  });
+
+  it('a passing roll adds a PI year', () => {
+    const s = createGame(1);
+    s.age = 40;
+    s.rank = 'vs';
+    s.rng = { chance: () => true, next: () => 0 };
+    const log = settleGrant(s, alloc(4, 0, 3, 3, 2));
+    expect(s.grants.yearsPI).toBe(1);
+    expect(log).toMatch(/計畫/);
+  });
+
+  it('is a no-op below 3 research months or outside attending surgery', () => {
+    const s = createGame(1);
+    s.age = 40;
+    s.rank = 'vs';
+    expect(settleGrant(s, alloc(6, 2, 2, 1, 1))).toBeNull();
+    const pgy = createGame(1);
+    expect(settleGrant(pgy, alloc(6, 0, 3, 2, 1))).toBeNull();
   });
 });
 
@@ -892,7 +957,7 @@ export function applyGrowth(state, alloc) {
   a.clinical = clamp(a.clinical + alloc.clinical * (0.4 + t.dexterity * 0.16) * stage.clinicalMult);
   if (state.career === 'aesthetic') a.clinical = clamp(a.clinical - 3);
   a.teaching = clamp(a.teaching + alloc.teaching * (0.5 + t.charisma * 0.15) * stage.teachingMult);
-  a.papers += alloc.research * (0.3 + t.research * 0.12) * (state.flags.phd === 'done' ? 1.5 : 1);
+  a.papers += alloc.research * (2 + t.research * 1.2) * (state.flags.phd === 'done' ? 1.5 : 1);
   a.familyBond = clamp(
     a.familyBond +
       alloc.family * 3 -
@@ -936,6 +1001,18 @@ export function settlePhd(state, alloc) {
   return '你通過口試,拿到博士學位。口試委員最後一個問題是:「畢業後,你打算什麼時候做研究?」你看著自己下週的刀表,笑而不答。';
 }
 
+export function settleGrant(state, alloc) {
+  if (state.career !== 'surgery' || getStage(state).key !== 'attending') return null;
+  if (alloc.research < 3) return null;
+  state.grants.applied = true; // 申請紀錄本身就是副教授送審的門票
+  const p = Math.min(0.5, 0.1 + state.talents.research * 0.03 + (state.flags.phd === 'done' ? 0.1 : 0));
+  if (state.rng.chance(p)) {
+    state.grants.yearsPI += 1;
+    return `你的部級研究計畫通過了,今年以主持人身分執行(累計 ${state.grants.yearsPI} 年)。經費不多,但升等表上那一格,終於能填了。`;
+  }
+  return '計畫申請結果:未通過。你寫了兩週的計畫書,審查意見一行:「創新性不足。」';
+}
+
 export function settlePromotion(state) {
   if (state.career !== 'surgery' || getStage(state).key !== 'attending') return null;
   const a = state.attrs;
@@ -944,17 +1021,20 @@ export function settlePromotion(state) {
     state.rank = 'vs';
     return '你升上主治醫師。恭喜——從今天起,你的薪水和健保點值綁在一起了。';
   }
-  if (state.rank === 'vs' && a.papers >= (phd ? 20 : 30) && a.teaching >= 40) {
+  if (a.teaching < 70) return null; // 教學服務審查 70 分及格,未達不得送件
+  if (state.rank === 'vs' && (a.papers >= 300 || phd)) {
     state.rank = 'assistant';
-    return '升等通過:助理教授。月薪增加一萬元。你的手術技能不在任何一張評分表上。';
+    return phd
+      ? '你以博士學位送審,升等通過:助理教授。學位論文充當代表著作,歸類計分的門檻與你無關——細則寫得明白:「以學位送審者,不在此限。」'
+      : '外審五人回來四份「優良」,升等通過:助理教授。三百點歸類計分,是你十年的夜晚。月薪增加一萬元——你的手術技能,不在任何一張評分表上。';
   }
-  if (state.rank === 'assistant' && a.papers >= (phd ? 45 : 60) && a.teaching >= 60) {
+  if (state.rank === 'assistant' && a.papers >= 400 && state.grants.applied) {
     state.rank = 'associate';
     return '升等通過:副教授。院長在頒聘書時說「繼續努力」,你想不起他上次進開刀房是哪一年。';
   }
-  if (state.rank === 'associate' && a.papers >= (phd ? 80 : 100) && a.teaching >= 75) {
+  if (state.rank === 'associate' && a.papers >= 500 && state.grants.yearsPI >= 2) {
     state.rank = 'professor';
-    return '升等通過:教授。這是這個體系能給你的最高肯定——與你救過多少人無關。';
+    return '升等通過:教授。五百點計分、兩年計畫主持、外審五人全數通過——這是這個體系能給你的最高肯定,與你救過多少人無關。';
   }
   return null;
 }
@@ -1227,8 +1307,8 @@ export const EVENTS = [
     choices: [
       {
         label: '從睡眠裡擠時間寫。',
-        effects: { papers: 2, health: -5 },
-        log: '凌晨三點的醫局,只剩你的螢幕亮著。文獻的第三段你讀了四遍。',
+        effects: { papers: 15, health: -5 },
+        log: '凌晨三點的醫局,只剩你的螢幕亮著。三個月後,一篇 case series 刊出——歸類計分 15 點。你離三百點,又近了二十分之一。',
       },
       {
         label: '說你想先把刀練好。',
@@ -1367,7 +1447,7 @@ export const EVENTS = [
     stages: ['attending'],
     once: true,
     cond: (s) => s.rank === 'vs' && s.flags.phd === undefined,
-    text: '科務會議後,主任把你留下:「要不要考慮念個在職博士?不是必要啦——但有學位,論文門檻打折,產線也快。你自己算算,同樣要升等,哪條路快。」',
+    text: '科務會議後,主任把你留下:「要不要考慮念個在職博士?不是必要啦——但細則寫得清楚,以學位送審,三百點歸類計分直接免了,學位論文就能當代表著作。你自己算算,同樣要升等,哪條路快。」',
     choices: [
       {
         label: '報考在職博士班。',
@@ -1391,19 +1471,28 @@ export const EVENTS = [
     id: 'a_phd_peer',
     stages: ['attending'],
     once: true,
-    cond: (s) => s.rank === 'vs' && s.flags.phd !== 'done' && s.attrs.papers >= 12,
-    text: '公佈欄貼出新的升等名單:比你晚三年進來的學弟,拿著博士學位升上了助理教授。他的年刀量,是你的三分之一。',
+    cond: (s) => s.rank === 'vs' && s.flags.phd !== 'done' && s.attrs.papers >= 100,
+    text: '公佈欄貼出新的升等名單:比你晚三年進來的學弟,以博士學位送審,升上了助理教授。他的年刀量,是你的三分之一;你的三百點歸類計分,還刻在半路上。',
     effects: { self: -3 },
     log: '你看著名單想了很久,最後想通了:公式裡沒有刀量這一項。從來就沒有。',
+  },
+  {
+    id: 'a_teaching_credit',
+    stages: ['attending'],
+    weight: 2,
+    cond: (s) => s.alloc.teaching >= 2,
+    text: '學期末,你在系統上登錄教學時數:門診教學、急診教學、病房迴診、開刀房帶刀——每一小時都要填,一格都不能少。細則說這些都算教學。細則沒說的是,這些都不算錢。',
+    effects: { teaching: 2, self: -1 },
+    log: '登錄系統當掉了兩次。你在深夜十一點按下送出,螢幕顯示:「教學時數已認列。」',
   },
   {
     id: 'a_promotion_denied',
     stages: ['attending'],
     once: true,
-    cond: (s) => s.rank === 'vs' && s.attrs.clinical >= 70 && s.attrs.papers < 30,
-    text: '升等會議結果公佈:你落選了。評語:「臨床表現優異,學術產出不足。」你當年救回的那些人,不算產出。',
+    cond: (s) => s.rank === 'vs' && s.attrs.clinical >= 70 && s.attrs.papers < 300,
+    text: '年度考核面談,主任攤開你的資料:「臨床表現優異,學術產出不足——歸類計分連送審門檻的一半都不到。」你當年救回的那些人,不算產出。',
     effects: { self: -5 },
-    log: '公佈欄前,一位論文很多的同事拍拍你的肩:「先衝 paper 啦,刀讓年輕的開。」',
+    log: '走廊上,一位論文很多的同事拍拍你的肩:「先衝 paper 啦,刀讓年輕的開。」',
   },
   {
     id: 'a_health_check',
@@ -1785,12 +1874,12 @@ describe('decideEnding', () => {
   it('settlement includes the numbers that never appear on any award', () => {
     const s = createGame(1);
     s.stats.surgeries = 1234;
-    s.attrs.papers = 10;
+    s.attrs.papers = 400; // 歸類計分 400 點 ≈ 10 篇
     const labels = decideEnding(s, 'retire').settlement.map((x) => x.label);
     expect(labels).toContain('執刀次數');
     expect(labels).toContain('錯過的家庭晚餐');
     const cited = decideEnding(s, 'retire').settlement.find((x) => x.label.includes('引用'));
-    expect(cited.value).toBe(3);
+    expect(cited.value).toBe('3 篇');
   });
 });
 ```
@@ -1870,8 +1959,9 @@ export function decideEnding(state, cause) {
     { label: '執刀次數', value: state.stats.surgeries },
     { label: '救回的人', value: state.stats.livesSaved },
     { label: '被告次數', value: state.stats.lawsuits },
-    { label: '發表論文', value: Math.round(a.papers) },
-    { label: '其中真的有人引用的', value: Math.floor(a.papers * 0.3) },
+    { label: '論文歸類計分', value: `${Math.round(a.papers)} 點` },
+    { label: '折合論文', value: `約 ${Math.round(a.papers / 40)} 篇` },
+    { label: '其中真的有人引用的', value: `${Math.floor((a.papers / 40) * 0.3)} 篇` },
     { label: '錯過的家庭晚餐', value: state.stats.missedDinners },
     { label: '最終存款', value: `${Math.round(a.money)} 萬` },
     { label: '孩子', value: state.family.kids > 0 ? `${state.family.kids} 個` : '無' },
@@ -2084,6 +2174,8 @@ export async function playYear(state, alloc, chooser) {
   settleMoney(state);
   const phdLog = settlePhd(state, alloc);
   if (phdLog) logs.push({ kind: 'info', text: phdLog });
+  const grantLog = settleGrant(state, alloc);
+  if (grantLog) logs.push({ kind: 'info', text: grantLog });
   const promo = settlePromotion(state);
   if (promo) logs.push({ kind: 'info', text: promo });
 
@@ -2496,7 +2588,7 @@ function renderStatus() {
     [`家庭 ${Math.round(a.familyBond)}`, a.familyBond < 30],
     [`臨床 ${Math.round(a.clinical)}`, false],
     [`教學 ${Math.round(a.teaching)}`, false],
-    [`論文 ${Math.round(a.papers)}`, false],
+    [`計分 ${Math.round(a.papers)}`, false],
     [`存款 ${Math.round(a.money)} 萬`, a.money < 0],
   ];
   $('status-bar').innerHTML = items
@@ -2742,6 +2834,6 @@ git commit -m "docs: add readme with play and deploy instructions"
 
 ## Self-Review 紀錄
 
-- Spec 覆蓋:序章蒙太奇+聯考假選擇(Task 10 runPrologue + events.js PROLOGUE)、五軸 12 月配置(Task 4/10)、天賦斜率(Task 5)、社交雙面刃(Task 5 malpracticeChance、Task 6 醫美/判決事件、Task 7 醫美結局分流)、能力薪水脫鉤(Task 5 settleMoney 測試明確驗證)、教職系統:升等只看論文,博士為加速器(研究 ×1.5、門檻打折;Task 5 settlePhd/settlePromotion/applyGrowth、Task 6 a_phd_offer/a_phd_peer)、健康=壽命(Task 5/8)、自我濾鏡(Task 7)、感情進程鏈(Task 6 f_* 事件)、選科岔路為中性結局 another_path(Task 6/7/8)、結算單(Task 7)、CI/pre-commit/ADR(Task 1)、smoke(Task 9)。
+- Spec 覆蓋:序章蒙太奇+聯考假選擇(Task 10 runPrologue + events.js PROLOGUE)、五軸 12 月配置(Task 4/10)、天賦斜率(Task 5)、社交雙面刃(Task 5 malpracticeChance、Task 6 醫美/判決事件、Task 7 醫美結局分流)、能力薪水脫鉤(Task 5 settleMoney 測試明確驗證)、教職系統依陽明交大醫學院細則:歸類計分 300/400/500、教學 70 及格線、計畫申請紀錄/主持二年、博士以學位送審免計分門檻+研究 ×1.5(Task 5 settlePhd/settleGrant/settlePromotion/applyGrowth、Task 6 a_phd_offer/a_phd_peer/a_teaching_credit)、健康=壽命(Task 5/8)、自我濾鏡(Task 7)、感情進程鏈(Task 6 f_* 事件)、選科岔路為中性結局 another_path(Task 6/7/8)、結算單(Task 7)、CI/pre-commit/ADR(Task 1)、smoke(Task 9)。
 - 型別一致性:`playYear(state, alloc, chooser)`、`chooser({id,text,choices},state)→index`、`decideEnding(state,cause)` 於 Task 7/8/9/10 簽名一致;effects/stats 合法鍵集中定義於 Task 6 測試。
 - 已知簡化:醫糾機率注入每年至多一次;`once` 事件在 choices 分岔時不重複出現(含 `f_propose` 未標 once,允許「再等等」後隔年再遇)。
