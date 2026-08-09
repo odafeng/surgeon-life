@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { createGame, playYear, getStage, ALLOC_KEYS } from '../src/engine.js';
+import { createGame, playYear, getStage, conformAllocation, ALLOC_KEYS } from '../src/engine.js';
 import { createRng } from '../src/rng.js';
 
 function randomAlloc(state, rng) {
@@ -11,7 +11,11 @@ function randomAlloc(state, rng) {
     alloc[rng.pick(ALLOC_KEYS)] += chunk;
     left -= chunk;
   }
-  return alloc;
+  // 制度的臨床下限與承諾的家庭下限都要顧到，跟真正的玩家一樣
+  const out = conformAllocation(state, alloc);
+  const sum = ALLOC_KEYS.reduce((s, k) => s + out[k], 0);
+  out.personal += 100 - sum;
+  return out;
 }
 
 describe('smoke: random playthroughs', () => {

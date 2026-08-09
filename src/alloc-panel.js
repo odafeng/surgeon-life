@@ -24,6 +24,16 @@ function startingAlloc(state) {
       if (need <= 0) break;
     }
   }
+  if (base.family < (state.family.floor || 0)) {
+    let need = state.family.floor - base.family;
+    base.family = state.family.floor;
+    for (const k of ['research', 'teaching', 'personal']) {
+      const take = Math.min(need, base[k]);
+      base[k] -= take;
+      need -= take;
+      if (need <= 0) break;
+    }
+  }
   const sum = ALLOC_KEYS.reduce((s, k) => s + base[k], 0);
   base.personal += 100 - sum; // 收尾補到 100
   if (base.personal < 0) {
@@ -33,17 +43,29 @@ function startingAlloc(state) {
   return base;
 }
 
+/** 承諾的來源，用來解釋家庭下限為什麼在那裡。 */
+function promiseReason(state) {
+  if (state.family.kids > 0) return '孩子不會因為你在值班就不用陪';
+  if (state.family.stage === 'married') return '你答應過每週至少一起吃一頓晚餐';
+  if (state.family.stage !== 'single') return '你答應過認真試試看';
+  return '';
+}
+
 export function openAllocPanel(state) {
   const stage = getStage(state);
   const min = stage.minClinicalPct;
+  const floor = state.family.floor || 0;
   const alloc = startingAlloc(state);
   const bar = $('plan-bar');
 
   $('plan-title').textContent = `${state.age} 歲　這一年怎麼過`;
   $('plan-sub').textContent = `${stage.label}　／　拖曳分隔線調整比重`;
-  $('plan-lock').textContent = min
-    ? `斜線區是 ${stage.label}的臨床下限 ${min}%——這不是你能選的。`
-    : '你已經離開健保體系，沒有人規定你的時間怎麼分。';
+  const lockLines = [];
+  if (min) lockLines.push(`臨床的斜線區是 ${stage.label}的下限 ${min}%——這是制度規定的。`);
+  else lockLines.push('你已經離開健保體系，沒有人規定你的臨床時間怎麼分。');
+  if (floor)
+    lockLines.push(`家庭的斜線區是 ${floor}%——${promiseReason(state)}。這是你自己答應的。`);
+  $('plan-lock').textContent = lockLines.join('\n');
 
   function bounds() {
     const b = [0];
@@ -61,10 +83,11 @@ export function openAllocPanel(state) {
       seg.style.width = `${alloc[k]}%`;
       if (alloc[k] >= 12) seg.textContent = `${AXIS_LABELS[k]} ${alloc[k]}%`;
       else if (alloc[k] >= 6) seg.textContent = AXIS_LABELS[k];
-      if (k === 'clinical' && min > 0) {
+      const lockPct = k === 'clinical' ? min : k === 'family' ? floor : 0;
+      if (lockPct > 0) {
         const lock = document.createElement('span');
         lock.className = 'lockzone';
-        lock.style.width = `${alloc[k] ? (min / alloc[k]) * 100 : 0}%`;
+        lock.style.width = `${alloc[k] ? Math.min(100, (lockPct / alloc[k]) * 100) : 0}%`;
         seg.appendChild(lock);
       }
       bar.appendChild(seg);
@@ -132,6 +155,12 @@ export function openAllocPanel(state) {
     for (let j = i + 1; j <= 4; j++) b[j] = Math.max(b[j], pos);
     for (let j = i - 1; j >= 1; j--) b[j] = Math.min(b[j], pos);
     for (let j = 1; j <= 4; j++) b[j] = Math.max(b[j], min); // 臨床下限
+    // 家庭承諾下限：family 佔 b[3] 到 b[4]，兩邊都不能把它擠掉
+    if (floor > 0 && b[4] - b[3] < floor) {
+      if (i <= 3) b[3] = Math.max(min, b[4] - floor);
+      else b[4] = Math.min(100, b[3] + floor);
+      if (b[4] - b[3] < floor) b[3] = Math.max(min, b[4] - floor);
+    }
     ALLOC_KEYS.forEach((k, idx) => {
       alloc[k] = b[idx + 1] - b[idx];
     });

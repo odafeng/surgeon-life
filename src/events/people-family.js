@@ -20,28 +20,27 @@ export const FAMILY_ARC_EVENTS = [
     mood: 'lifted',
     stages: ['pgy', 'resident', 'attending', 'aesthetic'],
     once: true,
-    weight: 5,
-    cond: (s) => s.family.stage === 'single' && s.family.invested >= 1 && !S(s).gone,
-    text: '朋友介紹你認識了郁涵。第一次見面，她問：「聽說你們醫師都很忙？」',
+    // 這一幕不看你之前有沒有分時間給「家庭」——沒有人的時候，
+    // 沒有人會把時間分給一個空的欄位。機會要先來，承諾才有得許。
+    weight: 7,
+    cond: (s) => s.family.stage === 'single' && !S(s).gone && s.age >= 27,
+    text: '朋友介紹你認識了郁涵。第一次見面，她問：「聽說你們醫師都很忙？」你發現自己已經三年沒有跟不是同事的人吃過飯。',
     choices: [
       {
-        label: '老實說：「忙到沒有自己的時間。」',
+        label: '認真試試看。（家庭時間從此不得低於 15%）',
         bond: { spouse: 10 },
         memory: '你對郁涵說了實話：忙到沒有自己的時間。她笑了，說至少你誠實。',
         set: (s) => {
           s.family.stage = 'dating';
+          s.family.floor = 15; // 剛好是關係能往前走的最低限度
           advance(s, 'spouse', 1);
         },
-        log: '她笑了：「至少你誠實。」你們開始約會——大多約在醫院附近。',
+        log: '她笑了：「至少你誠實。」你們開始約會——大多約在醫院附近。從這個月起，你的行事曆上多了一格不能動的東西。',
       },
       {
-        label: '說：「還好啦，可以配合。」',
-        bond: { spouse: 4 },
-        set: (s) => {
-          s.family.stage = 'dating';
-          advance(s, 'spouse', 1);
-        },
-        log: '你們開始約會。三個月後她就會知道，「還好」是什麼意思。',
+        label: '現在真的沒空。',
+        effects: { self: -2 },
+        log: '你說等這一年過去。這句話你之後還會說很多次，對很多人。有些人會等，有些不會。',
       },
     ],
   },
@@ -99,9 +98,10 @@ export const FAMILY_ARC_EVENTS = [
         memory: '你把手機交給同事代班，然後求婚了。她只提一個條件：每週至少一起吃一頓晚餐。',
         set: (s) => {
           s.family.stage = 'married';
+          s.family.floor = 20;
           advance(s, 'spouse', 3);
         },
-        log: '她哭著答應，只提了一個條件：「每週至少一起吃一頓晚餐。」你答應了。你們都知道這個承諾有多難。',
+        log: '她哭著答應，只提了一個條件：「每週至少一起吃一頓晚餐。」你答應了。你們都知道這個承諾有多難——從今年起，家庭時間不得低於 20%。',
       },
       {
         label: '再等等，等升上主治穩定一點。',
@@ -191,6 +191,7 @@ export const FAMILY_ARC_EVENTS = [
     set: (s) => {
       s.family.kids = 1;
       s.family.children.push({ bornAt: s.age });
+      s.family.floor = 25; // 孩子不因你在值班就不用陪
       s.flags.expectingChild = false;
     },
     log: '你隔著口罩笑了，眼睛有點酸。那台刀你多花了二十分鐘，因為手一直在抖。',
@@ -365,9 +366,14 @@ export const FAMILY_ARC_EVENTS = [
     scene: 'home',
     mood: 'weary',
     stages: ['resident', 'attending', 'aesthetic'],
-    weight: 6,
-    cond: (s) =>
-      S(s).stage >= 1 && s.family.stage !== 'single' && s.family.neglect >= 3 && !S(s).gone,
+    // 你把答應過的事收回去之後，這一幕一定會來。它是警告，不是懲罰——
+    // 你還有一年可以回答它。
+    forced: (s) =>
+      S(s).stage >= 1 &&
+      s.family.stage !== 'single' &&
+      s.family.neglect >= 3 &&
+      !s.flags.familyWarned &&
+      !S(s).gone,
     text: '郁涵把離婚協議書放在餐桌上，沒有情緒。「我不是要吵架。我只是想確認，這樣下去我們還算不算一家人。」',
     choices: [
       {
@@ -377,14 +383,20 @@ export const FAMILY_ARC_EVENTS = [
         memory: '郁涵把離婚協議書放在桌上，你當場刪掉了明年三分之一的刀。',
         set: (s) => {
           s.family.neglect = 0;
+          s.family.floor = Math.max(s.family.floor, s.family.kids > 0 ? 25 : 20);
+          s.flags.familyWarned = true;
         },
         log: '你真的刪了。年底的績效掉到全科最後，主任找你談話。那份協議書後來被拿去墊桌腳。',
       },
       {
-        label: '「再撐一下，等我升上去。」',
+        label: '「再撐一下，等我升上去。」（承諾降到 10%）',
         effects: { familyBond: -12, self: -8 },
         bond: { spouse: -14 },
-        log: '她收起那張紙，說：「好。」你以為那是答應。三年後你才知道，那是她開始不再期待的那一天。',
+        set: (s) => {
+          s.family.floor = 10; // 你把答應過的事往回收了
+          s.flags.familyWarned = true;
+        },
+        log: '她收起那張紙，說：「好。」你以為那是答應。三年後你才知道，那是她開始不再期待的那一天。從那年起，你們家的晚餐桌少了一個固定位置。',
       },
     ],
   },
@@ -395,15 +407,20 @@ export const FAMILY_ARC_EVENTS = [
     mood: 'weary',
     stages: ['resident', 'attending', 'aesthetic'],
     once: true,
-    weight: 6,
-    cond: (s) =>
-      s.family.stage !== 'single' && s.family.neglect >= 6 && !S(s).gone && s.attrs.familyBond < 25,
+    // 警告來過，你沒有改。這一幕不是機率問題。
+    forced: (s) =>
+      s.family.stage !== 'single' &&
+      s.flags.familyWarned &&
+      s.family.neglect >= 5 &&
+      !S(s).gone &&
+      s.attrs.familyBond < 40,
     text: '你值完班回家，客廳的燈是暗的。衣櫃空了一半，冰箱上有一張紙條：「你救得了病人，救不了我們。」',
     effects: { familyBond: -25, self: -14 },
     memory: '你值完班回家，衣櫃空了一半。紙條上寫著：你救得了病人，救不了我們。',
     set: (s) => {
       s.people.spouse.gone = true;
       s.family.stage = 'single';
+      s.family.floor = s.family.kids > 0 ? 20 : 0; // 婚沒了，孩子還在
     },
     log: '你想反駁，但值班鈴響了。等你忙完，已讀不回的人變成了你。',
   },
@@ -462,6 +479,43 @@ export const FAMILY_ARC_EVENTS = [
     bond: { spouse: 8 },
     memory: '你連值三天，值班室桌上有一個便當，底下壓著一張紙條：不用回，吃就好。',
     log: '便當底下壓著一張紙條：「不用回，吃就好。」你坐在那裡吃完，然後又值了一天。',
+  },
+
+  {
+    // 承諾會跟你的野心正面對撞。這一幕是唯一的出口——
+    // 你可以把答應過的事收回去，但那句話說出口就收不回來了。
+    id: 'fa_ask_relief',
+    priority: true,
+    scene: 'home',
+    mood: 'weary',
+    stages: ['resident', 'attending'],
+    once: true,
+    weight: 6,
+    cond: (s) =>
+      S(s).stage >= 1 &&
+      !S(s).gone &&
+      (s.family.floor || 0) >= 20 &&
+      (s.attrs.health < 48 || s.alloc.personal < 12),
+    text: '你算了一下下半年的行程：升等送審、兩個計畫、加開的刀。怎麼排都排不出時間。郁涵在客廳等你講話，她已經知道你要說什麼了。',
+    choices: [
+      {
+        label: '「這一年真的不行，讓我拚完。」（承諾降到 10%）',
+        effects: { self: -6, familyBond: -8 },
+        bond: { spouse: -10 },
+        memory: '你跟郁涵說，這一年真的不行，讓你拚完。她說好。',
+        set: (s) => {
+          s.family.floor = 10;
+        },
+        log: '她說：「好。」沒有吵，也沒有問是哪一年。那之後她開始自己安排週末，不再問你有沒有空。',
+      },
+      {
+        label: '不說。把研究砍掉，把時間留著。',
+        effects: { self: 6, familyBond: 6, papers: -25 },
+        bond: { spouse: 10 },
+        memory: '你把送審的計畫撤掉了，沒有跟任何人說原因。',
+        log: '你撤掉了那兩個計畫。主任問你為什麼，你說時間喬不過來。他沒有再問，但那一年的考核你拿了乙。',
+      },
+    ],
   },
 
   // ───────── 父母 ─────────

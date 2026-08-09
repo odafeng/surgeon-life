@@ -80,6 +80,7 @@ export function createGame(seed) {
       stage: 'single',
       kids: 0, // 人數。孩子的細節在 children，這裡保留數字讓既有事件與支出公式照用
       children: [], // [{ bornAt }]，用來算孩子現在幾歲
+      floor: 0, // 家庭時間的下限。承諾一旦許下，時間就被鎖住了
       invested: 0, // 累計「有給家庭時間」的年數。感情要的是持續出現，不是某一年突然投入
       neglect: 0, // 連續幾年沒給
     },
@@ -139,6 +140,9 @@ export function validateAllocation(state, alloc) {
   if (sum !== 100) throw new Error(`五項加起來必須是 100%，你分配了 ${sum}%`);
   if (out.clinical < stage.minClinicalPct)
     throw new Error(`${stage.label}的臨床不得低於 ${stage.minClinicalPct}%——這不是你能選的`);
+  // 制度給你臨床下限，承諾給你家庭下限。兩個都不是你當下能反悔的。
+  const floor = state.family.floor || 0;
+  if (out.family < floor) throw new Error(`你答應過的事，家庭不得低於 ${floor}%`);
   return out;
 }
 
@@ -149,16 +153,21 @@ export function validateAllocation(state, alloc) {
  */
 export function conformAllocation(state, alloc) {
   const min = getStage(state).minClinicalPct;
+  const floor = state.family.floor || 0;
   const out = { ...alloc };
-  if (out.clinical >= min) return out;
-  let need = min - out.clinical;
-  out.clinical = min;
-  for (const k of ['research', 'teaching', 'personal', 'family']) {
-    const take = Math.min(need, out[k]);
-    out[k] -= take;
-    need -= take;
-    if (need <= 0) break;
-  }
+  const raise = (key, target, donors) => {
+    if (out[key] >= target) return;
+    let need = target - out[key];
+    out[key] = target;
+    for (const k of donors) {
+      const take = Math.min(need, out[k]);
+      out[k] -= take;
+      need -= take;
+      if (need <= 0) break;
+    }
+  };
+  raise('clinical', min, ['research', 'teaching', 'personal', 'family']);
+  raise('family', floor, ['research', 'teaching', 'personal']);
   return out;
 }
 
@@ -224,7 +233,9 @@ export function applyGrowth(state, alloc) {
   // 感情不會停在原地。你不投入，它就往回走，而且越久走得越快——
   // 沒有這一條的話，一輩子只給 8% 的人也能維持一段不痛不癢的關係。
   const drift =
-    state.family.stage !== 'single' && alloc.family < 15 ? 5 + state.family.neglect * 2 : 0;
+    state.family.stage !== 'single' && alloc.family < Math.max(15, state.family.floor || 0)
+      ? 5 + state.family.neglect * 2
+      : 0;
   a.familyBond = clamp(
     a.familyBond +
       months('family', alloc.family) * 3 -
@@ -241,10 +252,14 @@ export function applyGrowth(state, alloc) {
   );
 
   // 感情進程看的是「你有沒有一直在」，不是某一年的數字。
-  if (alloc.family >= 15) {
+  // 門檻是 15% 或你答應過的下限，取大的——做到自己答應的事就算有在經營。
+  const need = Math.max(15, state.family.floor || 0);
+  const hasSomeone = state.family.stage !== 'single' || state.family.kids > 0;
+  if (alloc.family >= need) {
     state.family.invested += 1;
     state.family.neglect = 0;
-  } else {
+  } else if (hasSomeone) {
+    // 還沒有人的時候不算疏忽——你沒有辜負任何人
     state.family.neglect += 1;
   }
 

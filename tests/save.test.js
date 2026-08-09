@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { serialize, deserialize } from '../src/save.js';
-import { createGame, playYear, getStage } from '../src/engine.js';
+import { createGame, playYear, getStage, conformAllocation, ALLOC_KEYS } from '../src/engine.js';
 
 const first = async () => 0;
 
@@ -16,7 +16,11 @@ function planFor(state) {
     if (left <= 0) break;
   }
   a.clinical += left;
-  return a;
+  // 臨床下限與家庭承諾下限都要顧到
+  const out = conformAllocation(state, a);
+  const sum = ALLOC_KEYS.reduce((acc, k) => acc + out[k], 0);
+  out.personal += 100 - sum;
+  return out;
 }
 
 async function playN(state, n) {
