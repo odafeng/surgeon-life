@@ -2559,8 +2559,7 @@ button.primary:disabled {
     opacity: 1;
   }
 }
-#choice-box button,
-#choice-box .exam-choice {
+#choice-box button {
   display: block;
   width: 100%;
   margin: 0.5rem 0;
@@ -2724,8 +2723,11 @@ async function runPrologue() {
   }
 }
 
+const printedLive = new Set();
+
 function askChoice(ev) {
   addLog('event', ev.text);
+  printedLive.add(ev.text);
   return new Promise((resolve) => {
     const box = $('choice-box');
     box.innerHTML = '';
@@ -2735,6 +2737,8 @@ function askChoice(ev) {
       b.textContent = c.label;
       b.onclick = () => {
         box.classList.add('hidden');
+        addLog('choice', c.log);
+        printedLive.add(c.log);
         resolve(i);
       };
       box.appendChild(b);
@@ -2810,10 +2814,13 @@ async function yearLoop() {
       resolve();
     };
   });
+  printedLive.clear();
+  const yearHeader = `【${state.age} 歲・${getStage(state).label}】`;
+  addLog('year', yearHeader);
+  printedLive.add(yearHeader);
   const { logs, ending } = await playYear(state, alloc, askChoice);
   for (const l of logs) {
-    if (l.kind === 'event' && document.querySelector(`#log p:last-child`)?.textContent === l.text)
-      continue; // askChoice 已即時印出事件文字,避免重複
+    if (printedLive.has(l.text)) continue; // 年份標頭、事件文字與選擇結果已即時印出
     addLog(l.kind, l.text);
     await sleep(650);
   }
@@ -2843,7 +2850,7 @@ $('btn-restart').onclick = () => {
 };
 ```
 
-實作提醒:`playYear` 的 logs 含事件文字,但 `askChoice` 在等待選擇時已先把事件文字印上畫面——迴圈裡的去重檢查(比對上一行文字)就是為了這件事,保留它。
+實作提醒:`askChoice` 在等待選擇時已即時把事件文字與選擇結果印上畫面,年份標頭也在 `playYear` 之前印出——`printedLive` Set 記錄這些已印文字,flush 迴圈以 `printedLive.has(l.text)` 跳過,避免重複與時序錯亂。
 
 - [ ] **Step 4: Lint 與全測試**
 
