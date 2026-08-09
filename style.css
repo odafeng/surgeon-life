@@ -419,6 +419,7 @@ body {
   width: min(calc(var(--u) * 64), 92%);
   max-height: 88%;
   overflow-y: auto;
+  overflow-x: hidden;
   background: linear-gradient(180deg, rgba(233, 227, 212, 0.98), rgba(214, 205, 185, 0.98));
   color: var(--ink);
   padding: calc(var(--u) * 2.2) calc(var(--u) * 2.8) calc(var(--u) * 2.4);
