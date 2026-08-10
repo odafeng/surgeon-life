@@ -261,3 +261,30 @@ describe('回報後修正的那幾處', () => {
     expect(roster.bond?.chief).toBeLessThan(0);
   });
 });
+
+// 前一輪把王慶昌的第一台刀從破裂性腹主動脈瘤改成十二指腸前壁穿孔，
+// 但下游的追蹤沒有跟著改：門診說「追蹤影像沒有變化」、復發那一幕靠「例行追蹤的斷層」。
+// 穿孔修補後既沒有可追的腫瘤，也沒有理由讓他年年吃那個輻射。
+describe('王慶昌的追蹤要接得上他開過的那台刀', () => {
+  const byId = (id) => EVENTS.find((e) => e.id === id);
+  const text = (id) => {
+    const e = byId(id);
+    return typeof e.text === 'string' ? e.text : e.text(createGame(1));
+  };
+
+  it('第一台刀是穿孔修補', () => {
+    expect(text('w_the_night')).toMatch(/游離氣體|板子/);
+  });
+
+  it('年度門診追的是症狀與傷口，不是影像', () => {
+    const t = text('w_annual_guava');
+    expect(t).not.toMatch(/影像|斷層|電腦斷層/);
+  });
+
+  it('胰頭腫瘤由新症狀帶出來，不是憑空的例行斷層', () => {
+    const t = text('w_recurrence');
+    expect(t).not.toMatch(/例行追蹤/);
+    expect(t).toMatch(/黃|尿|瘦/); // 先有症狀，才有理由開影像
+    expect(t).toMatch(/斷層/); // 影像仍然要出現，只是排在症狀之後
+  });
+});
