@@ -659,3 +659,36 @@ describe('老師只退休一次', () => {
     expect(farewells.every((e) => e.id.startsWith('m_') || e.id.startsWith('c_'))).toBe(true);
   });
 });
+
+describe('論文接受可以有很多次，但不是同一封信', () => {
+  // 試玩者在 53 與 59 歲收到逐字相同的那封信：同一個 Congratulations、
+  // 同一句「這種事在這裡不算事」。接受本來就會發生多次，所以不標 once，
+  // 改成讓正文自己承認那是另一篇。
+  it('第一次與第二次讀起來不同，而且順序不會顛倒', async () => {
+    const { EVENTS } = await import('../src/events.js');
+    const e = EVENTS.find((x) => x.id === 'ac_accept_mail');
+    const s = createGame(1);
+
+    // playYear 的順序：先算 text → 套效果 → 跑 set → 才算 log。
+    // 用布林旗標的話，第一次就會顯示第二次的結果文。
+    const first = {
+      text: e.text(s),
+      get log() {
+        return e.log(s);
+      },
+    };
+    expect(first.text).not.toMatch(/又一封/);
+    e.set(s);
+    expect(first.log).toMatch(/不算事/); // set 之後才算 log，第一次仍要是第一次的說法
+
+    const second = e.text(s);
+    expect(second).toMatch(/又一封/);
+    e.set(s);
+    expect(e.log(s)).toMatch(/連是哪一本都要想一下/);
+  });
+
+  it('沒有被標成 once——這一幕本來就該再發生', async () => {
+    const { EVENTS } = await import('../src/events.js');
+    expect(EVENTS.find((x) => x.id === 'ac_accept_mail').once).toBeUndefined();
+  });
+});

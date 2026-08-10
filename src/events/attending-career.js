@@ -27,9 +27,23 @@ export const ATTENDING_CAREER_EVENTS = [
     mood: 'lifted',
     stages: ['attending'],
     weight: 2,
-    text: '刀開到一半，流動護理師說你的手機在更衣室震個不停。收完傷口你才去看：主編來信，第一個字是 Congratulations。',
+    // 論文接受本來就會發生很多次，所以這一幕該重複——但逐字重播就變成同一封信。
+    // 第二次以後由正文自己承認那是另一篇，跟 as_point_settle 同一個做法。
+    // playYear 的順序是：先算 text，套用效果，跑 set，最後才算 log。
+    // 所以 text 讀到的是「這次之前」的次數，log 讀到的是「含這次」的次數，
+    // 用布林旗標的話第一次就會顯示第二次的結果文——這裡用計數。
+    text: (s) =>
+      s.flags.acceptedPapers
+        ? '又一封。刀開到一半，流動護理師說你的手機在更衣室震個不停。收完傷口你才去看：另一篇，另一個主編，同樣的第一個字。'
+        : '刀開到一半，流動護理師說你的手機在更衣室震個不停。收完傷口你才去看：主編來信，第一個字是 Congratulations。',
     effects: { papers: 25, self: 6 },
-    log: '你回了信，然後去看下一台的病人。整間開刀房沒有人知道剛剛發生了什麼——這種事在這裡不算事。',
+    set: (s) => {
+      s.flags.acceptedPapers = (s.flags.acceptedPapers || 0) + 1;
+    },
+    log: (s) =>
+      s.flags.acceptedPapers > 1
+        ? '你回了信，然後去看下一台的病人。第一次你還記得那天穿哪件刷手服，這一次你連是哪一本都要想一下。'
+        : '你回了信，然後去看下一台的病人。整間開刀房沒有人知道剛剛發生了什麼——這種事在這裡不算事。',
   },
   {
     id: 'ac_reviewer2',
