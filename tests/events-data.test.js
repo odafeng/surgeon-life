@@ -320,3 +320,13 @@ describe('選項不替玩家造沒有的負擔', () => {
     expect(take.label).toMatch(/十五萬/); // 講眼前那筆錢就夠了
   });
 });
+
+describe('診所週轉那一幕也不替玩家造房貸', () => {
+  // 條件只有存款低於 50 萬，單身、從未買房的人一樣會抽到。
+  it('自己停薪那個選項的結果不提房貸', () => {
+    const e = EVENTS.find((x) => x.id === 'ae_closure_risk');
+    const c = e.choices.find((x) => /不領薪水/.test(x.label));
+    expect(c, '應該有一個自己停薪的選項').toBeTruthy();
+    expect(c.log).not.toMatch(/房貸/);
+  });
+});
