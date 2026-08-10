@@ -779,3 +779,38 @@ describe('業配可以一直來，但不是同一支影片', () => {
     expect(EVENTS.find((x) => x.id === 'ac_supplement_ad').once).toBeUndefined();
   });
 });
+
+describe('年度考核唸的是你真正的數字', () => {
+  // HUD 上歸類計分 61，黃振邦卻說「歸類計分零」；選項又寫死「我一年開四百台刀」，
+  // 而那一局臨床只有 20%。兩個數字都要照實帶進來——
+  // 而且不能只修正文漏掉按鈕，那是上一輪犯過的錯。
+  it('正文與選項都帶入當下的計分與刀量', async () => {
+    const { EVENTS } = await import('../src/events.js');
+    const e = EVENTS.find((x) => x.id === 'c_paper_quota');
+    const s = createGame(1);
+    s.attrs.papers = 61;
+    s.stats.surgeries = 420;
+
+    expect(e.text(s)).toContain('歸類計分 61');
+    expect(e.text(s)).not.toMatch(/歸類計分零/);
+
+    const push = e.choices[0];
+    expect(push.label(s)).toContain('420');
+    expect(push.label(s)).not.toMatch(/四百台/);
+    expect(push.log(s)).toContain('420'); // 主任回話時唸的是同一個數字
+  });
+
+  it('數字變了，三段文字一起跟著變', async () => {
+    const { EVENTS } = await import('../src/events.js');
+    const e = EVENTS.find((x) => x.id === 'c_paper_quota');
+    const a = createGame(1);
+    a.attrs.papers = 0;
+    a.stats.surgeries = 180;
+    const b = createGame(1);
+    b.attrs.papers = 240;
+    b.stats.surgeries = 1100;
+    expect(e.text(a)).not.toBe(e.text(b));
+    expect(e.choices[0].label(a)).not.toBe(e.choices[0].label(b));
+    expect(e.choices[0].log(a)).not.toBe(e.choices[0].log(b));
+  });
+});
