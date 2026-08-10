@@ -362,3 +362,15 @@ describe('挖角那一幕不會讓玩家走掉又沒走', () => {
     expect(decline.log).toMatch(/婉拒/);
   });
 });
+
+describe('數字要有敘事依據', () => {
+  // 出勤紀錄那一幕，照實回覆扣 5 萬、配合修改給 8 萬，而兩段結果都沒有提到任何一筆錢。
+  // 主治的收入綁在績效，不是在院時數——那兩個數字是為了讓選項有重量硬接上去的。
+  it('出勤紀錄那一幕不再憑空動存款', () => {
+    const e = EVENTS.find((x) => x.id === 'as_overtime_edit');
+    for (const c of e.choices) expect(c.effects.money ?? 0).toBe(0);
+    // 代價仍然在，只是寫在該寫的地方
+    expect(e.choices.find((c) => /照實/.test(c.label)).effects.self).toBeGreaterThan(0);
+    expect(e.choices.find((c) => /修正/.test(c.label)).effects.self).toBeLessThan(0);
+  });
+});
