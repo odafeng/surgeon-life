@@ -340,3 +340,25 @@ describe('別人的藥盒不等於主角的', () => {
     expect(e.log).not.toMatch(/你自己|你的抽屜|抽屜裡那排/);
   });
 });
+
+describe('挖角那一幕不會讓玩家走掉又沒走', () => {
+  // 原本的「去」只改錢與心情，之後黃振邦、阿蘭姐與整套院內事件照演，
+  // 結果文還寫「孩子轉了學」——這一局可能單身無子。
+  // 作者決定不建轉職狀態，改成談判：你其實走不掉。
+  const e = () => EVENTS.find((x) => x.id === 'as_headhunt');
+
+  it('沒有一個選項宣稱你離開了這間醫院', () => {
+    for (const c of e().choices) {
+      expect(c.label).not.toMatch(/^去/);
+      expect(c.log).not.toMatch(/新醫院|搬了家|轉了學/);
+    }
+  });
+
+  it('兩個選項都留在原院，但代價不同', () => {
+    const [deal, decline] = e().choices;
+    expect(deal.label).toMatch(/談/);
+    expect(deal.effects.self).toBeLessThan(0); // 拿去談是要付代價的
+    expect(decline.effects.self).toBeGreaterThan(0); // 不提的人保住了一點自己
+    expect(decline.log).toMatch(/婉拒/);
+  });
+});
