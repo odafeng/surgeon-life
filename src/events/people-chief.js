@@ -47,7 +47,9 @@ export const CHIEF_EVENTS = [
     stages: ['attending'],
     weight: 3,
     cond: (s) => C(s).stage === 0,
-    text: '科務會議。黃振邦站在投影片前唸平均住院天數，唸到你的名字停了兩秒：「你的病人躺太久。」你開的是全科最難的刀。',
+    // 「你開的是全科最難的刀」跟 ac_kpi_slide 那句是同一份未建模的斷言。
+    // 這個遊戲不追蹤刀的難度，也沒有任何選擇讓你成為專開難刀的人。
+    text: '科務會議。黃振邦站在投影片前唸平均住院天數，唸到你的名字停了兩秒：「你的病人躺太久。」那張表上沒有一欄寫著病人本來有多重。',
     effects: { self: -4 },
     bond: { chief: -2 },
     log: '散會他沒有留你。你回頭看那張投影片，欄位有八個，沒有一欄叫做「活著出院」。',
@@ -65,7 +67,8 @@ export const CHIEF_EVENTS = [
     choices: [
       {
         label: '接下來。',
-        effects: { teaching: 2, self: -3, health: -2 },
+        // 感控委員會是院務行政，不是教學服務——軸名叫教學服務就不能什麼都算
+        effects: { self: -3, health: -2 },
         bond: { chief: 4 },
         log: '第一次開會你遲到二十分鐘，因為刀還沒收完。會議紀錄上你的名字後面寫著「未出席」。你去改，改了四十分鐘。',
       },
@@ -271,7 +274,8 @@ export const CHIEF_EVENTS = [
     choices: [
       {
         label: '接。有些事情要坐在那個位置才做得到。',
-        effects: { self: -6, clinical: -4, teaching: 4 },
+        // 簽下部主任那一刻並沒有取得任何教學服務分數
+        effects: { self: -6, clinical: -4 },
         bond: { chief: 8 },
         memory: '你接下黃振邦的位置。那張意向書上，績效目標排在醫療品質前面。',
         set: (s) => {

@@ -438,3 +438,38 @@ describe('教學分數只給教學', () => {
     expect(deal.choices.find((c) => /談條件/.test(c.label)).effects.self).toBeLessThan(0);
   });
 });
+
+describe('教學服務分數不含院務行政', () => {
+  // 試玩者的理由：若 institutional service 都要算，那個軸就不該叫教學服務。
+  // 感控委員會、接下部主任、在惜別會上台講一句話，三者都不是教學。
+  it('這三幕都不動教學分數', () => {
+    for (const id of ['c_admin_dump', 'c_succession', 'm_retire']) {
+      const e = EVENTS.find((x) => x.id === id);
+      for (const c of e.choices || []) expect(c.effects?.teaching ?? 0, `${id} ${c.label}`).toBe(0);
+    }
+  });
+
+  it('三幕原本就各有足夠的代價或回饋', () => {
+    const admin = EVENTS.find((x) => x.id === 'c_admin_dump').choices[0];
+    const chief = EVENTS.find((x) => x.id === 'c_succession').choices[0];
+    const retire = EVENTS.find((x) => x.id === 'm_retire').choices[0];
+    for (const c of [admin, chief, retire]) {
+      const moved = Object.entries(c.effects || {}).filter(([, v]) => v);
+      expect(moved.length, `${c.label} 拿掉教學之後不能什麼都不剩`).toBeGreaterThan(0);
+    }
+  });
+});
+
+describe('沒有第二份「你開的刀最難」', () => {
+  // 修掉 ac_kpi_slide 之後，c_kpi_ranking 還有一份同型的斷言——
+  // 又是只修了被回報的那一個。
+  it('全部事件都不宣稱玩家開的刀最難', () => {
+    const bad = [];
+    for (const e of EVENTS) {
+      const parts = [e.text, e.log, ...(e.choices || []).flatMap((c) => [c.log, c.memory])];
+      for (const x of parts)
+        if (typeof x === 'string' && /最難的刀|刀最難|全科最難/.test(x)) bad.push(e.id);
+    }
+    expect([...new Set(bad)]).toEqual([]);
+  });
+});

@@ -170,7 +170,8 @@ export const MENTOR_EVENTS = [
     choices: [
       {
         label: '上台補一句：他開過一萬一千台刀。',
-        effects: { self: 8, teaching: 2 },
+        // 在惜別會上台講一句話不是教學服務
+        effects: { self: 8 },
         bond: { mentor: 12 },
         memory: '陳文彬的惜別會上，沒有人提他開過幾台刀，所以你上台講了。',
         set: (s) => advance(s, 'mentor', 3),
