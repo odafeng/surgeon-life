@@ -7,7 +7,12 @@ export const ATTENDING_SYSTEM_EVENTS = [
     mood: 'wry',
     stages: ['attending'],
     weight: 3,
-    text: '年度總額結算補付的公告貼出來了。你翻到自己那一欄：同樣一台胰十二指腸切除，一月申報的和七月申報的，實拿差了兩萬三。中間你什麼都沒有做得不一樣。',
+    // 總額結算每年都有，所以這一幕該重複——但金額寫死就變成同一年重播兩次。
+    // 這個遊戲每年本來就擲 pointValue，差額用它算，數字才會跟著那一年動。
+    text: (s) => {
+      const gap = Math.max(0.4, Math.round((0.95 - (s.pointValue ?? 0.82)) * 100) / 10);
+      return `年度總額結算補付的公告又貼出來了。你翻到自己那一欄：同樣一台胰十二指腸切除，年初申報的和年中申報的，實拿差了 ${gap.toFixed(1)} 萬。中間你什麼都沒有做得不一樣。`;
+    },
     effects: { money: -15, self: -3 },
     log: '你把兩張報表並排放著看。手術是同一台，病人也都活著，只有分母動了。',
   },
@@ -183,6 +188,7 @@ export const ATTENDING_SYSTEM_EVENTS = [
   // ───────────── 刀房排程與時段分配 ─────────────
   {
     id: 'as_or_slot_cut',
+    once: true, // 被砍的是同一個週三，準備了三個月的也是同一批刀
     scene: 'or',
     mood: 'wry',
     stages: ['attending'],
@@ -304,6 +310,7 @@ export const ATTENDING_SYSTEM_EVENTS = [
   },
   {
     id: 'as_defensive_chart',
+    once: true, // 正文是「第一次」設 F7、住院醫師第一次問要不要背
     scene: 'office',
     mood: 'wry',
     stages: ['attending'],
@@ -400,6 +407,7 @@ export const ATTENDING_SYSTEM_EVENTS = [
   },
   {
     id: 'as_vip_round',
+    once: true, // 捐了整層樓的那位病人、術後第三天、七點半與八點——同一個人
     scene: 'corridor',
     mood: 'wry',
     stages: ['attending'],
@@ -422,6 +430,7 @@ export const ATTENDING_SYSTEM_EVENTS = [
   // ───────────── 媒體與網路輿論 ─────────────
   {
     id: 'as_news_frame',
+    once: true, // 同一則標題、同一份三百字聲明
     scene: 'home',
     mood: 'weary',
     stages: ['attending'],
@@ -455,6 +464,7 @@ export const ATTENDING_SYSTEM_EVENTS = [
   // ───────────── 醫療暴力 ─────────────
   {
     id: 'as_violence_punch',
+    once: true, // 同一位九十一歲的長輩，同一場推倒
     scene: 'corridor',
     mood: 'weary',
     stages: ['attending'],
@@ -487,6 +497,7 @@ export const ATTENDING_SYSTEM_EVENTS = [
   // ───────────── 人力不足與護病比 ─────────────
   {
     id: 'as_beds_closed',
+    once: true, // 12A、二十床、九個人、三台刀——這些數字指的是同一次降載
     scene: 'corridor',
     mood: 'weary',
     stages: ['attending'],
@@ -541,6 +552,7 @@ export const ATTENDING_SYSTEM_EVENTS = [
   // ───────────── 跨科會診與推病人 ─────────────
   {
     id: 'as_consult_pingpong',
+    once: true, // 同一位老先生躺了十四小時，同一通十分鐘的電話
     scene: 'corridor',
     mood: 'wry',
     stages: ['attending'],

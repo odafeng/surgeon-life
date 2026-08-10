@@ -499,3 +499,76 @@ describe('相親對象的性別跟配偶線一致', () => {
     }
   });
 });
+
+describe('帶著唯一識別資料的時刻只演一次', () => {
+  // 判準是試玩者定的：第一次／單一事件的語法，加上不可能原樣重現的識別資料。
+  // 12A 病房那二十床、被砍的那個週三、捐了整層樓的那位病人、
+  // 九十一歲那位長輩、那則標題與三百字聲明、第一次設 F7、躺了十四小時的老先生。
+  //
+  // 每個標記字串都先確認過只屬於一個事件。今天已經有四次是我比對太寬、
+  // 量到根本沒發生的重播——「三個小時」在四個事件裡都有，
+  // 「十四個小時」和「九十一歲」各在兩個裡面。
+  const ONCE = [
+    ['as_beds_closed', '12A'],
+    ['as_or_slot_cut', '週三整天被砍成半天'],
+    ['as_vip_round', '捐了一整層樓'],
+    ['as_violence_punch', '我爸就是被你們害死的'],
+    ['as_news_frame', '權威醫師失手'],
+    ['as_defensive_chart', 'F7'],
+    ['as_consult_pingpong', '已回覆，待處理'],
+  ];
+
+  it('每個標記字串都只屬於一個事件', async () => {
+    // 標記不唯一的話，測試會報一個根本沒發生的重播——今天已經發生四次
+    const { EVENTS } = await import('../src/events.js');
+    const s = createGame(1);
+    for (const [id, mark] of ONCE) {
+      const owners = EVENTS.filter((e) => {
+        const parts = [
+          typeof e.text === 'function' ? e.text(s) : e.text,
+          e.log,
+          ...(e.choices || []).flatMap((c) => [c.log, c.memory]),
+        ];
+        return parts.some((x) => typeof x === 'string' && x.includes(mark));
+      }).map((e) => e.id);
+      expect(owners, `${id} 的標記「${mark}」`).toEqual([id]);
+    }
+  });
+
+  it('這七幕在一局裡最多各出現一次', async () => {
+    const counts = Object.fromEntries(ONCE.map(([id]) => [id, 0]));
+    const worst = Object.fromEntries(ONCE.map(([id]) => [id, 0]));
+    for (let seed = 1; seed <= 10; seed++) {
+      const s = createGame(seed);
+      const intent = { clinical: 45, teaching: 12, research: 12, family: 16, personal: 15 };
+      for (const id of Object.keys(counts)) counts[id] = 0;
+      while (!s.ending && s.age <= 65) {
+        const alloc = conformAllocation(s, intent);
+        const { ending } = await playYear(
+          s,
+          alloc,
+          async () => 0,
+          async (l) => {
+            for (const [id, mark] of ONCE) if (l.text.includes(mark)) counts[id] += 1;
+          },
+        );
+        if (ending) break;
+      }
+      for (const [id] of ONCE) worst[id] = Math.max(worst[id], counts[id]);
+    }
+    const over = Object.entries(worst).filter(([, n]) => n > 1);
+    expect(over.map(([id, n]) => `${id} 演了 ${n} 次`)).toEqual([]);
+  });
+
+  it('總額結算可以年年來，但數字要跟著那一年的點值走', async () => {
+    const { EVENTS } = await import('../src/events.js');
+    const e = EVENTS.find((x) => x.id === 'as_point_settle');
+    expect(e.once, '這一幕是年度事件，不該標 once').toBeUndefined();
+    const low = createGame(1);
+    low.pointValue = 0.72;
+    const high = createGame(1);
+    high.pointValue = 0.95;
+    expect(e.text(low)).not.toBe(e.text(high)); // 點值不同，差額就不同
+    expect(e.text(low)).toMatch(/又貼出來/); // 語氣要說明這不是第一次
+  });
+});
