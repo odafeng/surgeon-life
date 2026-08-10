@@ -3,6 +3,7 @@ import { describe, it, expect } from 'vitest';
 import { PROLOGUE, EVENTS } from '../src/events.js';
 import { decideEnding } from '../src/endings.js';
 import { createGame } from '../src/engine.js';
+import { val } from '../src/text.js';
 
 const VALID_STAGES = ['pgy', 'resident', 'attending', 'aesthetic'];
 const VALID_EFFECT_KEYS = [
@@ -259,6 +260,22 @@ describe('回報後修正的那幾處', () => {
     expect(roster).toBeTruthy();
     expect(roster.effects.teaching ?? 0).toBe(0);
     expect(roster.bond?.chief).toBeLessThan(0);
+  });
+
+  // 保管費年年收，這一幕沒有 once。原本寫死「三年前那個名字」，但實測它會在凍卵後
+  // 第 1 到第 35 年之間演出，中位 19 年——1286 次演出裡只有 19 次剛好是三年。
+  it('保管費通知講的年數是真的年數', () => {
+    const fee = byId('fw_egg_storage_fee');
+    const say = (frozenAt, age) => {
+      const s = createGame(1, 'f');
+      s.age = age;
+      s.flags.eggsFrozen = frozenAt;
+      return val(fee.log, s);
+    };
+    expect(say(33, 52)).toMatch(/19 年前那個名字/);
+    expect(say(33, 36)).toMatch(/3 年前那個名字/);
+    expect(say(33, 34)).toMatch(/去年那個名字/); // 隔年就演的話「1 年前」讀起來很怪
+    expect(say(33, 68)).toMatch(/35 年前那個名字/);
   });
 });
 

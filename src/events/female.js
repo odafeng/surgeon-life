@@ -71,7 +71,14 @@ export const FEMALE_EVENTS = [
     cond: (s) => F(s) && s.flags.eggsFrozen && s.family.kids === 0,
     text: '生殖中心寄來年度保管費的通知。信封裡還有一張表，問你要不要更新緊急聯絡人。',
     effects: { money: -2, self: -2 },
-    log: '你繳了。緊急聯絡人那一欄，你寫的還是三年前那個名字，沒有改。',
+    // 這一幕沒有 once，保管費是年年收的。原本寫死「三年前那個名字」，
+    // 但實測它會在凍卵後第 1 到第 35 年之間演出，中位數是 19 年——
+    // 1286 次演出裡只有 19 次剛好是三年。flags.eggsFrozen 存的就是凍卵那年的年齡。
+    log: (s) => {
+      const years = s.age - s.flags.eggsFrozen;
+      const when = years <= 1 ? '去年' : `${years} 年前`;
+      return `你繳了。緊急聯絡人那一欄，你寫的還是${when}那個名字，沒有改。`;
+    },
   },
   {
     id: 'fw_on_call_pregnant',
