@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { EVENTS } from '../src/events.js';
 import {
   createGame,
   playYear,
@@ -574,5 +575,30 @@ describe('點值在玩家分配之前就定下來', () => {
     expect(s.pointValue).toBeUndefined();
     await playYear(s, alloc(40, 10, 10, 20, 20), async () => 0);
     expect(s.pointValue).toBeGreaterThan(0.7);
+  });
+});
+
+// 改成以承諾為基準之後，這個計數器的上限從四千多掉到 126，但讀它的那一幕還寫著 600，
+// 於是整幕消失了。這裡不重複寫死門檻——直接拿事件自己的 cond 去驗它到得了，
+// 這樣以後不管是累積規則改了還是門檻改了，對不上就會紅。
+describe('錯過的晚餐要到得了讀它的那一幕', () => {
+  const dinnerScene = EVENTS.find((e) => e.id === 'f_missed_dinners');
+
+  it('長年只給家庭 5% 的人，那本記事本會被翻出來', async () => {
+    const s = createGame(2); // 30 個 seed 裡有 18 個會成立，2 是其中最早的一個
+    let fired = false;
+    while (!s.ending && s.age < 66 && !fired) {
+      await playYear(s, conformAllocation(s, alloc(55, 10, 15, 5, 15)), async () => 0);
+      if (dinnerScene.cond(s)) fired = true;
+    }
+    expect(fired, `missedDinners 停在 ${s.stats.missedDinners}，那一幕的門檻到不了`).toBe(true);
+  });
+
+  it('做到自己答應的家庭時間，就不會被翻出來', async () => {
+    const s = createGame(2);
+    while (!s.ending && s.age < 66) {
+      await playYear(s, conformAllocation(s, alloc(40, 10, 15, 25, 10)), async () => 0);
+      expect(dinnerScene.cond(s), `${s.age} 歲不該成立`).toBe(false);
+    }
   });
 });

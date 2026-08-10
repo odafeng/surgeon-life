@@ -498,7 +498,12 @@ export const FAMILY_EVENTS = [
     stages: ['attending', 'aesthetic'],
     once: true,
     weight: 2,
-    cond: (s) => s.family.stage === 'married' && s.stats.missedDinners >= 600 && !spouseAway(s),
+    // 600 是照舊的算法校準的——那時候「錯過」是拿 100% 當基準，一輩子會累積到四千多。
+    // 改成以承諾為基準之後，實測上限是 126：累積只發生在「有人等你」到「下限追上承諾」
+    // 的那幾年，之後做到承諾就不再累積。600 於是變成一個到不了的數字，這一幕整個消失。
+    // 100 分得開：家庭 ≤10% 會到 120，12% 到 72，15% 以上幾乎是 0。
+    // 那個窗口正好是正文講的「前面幾年」。
+    cond: (s) => s.family.stage === 'married' && s.stats.missedDinners >= 100 && !spouseAway(s),
     text: '{配偶}整理抽屜時翻出一本舊記事本，前面幾年每一頁都寫著「今天等到幾點」。後面就沒有寫了。',
     effects: { familyBond: -6, self: -8 },
     log: '你問為什麼後來不寫了。{配偶}說：「因為後來就不等了。」',
