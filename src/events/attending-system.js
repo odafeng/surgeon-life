@@ -663,6 +663,7 @@ export const ATTENDING_SYSTEM_EVENTS = [
   // ───────────── 疫情與支援 ─────────────
   {
     id: 'as_pandemic_ward',
+    once: true, // 成立專責病房、延期那三台癌症刀是同一批病人，複製一次等於換一批人再死一次
     scene: 'corridor',
     mood: 'weary',
     stages: ['attending'],

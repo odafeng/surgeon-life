@@ -438,6 +438,29 @@ describe('具體時刻不重播', () => {
       expect(seen, `seed ${seed} 演了 ${seen} 次`).toBeLessThanOrEqual(1);
     }
   });
+
+  it('專責病房那兩個月只會經歷一次', async () => {
+    // 成立專責病房、被排兩個月、延期的那三台癌症——是同一批病人。
+    // 複製一次等於換一批人再死一次。
+    for (let seed = 1; seed <= 12; seed++) {
+      const s = createGame(seed);
+      const intent = { clinical: 45, teaching: 12, research: 12, family: 16, personal: 15 };
+      let seen = 0;
+      while (!s.ending && s.age <= 65) {
+        const alloc = conformAllocation(s, intent);
+        const { ending } = await playYear(
+          s,
+          alloc,
+          async () => 0,
+          async (l) => {
+            if (l.text.includes('院內成立專責病房')) seen += 1;
+          },
+        );
+        if (ending) break;
+      }
+      expect(seen, `seed ${seed} 演了 ${seen} 次`).toBeLessThanOrEqual(1);
+    }
+  });
 });
 
 describe('學弟妹怎麼稱呼主角', () => {
