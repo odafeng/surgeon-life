@@ -391,3 +391,67 @@ describe('遇到的人跟後來的伴侶要是同一個人', () => {
     }
   });
 });
+
+describe('具體時刻不重播', () => {
+  // 「寫了七個月、投出去三小時、不送外審、改名 v2」是一個帶著唯一數字的時刻。
+  // 退稿本身當然會再發生，但同一段記憶逐字演第二次就讀成失憶。
+  it('那封三小時就退回來的信，一局裡只會收到一次', async () => {
+    for (let seed = 1; seed <= 12; seed++) {
+      const s = createGame(seed);
+      const intent = { clinical: 35, teaching: 15, research: 25, family: 10, personal: 15 };
+      let seen = 0;
+      while (!s.ending && s.age <= 65) {
+        const alloc = conformAllocation(s, intent);
+        const { ending } = await playYear(
+          s,
+          alloc,
+          async () => 0,
+          async (l) => {
+            // 「三個小時」在四個事件裡都有，要用這一幕獨有的那一句
+            if (l.text.includes('投出去三小時後收到回信')) seen += 1;
+          },
+        );
+        if (ending) break;
+      }
+      expect(seen, `seed ${seed} 演了 ${seen} 次`).toBeLessThanOrEqual(1);
+    }
+  });
+
+  it('急診推床那一段也只演一次', async () => {
+    // 第四天、群組名字後面的 4、第五天上樓、下午又來三個——四個精確數字是同一件事。
+    for (let seed = 1; seed <= 12; seed++) {
+      const s = createGame(seed);
+      const intent = { clinical: 45, teaching: 12, research: 12, family: 16, personal: 15 };
+      let seen = 0;
+      while (!s.ending && s.age <= 65) {
+        const alloc = conformAllocation(s, intent);
+        const { ending } = await playYear(
+          s,
+          alloc,
+          async () => 0,
+          async (l) => {
+            if (l.text.includes('在急診推床上第四天')) seen += 1;
+          },
+        );
+        if (ending) break;
+      }
+      expect(seen, `seed ${seed} 演了 ${seen} 次`).toBeLessThanOrEqual(1);
+    }
+  });
+});
+
+describe('學弟妹怎麼稱呼主角', () => {
+  // 許士杰對女性教授說「學長對不起」。這不是主角的學長，是學弟在叫主角。
+  it('許士杰道歉時叫的是學姊還是學長，看主角是誰', async () => {
+    const { EVENTS } = await import('../src/events.js');
+    const { resolve } = await import('../src/engine.js');
+    const e = EVENTS.find((x) => x.id === 'j_first_case');
+    for (const [gender, want] of [
+      ['m', '學長對不起'],
+      ['f', '學姊對不起'],
+    ]) {
+      const s = createGame(1, gender);
+      expect(resolve(s, e.log), `${gender}`).toContain(want);
+    }
+  });
+});

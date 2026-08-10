@@ -2,6 +2,7 @@
 export const ATTENDING_CAREER_EVENTS = [
   {
     id: 'ac_desk_reject',
+    once: true, // 七個月、三小時、改名 v2 是一個具體時刻，重播會讀成失憶
     scene: 'office',
     mood: 'wry',
     stages: ['attending'],

@@ -617,6 +617,7 @@ export const ATTENDING_SYSTEM_EVENTS = [
   },
   {
     id: 'as_er_boarding',
+    once: true, // 第四天、名字後面的 4、第五天、又來三個——四個精確數字是同一件事
     scene: 'corridor',
     mood: 'weary',
     stages: ['attending'],
