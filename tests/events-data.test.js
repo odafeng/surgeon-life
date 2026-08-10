@@ -307,3 +307,16 @@ describe('第一作者的理由要對得上真實需求', () => {
     expect(give.log).not.toMatch(/申請/); // 不能還停在舊的理由上
   });
 });
+
+// 這個遊戲沒有房貸、沒有房子，也沒有任何 home ownership state。
+// 保健食品那一幕的接受選項原本寫「接。房貸不會自己還。」——
+// 一個一直單身、從未買房的玩家會被告知自己有房貸。
+describe('選項不替玩家造沒有的負擔', () => {
+  it('保健食品業配的接受選項不提房貸', () => {
+    const e = EVENTS.find((x) => x.id === 'ac_supplement_ad');
+    const take = e.choices.find((c) => c.effects?.money > 0);
+    expect(take, '應該有一個拿錢的選項').toBeTruthy();
+    expect(take.label).not.toMatch(/房貸|房子|頭期款/);
+    expect(take.label).toMatch(/十五萬/); // 講眼前那筆錢就夠了
+  });
+});
