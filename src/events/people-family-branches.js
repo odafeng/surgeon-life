@@ -297,14 +297,15 @@ export const FAMILY_BRANCH_EVENTS = [
     text: '導師打電話來，說孩子這學期缺曠很多，交的作業是別人的。「{爸爸}方便來一趟嗎？」你翻了行事曆，最近的空檔在三週後。',
     choices: [
       {
+        // 停一次門診不會讓存款少二十萬。真正欠下的是替你代診的那個人。
         label: '把明天的門診請人代，今天就去。',
-        effects: { familyBond: 8, self: 4, money: -20 },
+        effects: { familyBond: 8, self: 4 },
         memory: '導師打電話來的那天，你把門診請人代，當天就去了學校。',
         set: (s) => {
           s.family.neglect = 0;
           s.family.floor = Math.max(s.family.floor, 20);
         },
-        log: '你在導師辦公室坐了一小時。回家的車上孩子什麼都沒說，但他上車了，沒有走路回去。',
+        log: '你在導師辦公室坐了一小時。回家的車上孩子什麼都沒說，但他上車了，沒有走路回去。替你代診的是同科的學妹，她說沒關係——你把這件事記著。',
       },
       {
         label: '「三週後可以嗎？我這邊真的走不開。」',
@@ -328,7 +329,8 @@ export const FAMILY_BRANCH_EVENTS = [
     choices: [
       {
         label: '把刀交給學弟，現在就過去。',
-        effects: { self: 6, familyBond: 10, health: -4, money: -80 },
+        // 賠償是真的（結果文明寫「賠了錢，簽了字」），但八十萬是憑空的數字。
+        effects: { self: 6, familyBond: 10, health: -4, money: -25 },
         memory: '派出所半夜打來的那次，你把刀交給學弟，穿著手術衣就過去了。',
         set: (s) => {
           s.flags.kidTrouble = 0;
@@ -340,12 +342,13 @@ export const FAMILY_BRANCH_EVENTS = [
       },
       {
         label: '刀開到一半，你請{她}先過去。',
-        effects: { self: -10, familyBond: -14, money: -80 },
+        // 同一件事，賠償一樣要付——只是付錢的人不是你。
+        effects: { self: -10, familyBond: -14, money: -25 },
         memory: '派出所半夜打來的時候，你正在開刀，你請{她}先過去。',
         set: (s) => {
           s.flags.kidTrouble = 2;
         },
-        log: '那台刀你開得很好，病人沒事。你到派出所的時候，事情都處理完了，他們已經回家了。',
+        log: '那台刀你開得很好，病人沒事。你到派出所的時候，事情都處理完了，錢是{她}墊的，字也是{她}簽的，他們已經回家了。',
       },
     ],
   },

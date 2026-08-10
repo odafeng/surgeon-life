@@ -374,3 +374,32 @@ describe('數字要有敘事依據', () => {
     expect(e.choices.find((c) => /修正/.test(c.label)).effects.self).toBeLessThan(0);
   });
 });
+
+describe('受雇階段的選項不會動私人存款', () => {
+  // 主治是受雇的：DRG 超支由醫院吸收、健保給付的斷層不是他自費、
+  // 停一次門診也不會讓存款少二十萬。這些數字原本是為了讓選項有重量硬接的。
+  it('DRG 與防禦性影像都不從個人存款扣', () => {
+    for (const id of ['as_drg_los', 'as_defensive_ct']) {
+      const e = EVENTS.find((x) => x.id === id);
+      for (const c of e.choices) expect(c.effects.money ?? 0, `${id} ${c.label}`).toBe(0);
+    }
+  });
+
+  it('為了孩子停診，代價在家庭與人情，不在存款', () => {
+    const e = EVENTS.find((x) => x.id === 'fb_kid_warning');
+    const go = e.choices.find((c) => /今天就去/.test(c.label));
+    expect(go.effects.money ?? 0).toBe(0);
+    expect(go.effects.familyBond).toBeGreaterThan(0);
+    expect(go.log).toMatch(/代診/); // 欠下的是替你代診的那個人
+  });
+
+  it('派出所那一筆賠償兩邊都要付，而且結果文說得出誰付的', () => {
+    // 賠償是真的（「賠了錢，簽了字」），只是八十萬是憑空的數字。
+    const e = EVENTS.find((x) => x.id === 'fb_kid_police');
+    const [go, stay] = e.choices;
+    expect(go.effects.money).toBe(stay.effects.money); // 同一件事，金額一樣
+    expect(Math.abs(go.effects.money)).toBeLessThan(40);
+    expect(go.log).toMatch(/賠了錢/);
+    expect(stay.log).toMatch(/墊的/); // 沒去的那一邊要說清楚是誰付的
+  });
+});
