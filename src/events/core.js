@@ -252,6 +252,7 @@ export const CORE_EVENTS = [
         label: '走。你累了。',
         set: (s) => {
           s.career = 'aesthetic';
+          s.flags.leftAt = s.age; // 自己選擇離開的那一年，道別那幾幕靠這個
         },
         log: '你交回識別證。走出醫院大門時，你沒有回頭——你怕一回頭就走不了。',
       },

@@ -30,6 +30,7 @@ const ALLOWED = {
   // 兩種不同的起訴來源匯流到同一條審判鏈，判決事件沒有 once，不會卡住
   'flags.onTrial': '醫療爭議調解與醫療糾紛都可能上法院，判決由 core.js 統一收尾',
   'flags.aestheticCurious': '住院醫師與主治階段都可能動念',
+  'flags.leftAt': '自己選擇離開與被債務逼出去是兩個入口，同一個離開的那一年',
 };
 
 function writersByField() {

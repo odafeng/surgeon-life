@@ -709,9 +709,13 @@ describe('陳文彬只有一個主人', () => {
       return parts.some((x) => typeof x === 'string' && /指導教授|你的老師|陳文彬/.test(x));
     });
     const outside = mentions.filter((e) => !e.id.startsWith('m_'));
+    // 兩個例外，各有理由：
     // j_successor 是刻意的回音——許士杰把老師那句話傳給下一代，
-    // 它不宣稱老師在場，也不描寫他做了什麼。
-    expect(outside.map((e) => e.id)).toEqual(['j_successor']);
+    //   它不宣稱老師在場，也不描寫他做了什麼。
+    // lv_mentor_silence 是你離開健保那一年的道別。它不屬於恩師的弧線階段，
+    //   而是綁在「離開」這個轉折上，跟另外五幕道別是同一個時刻的一部分，
+    //   拆到六個檔案反而讓那一刻散掉。leaving.js 擁有那一年，弧線擁有其餘。
+    expect(outside.map((e) => e.id).sort()).toEqual(['j_successor', 'lv_mentor_silence']);
   });
 
   it('老師退休之後，不會再有人看見他開刀', async () => {

@@ -775,6 +775,7 @@ export async function playYear(state, alloc, chooser, onLog) {
   if (money < BANKRUPT_LIMIT && state.career === 'surgery') {
     state.career = 'aesthetic';
     state.flags.forcedAesthetic = true;
+    state.flags.leftAt = state.age; // 道別那幾幕靠這個，見 events/leaving.js
     await emit({
       kind: 'info',
       text: '銀行的催繳電話打到護理站。你在停車場坐了半小時，然後撥了那個一直壓在鍵盤下的號碼——醫美診所那邊說，明天就能上工。這不是選擇，是算術。',
