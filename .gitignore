@@ -11,3 +11,6 @@ openai-key
 .playwright-mcp/
 *.png
 !assets/*.png
+
+# 本機用的版面測試頁，不進 repo
+hud-preview.html
