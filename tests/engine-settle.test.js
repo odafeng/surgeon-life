@@ -61,12 +61,41 @@ describe('applyGrowth', () => {
     expect(s.attrs.self).toBeCloseTo(47, 5);
   });
 
-  it('counts missed dinners and surgeries', () => {
+  it('counts surgeries', () => {
     const s = createGame(1);
     s.age = 27; // resident: surgical, 8/month
     applyGrowth(s, alloc(60, 0, 0, 20, 20));
-    expect(s.stats.missedDinners).toBe(96); // (100−20)% × 12 個月 × 10 頓
     expect(s.stats.surgeries).toBe(49); // 6.12 等效月 × 8 台
+  });
+
+  // 一位一直單身、沒有孩子的外科醫師，結算單上寫著「錯過的家庭晚餐 4902」。
+  // neglect 早就用 hasSomeone 判斷過「還沒有人的時候不算疏忽」，
+  // 但這個計數在判斷外面，自己加了四十年。
+  describe('錯過的晚餐要有人在等', () => {
+    it('一直單身、沒有孩子的人不會累積', () => {
+      const s = createGame(1);
+      s.age = 40;
+      for (let y = 0; y < 10; y++) applyGrowth(s, alloc(60, 0, 0, 0, 40));
+      expect(s.stats.missedDinners).toBe(0);
+    });
+
+    it('有人之後才開始算', () => {
+      const s = createGame(1);
+      s.age = 40;
+      applyGrowth(s, alloc(60, 0, 0, 20, 20));
+      expect(s.stats.missedDinners).toBe(0); // 還沒有人
+      s.family.stage = 'married';
+      applyGrowth(s, alloc(60, 0, 0, 20, 20));
+      expect(s.stats.missedDinners).toBe(96); // (100−20)% × 12 個月 × 10 頓
+    });
+
+    it('未婚但有孩子也要算', () => {
+      const s = createGame(1);
+      s.age = 40;
+      s.family.kids = 1;
+      applyGrowth(s, alloc(60, 0, 0, 20, 20));
+      expect(s.stats.missedDinners).toBeGreaterThan(0);
+    });
   });
 });
 

@@ -311,7 +311,12 @@ export function applyGrowth(state, alloc) {
     state.family.neglect += 1;
   }
 
-  state.stats.missedDinners += Math.round(((100 - alloc.family) / 100) * 12 * 10);
+  // 只有在有人等你的時候才算「錯過」。單身到底、沒有孩子的人，
+  // 結算單上不該出現「錯過的家庭晚餐 4902」——他沒有讓任何人等過。
+  // neglect 早就用 hasSomeone 判斷了，這一行卻在判斷外面自己加了四十年。
+  if (hasSomeone) {
+    state.stats.missedDinners += Math.round(((100 - alloc.family) / 100) * 12 * 10);
+  }
   if (stage.surgical) {
     const ops = Math.round(months('clinical', alloc.clinical) * stage.surgeriesPerMonth);
     state.stats.surgeries += ops;
