@@ -1,5 +1,12 @@
 // 遊戲流程。畫面交給 view.js，配置盤與行動面板各自獨立。
-import { createGame, playYear, getStage, conformAllocation, backfillUsed } from './engine.js';
+import {
+  createGame,
+  playYear,
+  getStage,
+  conformAllocation,
+  backfillUsed,
+  rollPointValue,
+} from './engine.js';
 import { PROLOGUE } from './events.js';
 import { openAllocPanel } from './alloc-panel.js';
 import { openActionPanel } from './action-panel.js';
@@ -115,6 +122,9 @@ async function yearLoop() {
     renderHud(state);
     $('textbox').classList.add('hidden');
     renderFastFlag();
+
+    // 點值要在玩家看到配置盤之前就定下來，否則盤上的年結餘是拿去年的點值算的。
+    rollPointValue(state);
 
     // 存檔點在「這一年還沒開始做任何決定」的位置。
     // 存在行動階段之後的話，重新載入會回到同一年的配置盤，

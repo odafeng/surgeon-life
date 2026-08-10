@@ -380,8 +380,9 @@ export const ATTENDING_CAREER_EVENTS = [
     text: '藥廠業務約你演講。題目他們擬好了，投影片也做好了，「老師只要講就好」。演講費三萬。',
     choices: [
       {
+        // 藥廠的產品說明會不是升等審查認的教學服務，不管投影片是誰做的。
         label: '接，但投影片自己重做。',
-        effects: { money: 3, teaching: 3, health: -2, self: 2 },
+        effects: { money: 3, health: -2, self: 2 },
         log: '你刪掉了第七頁——那頁只列了自家藥的好處。業務笑著說沒關係。下一季他們沒有再找你。',
       },
       {

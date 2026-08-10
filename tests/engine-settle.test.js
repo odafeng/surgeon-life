@@ -12,6 +12,7 @@ import {
   forecast,
   conformAllocation,
   annualSlack,
+  rollPointValue,
 } from '../src/engine.js';
 import { ACTIONS, runAction } from '../src/actions.js';
 
@@ -488,5 +489,41 @@ describe('健康預告的數字不能自相矛盾', () => {
       const shown = Number(c.value.replace('−', '-').replace('+', ''));
       expect(Math.abs(shown - (to - from)), `${age} 歲 健康 ${health}`).toBeLessThan(1);
     }
+  });
+});
+
+describe('點值在玩家分配之前就定下來', () => {
+  // 配置盤的年結餘是用點值算的，但原本 playYear 才擲點值——
+  // 於是盤上顯示的是去年的值。試玩者在 43 歲的盤看到 0.93，那一年實際是 0.81。
+  it('一年只擲一次，開盤看到的就是那一年會用的', async () => {
+    const s = createGame(5);
+    s.age = 43;
+    s.rank = 'vs';
+    const a = alloc(40, 10, 10, 20, 20);
+    const shown = rollPointValue(s); // ui 在開盤前呼叫
+    const chip = forecast(s, a).chips.find((c) => c.label.includes('點值'));
+    expect(chip.value).toBe(shown.toFixed(2));
+    await playYear(s, a, async () => 0);
+    expect(s.pointValue, 'playYear 不該再擲一次').toBe(shown);
+  });
+
+  it('跨年才會重新擲', () => {
+    const s = createGame(5);
+    s.age = 43;
+    const first = rollPointValue(s);
+    expect(rollPointValue(s), '同一年重複呼叫不變').toBe(first);
+    s.age = 44;
+    const second = rollPointValue(s);
+    expect(s.flags.pointYear).toBe(44);
+    expect(typeof second).toBe('number');
+  });
+
+  it('直接呼叫 playYear 的路徑仍然會擲', async () => {
+    const s = createGame(9);
+    s.age = 40;
+    s.rank = 'vs';
+    expect(s.pointValue).toBeUndefined();
+    await playYear(s, alloc(40, 10, 10, 20, 20), async () => 0);
+    expect(s.pointValue).toBeGreaterThan(0.7);
   });
 });

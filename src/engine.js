@@ -387,7 +387,12 @@ const RANK_BONUS = { none: 0, vs: 0, assistant: 10, associate: 20, professor: 30
  * 一年只擲一次，存進 state，讓預告和結算看到同一個數字。
  */
 export function rollPointValue(state) {
+  // 一年只擲一次，而且要在玩家分配時間之前擲——配置盤的年結餘預告是用點值算的，
+  // 原本 playYear 才擲，於是盤上顯示的是去年的值：試玩者在 43 歲的盤看到 0.93，
+  // 那一年實際是 0.81。ui 在開盤前呼叫一次，playYear 這一次就會是 no-op。
+  if (state.flags.pointYear === state.age) return state.pointValue;
   state.pointValue = Number((0.72 + state.rng.next() * 0.23).toFixed(2));
+  state.flags.pointYear = state.age;
   return state.pointValue;
 }
 

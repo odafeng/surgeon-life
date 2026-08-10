@@ -447,6 +447,7 @@ export const AESTHETIC_EVENTS = [
   },
   {
     id: 'ae_six_pm',
+    once: true, // 結果文有「第一次」語法，那是一個時刻不是一種處境
     scene: 'home',
     mood: 'lifted',
     stages: ['aesthetic'],
