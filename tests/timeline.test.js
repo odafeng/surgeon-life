@@ -738,3 +738,40 @@ describe('陳文彬只有一個主人', () => {
     }
   });
 });
+
+describe('業配可以一直來，但不是同一支影片', () => {
+  // 試玩者在同一局收到兩次一模一樣的保健食品邀約，連拒絕的結果都逐字相同，
+  // 而結果裡的「那支影片」是單數，讀起來就是同一支。
+  // 不同廠商本來就會一直來，所以不標 once，改成讓正文承認這是又一間。
+  it('第二次明說是另一間，而且結果不會提前跳到第二次的說法', async () => {
+    const { EVENTS } = await import('../src/events.js');
+    const e = EVENTS.find((x) => x.id === 'ac_supplement_ad');
+    const s = createGame(1);
+    const refuse = e.choices.find((c) => /拒絕/.test(c.label));
+
+    // playYear 的順序：text → 效果 → set → log
+    expect(e.text(s)).not.toMatch(/又一間/);
+    refuse.set(s);
+    expect(refuse.log(s), '第一次仍要是第一次的說法').toMatch(/那支影片現在還在播/);
+
+    expect(e.text(s)).toMatch(/又一間/);
+    refuse.set(s);
+    expect(refuse.log(s)).toMatch(/這家隔週也找到了別人/);
+  });
+
+  it('接受那一邊也跟著分岔，而且兩邊共用同一個計數', async () => {
+    const { EVENTS } = await import('../src/events.js');
+    const e = EVENTS.find((x) => x.id === 'ac_supplement_ad');
+    const s = createGame(1);
+    const [refuse, take] = e.choices;
+    refuse.set(s); // 第一次拒絕
+    expect(e.text(s)).toMatch(/又一間/); // 第二次就該知道是另一間
+    take.set(s);
+    expect(take.log(s)).toMatch(/只 NG 了兩次/);
+  });
+
+  it('沒有被標成 once', async () => {
+    const { EVENTS } = await import('../src/events.js');
+    expect(EVENTS.find((x) => x.id === 'ac_supplement_ad').once).toBeUndefined();
+  });
+});
