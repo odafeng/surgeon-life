@@ -311,11 +311,14 @@ export function applyGrowth(state, alloc) {
     state.family.neglect += 1;
   }
 
-  // 只有在有人等你的時候才算「錯過」。單身到底、沒有孩子的人，
-  // 結算單上不該出現「錯過的家庭晚餐 4902」——他沒有讓任何人等過。
-  // neglect 早就用 hasSomeone 判斷了，這一行卻在判斷外面自己加了四十年。
-  if (hasSomeone) {
-    state.stats.missedDinners += Math.round(((100 - alloc.family) / 100) * 12 * 10);
+  // 只有在有人等你的時候才算「錯過」，而且只算超過承諾的那一段。
+  //
+  // 原本是 (100 − 家庭%) × 12 × 10：家庭給到 70%——幾乎是上限——一年還是錯 36 頓，
+  // 結算單等於在否定玩家實際做過的事。改成以 need 為基準，跟 neglect 同一條線：
+  // 做到自己答應的事就不算辜負任何人，低於承諾才開始累積。
+  if (hasSomeone && alloc.family < need) {
+    const short = (need - alloc.family) / need; // 差承諾多遠，就欠多少
+    state.stats.missedDinners += Math.round(short * 12 * 10);
   }
   if (stage.surgical) {
     const ops = Math.round(months('clinical', alloc.clinical) * stage.surgeriesPerMonth);

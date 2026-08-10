@@ -83,19 +83,68 @@ describe('applyGrowth', () => {
     it('有人之後才開始算', () => {
       const s = createGame(1);
       s.age = 40;
-      applyGrowth(s, alloc(60, 0, 0, 20, 20));
+      applyGrowth(s, alloc(60, 0, 0, 10, 30));
       expect(s.stats.missedDinners).toBe(0); // 還沒有人
       s.family.stage = 'married';
-      applyGrowth(s, alloc(60, 0, 0, 20, 20));
-      expect(s.stats.missedDinners).toBe(96); // (100−20)% × 12 個月 × 10 頓
+      applyGrowth(s, alloc(60, 0, 0, 10, 30));
+      expect(s.stats.missedDinners).toBeGreaterThan(0); // 有人了，而且低於承諾
     });
 
-    it('未婚但有孩子也要算', () => {
+    // 家庭給到 70%——幾乎是上限——原本一年還是錯 36 頓，
+    // 結算單等於在否定玩家實際做過的事。
+    it('做到自己答應的下限就不再累積', () => {
+      const s = createGame(1);
+      s.age = 42;
+      s.family = {
+        stage: 'married',
+        kids: 2,
+        children: [{ bornAt: 37 }],
+        floor: 25,
+        invested: 5,
+        neglect: 0,
+      };
+      for (const fam of [25, 40, 70]) {
+        s.stats.missedDinners = 0;
+        applyGrowth(s, alloc(100 - 20 - fam, 10, 10, fam, 10 - 10 + (fam > 60 ? 0 : 0)));
+        expect(s.stats.missedDinners, `家庭 ${fam}%`).toBe(0);
+      }
+    });
+
+    it('低於承諾才欠，而且差越多欠越多', () => {
+      const mk = (fam) => {
+        const s = createGame(1);
+        s.age = 42;
+        s.family = {
+          stage: 'married',
+          kids: 2,
+          children: [{ bornAt: 37 }],
+          floor: 25,
+          invested: 5,
+          neglect: 0,
+        };
+        applyGrowth(s, alloc(100 - 20 - fam, 10, 10, fam, 0));
+        return s.stats.missedDinners;
+      };
+      expect(mk(15)).toBeGreaterThan(0);
+      expect(mk(0)).toBeGreaterThan(mk(10));
+      expect(mk(10)).toBeGreaterThan(mk(15));
+    });
+
+    it('未婚但有孩子也要算——只要低於承諾', () => {
       const s = createGame(1);
       s.age = 40;
       s.family.kids = 1;
-      applyGrowth(s, alloc(60, 0, 0, 20, 20));
+      s.family.children = [{ bornAt: 35 }];
+      applyGrowth(s, alloc(70, 0, 0, 5, 25)); // 承諾下限 15%，只給 5%
       expect(s.stats.missedDinners).toBeGreaterThan(0);
+
+      // 同樣未婚有小孩，但做到下限就不算欠
+      const kept = createGame(1);
+      kept.age = 40;
+      kept.family.kids = 1;
+      kept.family.children = [{ bornAt: 35 }];
+      applyGrowth(kept, alloc(55, 0, 0, 20, 25));
+      expect(kept.stats.missedDinners).toBe(0);
     });
   });
 });
