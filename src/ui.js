@@ -117,14 +117,17 @@ async function chooser(ev) {
 
 async function yearLoop() {
   for (;;) {
+    // 這一年的點值要在任何東西畫出來之前就定下來。HUD 名牌在住院醫師階段也印點值，
+    // 擲在 renderHud 之後的話，名牌是去年的數字（第一年是 fallback 0.82），
+    // 配置盤 chip 是今年的——同一個畫面上兩個點值。
+    // 也必須留在 autosave 之前：存檔沒帶到這次擲的結果，重新載入會再擲一次。
+    rollPointValue(state);
+
     setPortrait(state.age);
     setScene(sceneForEvent(state, null));
     renderHud(state);
     $('textbox').classList.add('hidden');
     renderFastFlag();
-
-    // 點值要在玩家看到配置盤之前就定下來，否則盤上的年結餘是拿去年的點值算的。
-    rollPointValue(state);
 
     // 存檔點在「這一年還沒開始做任何決定」的位置。
     // 存在行動階段之後的話，重新載入會回到同一年的配置盤，

@@ -52,7 +52,7 @@ export function setPortrait(age, mood) {
 }
 
 /** 主角在名牌上的稱號：用當下最刺的那個事實。 */
-function sealTitle(state) {
+export function sealTitle(state) {
   if (state.career === 'aesthetic') return '離開健保的人';
   if (state.attrs.money < 0) return `負債 ${Math.abs(Math.round(state.attrs.money))} 萬`;
   if (state.stats.lawsuits > 0) return `被告過 ${state.stats.lawsuits} 次`;
