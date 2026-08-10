@@ -302,6 +302,28 @@ describe('回報後修正的那幾處', () => {
       expect(clears('fw_eggs_let_go', /照舊/)).toBe(33);
     });
 
+    // 有伴侶時做過療程、伴侶之後離開的人會變回單身，於是《人工生殖法》那一幕會在
+    // 中位 16 年後才演，把「原來需要另一個人的名字」講成第一次領悟——她那時候有那個名字。
+    // 500 局裡有 36 局撞到（佔用過卵的 31%）。
+    it('做過療程的人不會在十幾年後被當成第一次告知法規', () => {
+      const law = byId('fw_eggs_law');
+      const base = () => {
+        const s = createGame(1, 'f');
+        s.age = 54;
+        s.flags.eggsFrozen = 33;
+        s.family.stage = 'single';
+        return s;
+      };
+      expect(law.cond(base()), '沒做過療程的單身女性仍然要看到這一幕').toBe(true);
+
+      const tried = base();
+      byId('fw_eggs_used')
+        .choices.find((c) => /開始/.test(c.label))
+        .set(tried);
+      expect(tried.flags.eggsTried).toBeTruthy();
+      expect(law.cond(tried), '她三十幾歲就用過那個名字了').toBe(false);
+    });
+
     it('凍卵線的每一條路都走得到某一個收尾', () => {
       // 之前單身那條沒有出口：39 歲告訴她不能用，然後保管費一路收到六十幾歲。
       const fee = byId('fw_egg_storage_fee');

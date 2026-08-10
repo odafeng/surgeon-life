@@ -215,6 +215,10 @@ export const FEMALE_EVENTS = [
     // 那不是設計上的隨意限制——《人工生殖法》把受術對象限定為「受術夫妻」，
     // 單身女性可以凍卵，卻不能在國內解凍使用。
     // 在此之前，玩家付了十五萬加每年保管費，然後這條線就沒有下文，也沒有人告訴她為什麼。
+    //
+    // eggsTried 那道閘是後來補的：有伴侶時做過療程、伴侶之後離開的人會變回單身，
+    // 於是這一幕在中位 16 年後才演，把「原來需要另一個人的名字」講成第一次領悟——
+    // 而她那時候有那個名字。實測 115 局用過卵的人裡有 36 局撞到。
     id: 'fw_eggs_law',
     priority: true,
     scene: 'clinic',
@@ -222,7 +226,12 @@ export const FEMALE_EVENTS = [
     stages: ['attending', 'aesthetic'],
     once: true,
     weight: 6,
-    cond: (s) => F(s) && s.flags.eggsFrozen && s.family.stage === 'single' && s.age >= 39,
+    cond: (s) =>
+      F(s) &&
+      s.flags.eggsFrozen &&
+      !s.flags.eggsTried &&
+      s.family.stage === 'single' &&
+      s.age >= 39,
     text: '你打電話去問流程。對方在電話那頭停了一下，語氣很客氣：「醫師，您有結婚嗎？我們這邊……法規是限受術夫妻。」你當然知道。你只是想聽別人講一次。',
     effects: { self: -8 },
     memory:
@@ -282,6 +291,9 @@ export const FEMALE_EVENTS = [
         effects: { money: -55, health: -5, self: 4 },
         memory: '你用了三十幾歲那年凍的卵。當年那個決定，替現在的你留了一條路。',
         set: (s) => {
+          // 走過療程就不能再讓「法規限受術夫妻」那一幕當成第一次領悟演出——
+          // 她那時候有那個名字。伴侶後來離開的話 stage 會變回單身，那一幕就接得上來。
+          s.flags.eggsTried = s.age;
           if (s.rng.chance(0.55)) s.flags.expectingChild = true;
           else s.flags.eggsFailed = true;
         },
