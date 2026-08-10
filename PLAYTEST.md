@@ -275,6 +275,9 @@
 - **PASS｜不存在的頭銜已移除（`b3ad5ab`）：** 未接主任、只有教授職級的 `no_or` 結局，實際畫面只寫「聘書上是教授」；不再出現學會理事或部主任。`both_but` 也把「學會頭銜」改成「一整櫃研討會的名牌」，這是玩家真的可能累積的物件，不是未追蹤的職位。
 - **高優先新問題｜`both_but` 同時斷言三種代價，但條件只要求其中一種：** 結局條件是 `familyBond < 45 || health < 35`。實際用 `familyBond = 80、health = 20、self = 80` 渲染，仍寫「你的家人早就學會不等你吃飯」及「沒有一年，你是為自己活的」；玩家明明只耗盡健康。反過來用 `familyBond = 20、health = 60、self = 80`，又會被寫成「膝蓋上下樓要扶欄杆」。也就是 health-only、family-only 兩個分支都會憑空補上另外兩種犧牲。現有 state matrix 把 `health` 固定在 50，也沒有用 `self` 驗證結局句子，因此剛好看不到這兩個反例。建議依實際低落的軸動態組句，而不是用同一段同時宣判健康、家庭、自我。
 - **驗證：** `b3ad5ab` 上 `npm test` 128/128、`npm run lint`、`npm run format:check` 全過。
+- **PASS｜`both_but` 只寫玩家實際付出的代價（`be06c72`）：** 在 fresh browser 逐一實際渲染三種互斥 state。`familyBond = 80、health = 20、self = 80` 時只寫膝蓋與健檢紅字；`familyBond = 20、health = 70、self = 80` 時只寫家人不等吃飯；三軸都低時三句才同時出現。沒有再憑空補上玩家未付出的代價。
+- **PASS｜處境守衛不再被否定詞過濾：** 「家人不等你吃飯」與「沒有一年為自己活」本身含「不／沒有」，現在直接對完整結局內文檢查；state matrix 也分別覆蓋 `familyBond`、`health`、`self` 高低值。這能守住本輪兩個反例，不再只驗已知頭銜。
+- **驗證：** `be06c72` 上 `npm test` 128/128、`npm run lint`、`npm run format:check` 全過。
 
 ---
 
