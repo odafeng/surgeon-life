@@ -8,8 +8,12 @@ export const CORE_EVENTS = [
     scene: 'office',
     stages: ['attending'],
     weight: 3,
-    text: '健保公告本季點值 0.78。你算了一下：昨天那台八小時的胃癌根除術，實拿的錢買不起一支新手機。',
-    effects: { money: -20, self: -3 },
+    // 點值每年由 rollPointValue 擲一次，yearlyIncome 已經用它算過薪水了。
+    // 這裡再扣 20 萬等於同一件事算兩次；而寫死 0.78 又會跟配置盤上顯示的當年點值打架
+    // ——試玩者在配置盤看到 0.89，事件卻說 0.78。
+    text: (s) =>
+      `健保公告本季點值 ${(s.pointValue ?? 0.82).toFixed(2)}。你算了一下：昨天那台八小時的胃癌根除術，實拿的錢買不起一支新手機。`,
+    effects: { self: -3 },
     log: '隔壁維修站換手機螢幕要價三千，不砍價、不核刪、當場付清。',
   },
   {

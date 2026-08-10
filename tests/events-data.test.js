@@ -492,3 +492,28 @@ describe('特約病房不發獎金也不扣薪', () => {
     expect(delegate.log).toMatch(/院長室/); // 代價是那通電話
   });
 });
+
+describe('點值只有一份', () => {
+  // 配置盤顯示當年 0.89，事件卻寫死 0.78；而 yearlyIncome 已經用 pointValue
+  // 算過薪水了，事件再扣 20 萬等於同一件事算兩次。
+  it('沒有任何地方把點值寫死', () => {
+    const bad = [];
+    for (const e of EVENTS) {
+      const parts = [e.text, e.log, ...(e.choices || []).flatMap((c) => [c.log, c.memory])];
+      for (const x of parts) if (typeof x === 'string' && /點值\s*0\.\d/.test(x)) bad.push(e.id);
+    }
+    expect([...new Set(bad)]).toEqual([]);
+  });
+
+  it('點值那一幕帶入當年的數字，而且不重複扣錢', () => {
+    const e = EVENTS.find((x) => x.id === 'a_point_value');
+    expect(e.effects.money ?? 0, 'yearlyIncome 已經把點值算進薪水了').toBe(0);
+    expect(e.effects.self).toBeLessThan(0); // 重量留在自我
+    const low = createGame(1);
+    low.pointValue = 0.72;
+    const high = createGame(1);
+    high.pointValue = 0.95;
+    expect(e.text(low)).toContain('0.72');
+    expect(e.text(high)).toContain('0.95');
+  });
+});

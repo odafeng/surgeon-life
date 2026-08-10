@@ -58,7 +58,8 @@ function sealTitle(state) {
   if (state.stats.lawsuits > 0) return `被告過 ${state.stats.lawsuits} 次`;
   if (state.rank !== 'none' && RANK_LABELS[state.rank]) return RANK_LABELS[state.rank];
   if (state.attrs.health < 35) return '健檢紅字';
-  return '健保點值 0.78';
+  // 名牌上的點值要跟配置盤同一個來源，寫死會跟當年的數字打架
+  return `健保點值 ${(state.pointValue ?? 0.82).toFixed(2)}`;
 }
 
 const BARS = [
