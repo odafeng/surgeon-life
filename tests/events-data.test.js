@@ -207,12 +207,16 @@ describe('審稿的利益衝突', () => {
     expect(c.memory).toBeTruthy(); // 這是會被記進「你記得的事」的決定
   });
 
-  it('代價寫成跟編輯的關係，不是「在期刊露臉」——審稿是匿名的', () => {
-    const e = ev();
-    expect(e.choices[0].log).toMatch(/編輯|他/);
-    expect(e.choices[0].log).not.toMatch(/露臉/);
+  it('不替合規行為捏造後果', () => {
+    // ICMJE 與 COPE 都把「向編輯揭露並迴避」當成正常流程，編輯不會因此記你一筆。
+    // 第一版寫「少了一次在期刊露臉」，跟同幕的匿名審稿矛盾；
+    // 第二版改成「下次他想到誰就是想不到你」，是把矛盾換成沒有依據的報復。
+    const c = ev().choices[0];
+    expect(c.log).not.toMatch(/露臉/); // 匿名審稿不會在期刊上出現
+    expect(c.log).not.toMatch(/想不到你|記你一筆|以後不會再找你/); // 沒有依據的職涯懲罰
+    expect(c.log).toMatch(/編輯|換了人審/);
     // 同一幕的另一個選項明寫署名匿名，兩邊不能互相打架
-    expect(e.choices.some((c) => /匿名/.test(c.log))).toBe(true);
+    expect(ev().choices.some((x) => /匿名/.test(x.log))).toBe(true);
   });
 
   it('原本那兩條路都還在——婉拒是多一個選擇，不是取代', () => {
