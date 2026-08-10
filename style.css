@@ -250,6 +250,7 @@ body {
 }
 .coin::after {
   content: '';
+  pointer-events: none;
   position: absolute;
   inset: 30%;
   background: #141310;
@@ -430,9 +431,15 @@ body {
   width: min(calc(var(--u) * 74), 94%);
   max-height: 94%;
 }
+/* 卷軸上下的裝飾橫槓。
+   .scroll 是捲動容器，所以這兩條用 top/bottom 定位是相對「整份可捲動內容」，
+   內容一長，下面那條就會落在可見範圍的中間。它有背景色，於是把底下的
+   action card 蓋住並吃掉點擊——玩家會看到卡片在那裡，但怎麼點都沒反應。
+   純裝飾的東西不該出現在 hit test 裡。 */
 .scroll::before,
 .scroll::after {
   content: '';
+  pointer-events: none;
   position: absolute;
   left: calc(var(--u) * -0.9);
   right: calc(var(--u) * -0.9);
