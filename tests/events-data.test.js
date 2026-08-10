@@ -330,3 +330,13 @@ describe('診所週轉那一幕也不替玩家造房貸', () => {
     expect(c.log).not.toMatch(/房貸/);
   });
 });
+
+describe('別人的藥盒不等於主角的', () => {
+  // p_stayed_cost 的條件只有「同梯還在」與年齡，卻收在「跟你自己抽屜裡那排一樣多」。
+  // 這個遊戲沒有用藥狀態，健康 96 的主角也會讀到那一句。
+  it('不宣稱主角自己有藥盒', () => {
+    const e = EVENTS.find((x) => x.id === 'p_stayed_cost');
+    expect(e.text).toMatch(/六罐|一排藥盒/); // 林致遠那排要留著，那是這一幕的重量
+    expect(e.log).not.toMatch(/你自己|你的抽屜|抽屜裡那排/);
+  });
+});
