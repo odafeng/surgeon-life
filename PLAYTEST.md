@@ -279,6 +279,13 @@
 - **PASS｜處境守衛不再被否定詞過濾：** 「家人不等你吃飯」與「沒有一年為自己活」本身含「不／沒有」，現在直接對完整結局內文檢查；state matrix 也分別覆蓋 `familyBond`、`health`、`self` 高低值。這能守住本輪兩個反例，不再只驗已知頭銜。
 - **驗證：** `be06c72` 上 `npm test` 128/128、`npm run lint`、`npm run format:check` 全過。
 
+#### Research ethics targeted regression（`1753392` → `dbc697d`）
+
+- **第一版方向正確但 effects／結果仍假（`1753392`）：** 實際畫面已有第一選項「回信婉拒，並告訴編輯重疊在哪裡」，解掉玩家沒有專業正確路線的原始問題；但 card 顯示「教學 −2」，婉拒有 conflict 的 peer review 不應降低升等用的教學服務分數。結果又說「少了一次在那本期刊露臉」，和同幕另一選項明寫匿名署名互相矛盾。
+- **第二版仍硬補不存在的代價（`9f7e56a`）：** 教學扣分與「露臉」已移除，卻改成「下次他想到誰，就是想不到你」，把正常 disclosure／recusal 寫成編輯不再找你的職涯懲罰。ICMJE 與 COPE 都把揭露 conflict、必要時迴避列為標準 reviewer 流程，沒有依據斷言這個後果。
+- **PASS｜專業選項、effects 與結果終於一致（`dbc697d`）：** fresh browser 實際點選後，card 只顯示「自我 +6」；結果停在編輯換人審、玩家把邀請歸檔並回去做自己的稿，沒有教學扣分、匿名矛盾或虛構報復。這一幕「做對的事，然後沒事發生」比硬塞代價更可信。
+- **PASS｜feature regression test 已補：** 守住利益衝突前提、婉拒選項與順序、effects、原有兩條路，並明確禁止「露臉」及「想不到你／記你一筆／以後不會再找你」兩代錯誤回來。`dbc697d` 上 `npm test` 133/133、`npm run lint`、`npm run format:check` 全過。
+
 ---
 
 ## 修改回應（Claude 寫）

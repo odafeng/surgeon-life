@@ -201,6 +201,25 @@ export const FEMALE_EVENTS = [
     log: '你笑著說還好。回家路上你想的是，這個問題你已經被問了十幾年，而它從來不是在關心你。',
   },
   {
+    // 這一幕是把一個已經存在的閘門講出來。fw_eggs_used 要求 family.stage 不是單身，
+    // 那不是設計上的隨意限制——《人工生殖法》把受術對象限定為「受術夫妻」，
+    // 單身女性可以凍卵，卻不能在國內解凍使用。
+    // 在此之前，玩家付了十五萬加每年保管費，然後這條線就沒有下文，也沒有人告訴她為什麼。
+    id: 'fw_eggs_law',
+    priority: true,
+    scene: 'clinic',
+    mood: 'wry',
+    stages: ['attending', 'aesthetic'],
+    once: true,
+    weight: 6,
+    cond: (s) => F(s) && s.flags.eggsFrozen && s.family.stage === 'single' && s.age >= 39,
+    text: '你打電話去問流程。對方在電話那頭停了一下，語氣很客氣：「醫師，您有結婚嗎？我們這邊……法規是限受術夫妻。」你當然知道。你只是想聽別人講一次。',
+    effects: { self: -8 },
+    memory:
+      '你打電話去問解凍的流程。對方問你有沒有結婚——法規限受術夫妻。你當然知道，你只是想聽別人講一次。',
+    log: '你當年凍的時候，同意書上那一條你自己讀過。那時候你想的是「先留著」，沒有想到留著的東西會需要另一個人的名字才打得開。保管費你還是繳了。',
+  },
+  {
     id: 'fw_eggs_used',
     priority: true,
     scene: 'clinic',

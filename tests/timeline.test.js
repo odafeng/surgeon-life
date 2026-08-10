@@ -326,3 +326,38 @@ describe('分岔要分乾淨', () => {
     expect(bad).toEqual([]);
   });
 });
+
+describe('凍卵這條線不會斷在半路', () => {
+  // 單身女性凍了卵，付了十五萬與每年的保管費，然後這條線就沒有下文——
+  // 因為 fw_eggs_used 要求 family.stage 不是單身。那個閘門本身沒有錯：
+  // 《人工生殖法》把受術對象限定為受術夫妻。錯的是遊戲從來沒有說出來。
+  it('單身而且凍過卵的人，會被告知為什麼用不到', async () => {
+    let frozen = 0;
+    let told = 0;
+    for (let seed = 1; seed <= 25; seed++) {
+      const s = createGame(seed, 'f');
+      const intent = { clinical: 35, teaching: 15, research: 30, family: 5, personal: 15 };
+      let sawLaw = false;
+      while (!s.ending && s.age <= 65) {
+        const alloc = conformAllocation(s, intent);
+        const { ending } = await playYear(
+          s,
+          alloc,
+          // 一直單身：每次感情機會都選最後一個選項
+          async (ev) =>
+            /fa_meet|fb_reunion|fb_late_meet|fb_gold/.test(ev.id) ? ev.choices.length - 1 : 0,
+          async (l) => {
+            if (l.text.includes('限受術夫妻')) sawLaw = true;
+          },
+        );
+        if (ending) break;
+      }
+      if (s.flags.eggsFrozen && s.family.stage === 'single') {
+        frozen += 1;
+        if (sawLaw) told += 1;
+      }
+    }
+    expect(frozen, '這條路線要有人凍卵，測試才有意義').toBeGreaterThan(10);
+    expect(told / frozen, '凍了卵又單身的人，多數要看到那一幕').toBeGreaterThan(0.7);
+  });
+});
