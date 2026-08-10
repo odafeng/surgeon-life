@@ -181,3 +181,44 @@ describe('事件不會連年重複', () => {
     }
   });
 });
+
+// 玩家可見的新選項要有自己的回歸測試，不能只靠全域的資料完整性檢查——
+// 那一支只驗形狀（欄位型別、效果鍵合法），不會發現某個選項整個消失。
+describe('審稿的利益衝突', () => {
+  const ev = () => EVENTS.find((e) => e.id === 'ac_be_reviewer');
+
+  it('這一幕確實擺出了利益衝突', () => {
+    // 沒有重疊這個前提，「婉拒」就沒有意義，測試也就失去意思
+    expect(ev().text).toMatch(/重疊/);
+  });
+
+  it('揭露重疊並婉拒是選項之一，而且排在最前面', () => {
+    const c = ev().choices[0];
+    expect(c.label).toMatch(/婉拒/);
+    expect(c.label).toMatch(/編輯/);
+  });
+
+  it('婉拒只回自我，不動教學與計分', () => {
+    const c = ev().choices[0];
+    expect(c.effects.self).toBeGreaterThan(0); // 做對的事，自我會回來
+    // 審稿不是教學服務，婉拒不該扣教學分數；也不該因此多拿歸類計分
+    expect(c.effects.teaching ?? 0).toBe(0);
+    expect(c.effects.papers ?? 0).toBe(0);
+    expect(c.memory).toBeTruthy(); // 這是會被記進「你記得的事」的決定
+  });
+
+  it('代價寫成跟編輯的關係，不是「在期刊露臉」——審稿是匿名的', () => {
+    const e = ev();
+    expect(e.choices[0].log).toMatch(/編輯|他/);
+    expect(e.choices[0].log).not.toMatch(/露臉/);
+    // 同一幕的另一個選項明寫署名匿名，兩邊不能互相打架
+    expect(e.choices.some((c) => /匿名/.test(c.log))).toBe(true);
+  });
+
+  it('原本那兩條路都還在——婉拒是多一個選擇，不是取代', () => {
+    const labels = ev().choices.map((c) => c.label);
+    expect(labels.length).toBe(3);
+    expect(labels.some((l) => /照規矩審/.test(l))).toBe(true);
+    expect(labels.some((l) => /延長審查期限/.test(l))).toBe(true);
+  });
+});
