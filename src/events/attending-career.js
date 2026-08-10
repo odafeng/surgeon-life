@@ -632,27 +632,6 @@ export const ATTENDING_CAREER_EVENTS = [
     ],
   },
   {
-    id: 'ac_mentor_hands',
-    scene: 'or',
-    mood: 'weary',
-    stages: ['attending'],
-    once: true,
-    cond: (s) => s.age >= 46,
-    text: '你的指導教授七十歲了，還在開刀。今天他讓你當第一助手。你注意到他打結時左手在抖，而他自己好像不知道。',
-    choices: [
-      {
-        label: '術後私下跟他講。',
-        effects: { self: -4, clinical: 1 },
-        log: '他聽完，低頭看自己的手看了很久，說：「我知道。」然後把下週那兩台大刀掛上你的名字。',
-      },
-      {
-        label: '什麼都不說，把每一針都盯緊。',
-        effects: { health: -3, self: -2 },
-        log: '那台刀開得很順。你回家坐在車上想到，有一天也會有人這樣盯著你，而你不會知道。',
-      },
-    ],
-  },
-  {
     id: 'ac_fifty_stamina',
     scene: 'or',
     mood: 'weary',

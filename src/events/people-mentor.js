@@ -101,7 +101,9 @@ export const MENTOR_EVENTS = [
     stages: ['attending'],
     once: true,
     weight: 4,
-    cond: (s) => M(s).stage >= 1 && s.age >= 38,
+    // 退休之後就不會再有「你跟陳文彬的刀」。m_retire 會把 stage 推到 3，
+    // 原本只看 stage >= 1，所以惜別會辦完了他還在開刀。
+    cond: (s) => M(s).stage >= 1 && M(s).stage < 3 && !M(s).gone && s.age >= 38,
     text: '你跟陳文彬的刀。分離血管時，你看見他的手抖了一下——很輕，一秒就穩住了。全場沒有人說話。',
     choices: [
       {

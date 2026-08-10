@@ -692,3 +692,49 @@ describe('論文接受可以有很多次，但不是同一封信', () => {
     expect(EVENTS.find((x) => x.id === 'ac_accept_mail').once).toBeUndefined();
   });
 });
+
+describe('陳文彬只有一個主人', () => {
+  // 惜別會有兩份、手抖那一幕也有兩份：attending-career.js 的 ac_mentor_hands
+  // 說「你的指導教授七十歲了，還在開刀」，而這一局他早已退休、還被玩家親手開過刀。
+  // 上一輪我只拔了惜別會就收手，沒有掃剩下的——這次掃完。
+  it('恩師的戲只寫在人物弧線裡', async () => {
+    const { EVENTS } = await import('../src/events.js');
+    const s = createGame(1);
+    const mentions = EVENTS.filter((e) => {
+      const parts = [
+        typeof e.text === 'function' ? e.text(s) : e.text,
+        typeof e.log === 'function' ? e.log(s) : e.log,
+        ...(e.choices || []).flatMap((c) => [typeof c.log === 'function' ? c.log(s) : c.log]),
+      ];
+      return parts.some((x) => typeof x === 'string' && /指導教授|你的老師|陳文彬/.test(x));
+    });
+    const outside = mentions.filter((e) => !e.id.startsWith('m_'));
+    // j_successor 是刻意的回音——許士杰把老師那句話傳給下一代，
+    // 它不宣稱老師在場，也不描寫他做了什麼。
+    expect(outside.map((e) => e.id)).toEqual(['j_successor']);
+  });
+
+  it('老師退休之後，不會再有人看見他開刀', async () => {
+    for (let seed = 1; seed <= 15; seed++) {
+      const s = createGame(seed, seed % 2 ? 'f' : 'm');
+      const intent = { clinical: 40, teaching: 15, research: 15, family: 15, personal: 15 };
+      let retired = false;
+      const after = [];
+      while (!s.ending && s.age <= 65) {
+        const alloc = conformAllocation(s, intent);
+        const { ending } = await playYear(
+          s,
+          alloc,
+          async () => 0,
+          async (l) => {
+            if (l.text.includes('惜別會')) retired = true;
+            else if (retired && /老師.*開刀|指導教授.*開刀|跟陳文彬的刀/.test(l.text))
+              after.push(l.text.slice(0, 24));
+          },
+        );
+        if (ending) break;
+      }
+      expect(after, `seed ${seed} 在惜別會之後還看到老師開刀`).toEqual([]);
+    }
+  });
+});
