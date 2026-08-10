@@ -157,8 +157,11 @@ export const MENTOR_EVENTS = [
     priority: true,
     stages: ['attending'],
     once: true,
-    weight: 5,
-    cond: (s) => M(s).stage >= 2 && s.age >= 46,
+    // 退休不是抽獎。原本要 stage >= 2 又跟其他事件搶抽籤，六十局裡有三十五局
+    // 活過五十二歲卻從來沒有送過老師——於是 attending-career.js 另外寫了一個
+    // 「你的老師退休了」來補，兩套各演各的，有人一輩子送了他兩次。
+    // 這一幕由弧線負責，而且到了年紀就一定會演。
+    forced: (s) => M(s).stage >= 1 && !M(s).gone && s.age >= 50,
     text: '陳文彬的惜別會。院長致詞八分鐘，講他發表過幾篇論文、拿過幾個計畫、當過幾屆理事。匾額上刻著四個頭銜。',
     choices: [
       {

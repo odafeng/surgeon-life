@@ -620,3 +620,42 @@ describe('會診沒人回與後送電話也只演一次', () => {
     expect(Object.entries(worst).filter(([, v]) => v > 1)).toEqual([]);
   });
 });
+
+describe('老師只退休一次', () => {
+  // people-mentor.js 的 m_retire 與 attending-career.js 的 ac_mentor_farewell
+  // 各自 once，卻演的是同一件事——同一場惜別會、同一面匾額、同一個一萬一千台。
+  // 有玩家在 50 歲送過老師，54 歲又送了一次。
+  it('一局裡最多一場惜別會', async () => {
+    for (let seed = 1; seed <= 15; seed++) {
+      const s = createGame(seed, seed % 2 ? 'f' : 'm');
+      const intent = { clinical: 40, teaching: 15, research: 15, family: 15, personal: 15 };
+      let seen = 0;
+      while (!s.ending && s.age <= 65) {
+        const alloc = conformAllocation(s, intent);
+        const { ending } = await playYear(
+          s,
+          alloc,
+          async () => 0,
+          async (l) => {
+            if (/惜別會|你的老師退休了/.test(l.text)) seen += 1;
+          },
+        );
+        if (ending) break;
+      }
+      expect(seen, `seed ${seed} 送了 ${seen} 次`).toBeLessThanOrEqual(1);
+    }
+  });
+
+  it('退休由人物弧線擁有，沒有第二份實作', async () => {
+    const { EVENTS } = await import('../src/events.js');
+    const s = createGame(1);
+    const farewells = EVENTS.filter((e) => {
+      const text = typeof e.text === 'function' ? e.text(s) : e.text;
+      return typeof text === 'string' && /惜別會|老師退休/.test(text);
+    });
+    // 陳文彬的惜別會與黃振邦的卸任茶會是不同的人，各留一份
+    const mentor = farewells.filter((e) => e.id.startsWith('m_'));
+    expect(mentor).toHaveLength(1);
+    expect(farewells.every((e) => e.id.startsWith('m_') || e.id.startsWith('c_'))).toBe(true);
+  });
+});

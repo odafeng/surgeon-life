@@ -639,17 +639,6 @@ export const ATTENDING_CAREER_EVENTS = [
     ],
   },
   {
-    id: 'ac_mentor_farewell',
-    scene: 'office',
-    mood: 'weary',
-    stages: ['attending'],
-    once: true,
-    cond: (s) => s.age >= 52,
-    text: '你的老師退休了。惜別會辦在餐廳，院方送了一面匾額，上面刻著四個字。他的手術紀錄一共一萬一千多台，匾額上沒有這個數字。',
-    effects: { self: -6 },
-    log: '他只講了兩句：「我這輩子沒有離開過開刀房。」停了一下，「不知道明天要去哪裡。」',
-  },
-  {
     id: 'ac_fifty_stamina',
     scene: 'or',
     mood: 'weary',
