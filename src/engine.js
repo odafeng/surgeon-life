@@ -320,6 +320,18 @@ const EVENT_HEALTH_DRAG = 3.4;
  * 用的是同一套 healthDelta 與 healthCap，所以它不會跟結算說謊。
  * 事件傷害用上面那個平均值代入——那是平均，運氣差的人會更早。
  */
+/**
+ * 晚年每年的健康淨變化（已扣掉事件的平均傷害）。
+ *
+ * projectCollapse 只回答「會不會倒」，但它是一條平均線。
+ * 個人 15% 的人每年淨掉 1.7 點，從 88 掉三十二年還剩 34——預告說活得到退休，
+ * 實測卻有 27/40 倒在工作中，因為事件的變異會把貼著地板走的人推下去。
+ * 淨值為負代表你每年都在退，撐不撐得到只剩運氣。這個數字要講給玩家聽。
+ */
+export function annualSlack(state, alloc) {
+  return healthDelta({ age: 65, talents: state.talents }, alloc) - EVENT_HEALTH_DRAG;
+}
+
 export function projectCollapse(state, alloc) {
   let health = state.attrs.health;
   const probe = { age: state.age, talents: state.talents };
@@ -585,6 +597,14 @@ export function forecast(state, alloc) {
     const fallAt = projectCollapse(state, alloc);
     if (fallAt !== null)
       warnings.push(`照這個配置一路走下去，你會在 ${fallAt} 歲倒下，走不到退休。`);
+    else {
+      // 沒有算出倒下，不代表安全。平均線撐得過，變異不一定。
+      const slack = annualSlack(state, alloc);
+      if (slack < 0)
+        warnings.push(
+          `這個配置撐得到退休，但晚年每年淨掉 ${Math.abs(slack).toFixed(1)} 點健康——沒有餘裕，運氣差一點就撐不到。`,
+        );
+    }
   }
   if (alloc.personal <= 5 && dh < 0) warnings.push('個人幾乎歸零：沒有任何回血來源。');
   if (state.family.kids > 0 && alloc.family < 25) warnings.push('家庭低於 25%：孩子那邊會出事。');

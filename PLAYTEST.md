@@ -286,6 +286,14 @@
 - **PASS｜專業選項、effects 與結果終於一致（`dbc697d`）：** fresh browser 實際點選後，card 只顯示「自我 +6」；結果停在編輯換人審、玩家把邀請歸檔並回去做自己的稿，沒有教學扣分、匿名矛盾或虛構報復。這一幕「做對的事，然後沒事發生」比硬塞代價更可信。
 - **PASS｜feature regression test 已補：** 守住利益衝突前提、婉拒選項與順序、effects、原有兩條路，並明確禁止「露臉」及「想不到你／記你一筆／以後不會再找你」兩代錯誤回來。`dbc697d` 上 `npm test` 133/133、`npm run lint`、`npm run format:check` 全過。
 
+#### 女性單身學術自然線續跑與 action panel regression（`1a1f5c5` → `5a6231f`）
+
+- **壽命警告確實看得懂，而且會改變選擇：** 27 歲住院醫師配置被下限調整成臨床 60／研究 22／家庭 6／個人 12 時，配置盤顯示「照這個配置一路走下去，你會在 60 歲倒下」。我沒有把它當 flavor text；當下改成 60／0／20／0／20，警告消失後才繼續。這是自然操作、零快轉，不是 regression state。代價也清楚：為了活久一點，我主動犧牲了家庭與一小部分研究。
+- **高優先 input／視覺 bug｜28 歲 action panel 的棕色橫槓：** 先選寫論文、讀期刊、練刀後，剩餘卡片 reflow 到面板底部；捲到底時，粗棕色橫槓直接穿過「請刀房喝飲料」的標題與說明，並壓在運動／補眠卡片的 hit target 上。`elementsFromPoint()` 顯示最上層是 `.scroll` 而非 button，實際 pointer click 沒扣精力。根因是 `.scroll` 是捲動容器，而它的 absolute `::after` 會隨內容捲動：未捲時落在 box 外被 `overflow` 裁掉，捲下後才跑進卡片區；這個裝飾唯一可見的狀態就是錯位。
+- **部分修正仍 FAIL（`ab3594d`／`c8c1b33`）：** 把 pseudo-element 設成 `pointer-events: none` 後，實際 click 已可使精力 3→1→0；但橫槓仍穿過卡片，視覺上像刪除線。只治 hit target，不足以讓玩家知道卡片沒有失效。`c8c1b33` 收窄測試並還原無證據的 `.coin::after` 變更是正確的，但畫面仍不能算 PASS。
+- **完整 PASS（`5a6231f`）：** 移除 `.scroll` 的兩根裝飾後，先在原 action state hot-swap 新 CSS，確認 pseudo 規則為 0、橫槓消失；再整頁重載回 28 歲年初，依真實 pointer 重做寫論文、讀期刊、練刀、捲到底，卡片中心 hit stack 最上層為 `span/button`，運動與補眠實際可按到精力 0。`npm test` 135/135、`npm run lint`、`npm run format:check` 全過。
+- **部署 cache 觀察成立，但這輪不應加版本參數：** 一般 reload 後，瀏覽器確實仍沿用舊的 `/style.css`，測試時需 hard reload／停用 cache；但實查 GitHub Pages 對 `index.html`、`style.css`、`src/ui.js` 都回 `Cache-Control: max-age=600` 與 ETag。`?v=` 若寫在 HTML 裡，玩家在 600 秒內不會拿到新 HTML，也就看不到新 query；等 HTML 可 revalidate 時，CSS／JS 也同時可 revalidate。手動 bump `style.css?v=<release-id>` 不會縮短真實玩家至多十分鐘的 stale window，且只處理 CSS、沒有處理同樣快取的 JS。我撤回前一版建議；這輪不改是正確的。若未來要求部署立即一致，才另案評估 content hash 檔名與 build step。
+
 ---
 
 ## 修改回應（Claude 寫）

@@ -11,6 +11,7 @@ import {
   projectCollapse,
   forecast,
   conformAllocation,
+  annualSlack,
 } from '../src/engine.js';
 
 const alloc = (c, t, r, f, p) => ({
@@ -337,5 +338,43 @@ describe('conformAllocation', () => {
     expect(twice.research).toBeLessThanOrEqual(once.research);
     // 從意圖重算永遠得到同一個答案
     expect(conformAllocation(s, intent)).toEqual(once);
+  });
+});
+
+describe('annualSlack', () => {
+  // projectCollapse 只回答「會不會倒」，而它是一條平均線。
+  // 女性單身學術路線的個人 15%：預告說活得到退休，實測 27/40 倒在工作中，
+  // 因為那條線每年淨掉 1.7 點，貼著地板走的人被事件的變異推下去。
+  const at = (personal) => ({
+    clinical: 100 - 15 - 30 - 5 - personal,
+    teaching: 15,
+    research: 30,
+    family: 5,
+    personal,
+  });
+
+  it('個人給得少就是每年在退，給得夠才轉正', () => {
+    const s = createGame(1, 'f');
+    expect(annualSlack(s, at(15))).toBeLessThan(0);
+    expect(annualSlack(s, at(18))).toBeLessThan(0);
+    expect(annualSlack(s, at(20))).toBeGreaterThan(0);
+    expect(annualSlack(s, at(25))).toBeGreaterThan(annualSlack(s, at(20)));
+  });
+
+  it('沒有算出倒下、但每年在退的配置，仍然會被警告', () => {
+    const s = createGame(1, 'f');
+    s.age = 33;
+    const alloc = conformAllocation(s, at(15));
+    expect(projectCollapse(s, alloc), '這個配置的平均線撐得到退休').toBeNull();
+    const w = forecast(s, alloc).warnings.find((x) => x.includes('餘裕'));
+    expect(w, '撐得過不等於安全，這裡必須出聲').toBeTruthy();
+    expect(w).toMatch(/1\.7/); // 講出實際數字，不要只說「危險」
+  });
+
+  it('餘裕轉正之後就不再囉嗦', () => {
+    const s = createGame(1, 'f');
+    s.age = 33;
+    const alloc = conformAllocation(s, at(25));
+    expect(forecast(s, alloc).warnings.find((x) => x.includes('餘裕'))).toBeUndefined();
   });
 });
