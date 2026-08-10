@@ -573,6 +573,7 @@ export const ATTENDING_SYSTEM_EVENTS = [
   },
   {
     id: 'as_consult_silence',
+    once: true, // 同一次術前會診四十八小時無回覆，同一份看了三遍的心臟超音波
     scene: 'oncall',
     mood: 'weary',
     stages: ['attending'],
@@ -585,6 +586,7 @@ export const ATTENDING_SYSTEM_EVENTS = [
   // ───────────── 轉診與後送 ─────────────
   {
     id: 'as_transfer_calls',
+    once: true, // 同一位要葉克膜的病人、第一到第四通、成功的是第七通、凌晨三點五十
     scene: 'oncall',
     mood: 'weary',
     stages: ['attending'],

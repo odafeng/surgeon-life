@@ -1,5 +1,5 @@
 // 遊戲流程。畫面交給 view.js，配置盤與行動面板各自獨立。
-import { createGame, playYear, getStage, conformAllocation } from './engine.js';
+import { createGame, playYear, getStage, conformAllocation, backfillUsed } from './engine.js';
 import { PROLOGUE } from './events.js';
 import { openAllocPanel } from './alloc-panel.js';
 import { openActionPanel } from './action-panel.js';
@@ -203,6 +203,9 @@ $('btn-continue').onclick = async () => {
   }
   state = got.state;
   journal = got.meta.journal || [];
+  // 存檔可能是在某些事件還沒標成 once 之前存的，那時 used 沒有記過它們的 id。
+  // 年誌留著正文，用它把已經演過的一次性事件補回去，否則舊存檔會繼續重播。
+  backfillUsed(state, journal);
   setPortraitGender(state.gender);
   autoYears = 0;
   $('screen-start').classList.add('hidden');

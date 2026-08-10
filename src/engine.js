@@ -106,6 +106,31 @@ export function createGame(seed, gender = 'm') {
   };
 }
 
+/**
+ * 舊存檔補記已經演過的一次性事件。
+ *
+ * 把一個事件標成 once 只會影響之後的抽籤——已經存在的存檔裡，
+ * state.used 從來沒有記過它的 id，所以它會繼續重播。試玩者的存檔在 32 歲與
+ * 43 歲看過那封三小時退稿信，載入修好的版本之後 51 歲又演了第三次。
+ *
+ * 年誌留著每一幕的正文，所以可以反過來回填。比對用完整正文而不是片段——
+ * 今天已經有四次是我用太短的字串量到根本沒發生的事。
+ */
+export function backfillUsed(state, journal = []) {
+  const said = journal.map((e) => e && e.text).filter((x) => typeof x === 'string');
+  const added = [];
+  for (const e of EVENTS) {
+    if (!e.once || state.used.includes(e.id)) continue;
+    const text = resolve(state, val(e.text, state));
+    if (typeof text !== 'string' || text.length < 12) continue;
+    if (said.some((line) => line.includes(text))) {
+      state.used.push(e.id);
+      added.push(e.id);
+    }
+  }
+  return added;
+}
+
 export function getStage(state) {
   if (state.career === 'aesthetic') return STAGES.aesthetic;
   if (state.age <= 26) return STAGES.pgy;

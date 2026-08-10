@@ -572,3 +572,51 @@ describe('帶著唯一識別資料的時刻只演一次', () => {
     expect(e.text(low)).toMatch(/又貼出來/); // 語氣要說明這不是第一次
   });
 });
+
+describe('會診沒人回與後送電話也只演一次', () => {
+  // 同一次術前會診四十八小時無回覆、同一份看了三遍的心臟超音波；
+  // 同一位要葉克膜的病人、第一到第四通、成功的是第七通、凌晨三點五十。
+  const ONCE = [
+    ['as_consult_silence', '四十八小時沒有回覆'],
+    ['as_transfer_calls', '第一通說沒床'],
+  ];
+
+  it('標記字串各自只屬於一個事件', async () => {
+    const { EVENTS } = await import('../src/events.js');
+    const s = createGame(1);
+    for (const [id, mark] of ONCE) {
+      const owners = EVENTS.filter((e) => {
+        const parts = [
+          typeof e.text === 'function' ? e.text(s) : e.text,
+          e.log,
+          ...(e.choices || []).flatMap((c) => [c.log, c.memory]),
+        ];
+        return parts.some((x) => typeof x === 'string' && x.includes(mark));
+      }).map((e) => e.id);
+      expect(owners, `${id} 的標記「${mark}」`).toEqual([id]);
+    }
+  });
+
+  it('一局裡最多各出現一次', async () => {
+    const worst = { as_consult_silence: 0, as_transfer_calls: 0 };
+    for (let seed = 1; seed <= 10; seed++) {
+      const s = createGame(seed);
+      const intent = { clinical: 45, teaching: 12, research: 12, family: 16, personal: 15 };
+      const n = { as_consult_silence: 0, as_transfer_calls: 0 };
+      while (!s.ending && s.age <= 65) {
+        const alloc = conformAllocation(s, intent);
+        const { ending } = await playYear(
+          s,
+          alloc,
+          async () => 0,
+          async (l) => {
+            for (const [id, mark] of ONCE) if (l.text.includes(mark)) n[id] += 1;
+          },
+        );
+        if (ending) break;
+      }
+      for (const [id] of ONCE) worst[id] = Math.max(worst[id], n[id]);
+    }
+    expect(Object.entries(worst).filter(([, v]) => v > 1)).toEqual([]);
+  });
+});
