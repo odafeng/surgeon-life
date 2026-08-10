@@ -26,7 +26,8 @@ export const FEMALE_EVENTS = [
       },
       {
         label: '「這個問題你不會問我同梯。」',
-        effects: { self: 6, teaching: -3 },
+        // 後果是跟主任的政治關係，不是升等的教學服務分數——那條由 bond 承擔。
+        effects: { self: 6 },
         bond: { chief: -8 },
         memory: '主任問你今年有沒有什麼打算。你說，這個問題你不會問我同梯。',
         log: '他愣了兩秒，說：「我是關心你。」你說你知道。那份人力表後來沒有再拿給你看過。',
@@ -91,7 +92,9 @@ export const FEMALE_EVENTS = [
       },
       {
         label: '拿診斷書去談。',
-        effects: { health: 4, self: 3, teaching: -4 },
+        // 少的那四個大夜是別人替你值的，那是人情不是教學服務分數。
+        // 這個遊戲沒有建那條線，就讓 bond 與文字承擔，不要拿升等的軸來頂。
+        effects: { health: 4, self: 3 },
         bond: { chief: -6 },
         memory: '你拿了診斷書去談孕期的班。那個月你少了四個大夜，也少了一些東西。',
         log: '少了四個大夜，多了四個人替你值。他們沒有說什麼——真正難受的是這件事。你開始算自己欠了誰幾個晚上。',
