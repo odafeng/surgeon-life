@@ -473,3 +473,22 @@ describe('沒有第二份「你開的刀最難」', () => {
     expect([...new Set(bad)]).toEqual([]);
   });
 });
+
+describe('特約病房不發獎金也不扣薪', () => {
+  // 早晚各巡一次頂樓，私人存款 +10；交給住院醫師，私人存款 −10。
+  // 正文與結果裡只有院方壓力、時間分配與病人指名，沒有任何獎金、扣薪或自費。
+  it('兩個選項都不動存款', () => {
+    const e = EVENTS.find((x) => x.id === 'as_vip_round');
+    for (const c of e.choices) expect(c.effects.money ?? 0, c.label).toBe(0);
+  });
+
+  it('代價留在原本就寫對的地方', () => {
+    const e = EVENTS.find((x) => x.id === 'as_vip_round');
+    const obey = e.choices.find((c) => /照做/.test(c.label));
+    const delegate = e.choices.find((c) => /住院醫師/.test(c.label));
+    expect(obey.effects.health).toBeLessThan(0); // 一天多跑兩趟
+    expect(obey.log).toMatch(/沒有家屬的老先生/); // 真正被排擠掉的是那個人
+    expect(delegate.effects.self).toBeGreaterThan(0);
+    expect(delegate.log).toMatch(/院長室/); // 代價是那通電話
+  });
+});
