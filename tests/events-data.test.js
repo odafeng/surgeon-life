@@ -414,3 +414,27 @@ describe('績效排名不替玩家寫履歷', () => {
     expect(e.log).toMatch(/短刀/); // 同事開短刀排第一，這個對比不依賴玩家的刀有多難
   });
 });
+
+describe('教學分數只給教學', () => {
+  // 教學軸就是升等審查的教學服務分數。向健保署做行政說明、跟醫院談聘書條件
+  // 都不是教學服務——這已經是第三、第四次接錯這個軸。
+  it('醫材函文與挖角談判都不動教學', () => {
+    const cases = [
+      ['as_nhi_letter_sd', /認真寫/],
+      ['as_headhunt', /談條件/],
+    ];
+    for (const [id, pick] of cases) {
+      const e = EVENTS.find((x) => x.id === id);
+      const c = e.choices.find((x) => pick.test(typeof x.label === 'string' ? x.label : ''));
+      expect(c, `${id} 找不到那個選項`).toBeTruthy();
+      expect(c.effects.teaching ?? 0, `${id}`).toBe(0);
+    }
+  });
+
+  it('代價還在，只是換到對的地方', () => {
+    const letter = EVENTS.find((x) => x.id === 'as_nhi_letter_sd');
+    expect(letter.choices.find((c) => /認真寫/.test(c.label)).effects.health).toBeLessThan(0);
+    const deal = EVENTS.find((x) => x.id === 'as_headhunt');
+    expect(deal.choices.find((c) => /談條件/.test(c.label)).effects.self).toBeLessThan(0);
+  });
+});
