@@ -455,3 +455,24 @@ describe('學弟妹怎麼稱呼主角', () => {
     }
   });
 });
+
+describe('相親對象的性別跟配偶線一致', () => {
+  // 這個遊戲的配偶線是固定異性：男主角配郁涵、女主角配宗翰。
+  // 相親那一幕原本寫死「她想找可以一起吃飯的」，女性主角會被安排一場同性相親——
+  // 而遊戲從來沒問過性向，別的地方也不支援，那會讀成意外而不是設定。
+  it('男主角遇到的是她，女主角遇到的是他', async () => {
+    const { EVENTS } = await import('../src/events.js');
+    const { resolve, val } = await import('../src/engine.js');
+    const e = EVENTS.find((x) => x.id === 'f_blind_date');
+    const leave = e.choices.find((c) => /先走/.test(c.label));
+    for (const [gender, want, avoid] of [
+      ['m', '她想找', '他想找'],
+      ['f', '他想找', '她想找'],
+    ]) {
+      const s = createGame(1, gender);
+      const log = resolve(s, val(leave.log, s));
+      expect(log, gender).toContain(want);
+      expect(log, gender).not.toContain(avoid);
+    }
+  });
+});
