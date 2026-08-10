@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body>
+    <main id="stage">
+      <!-- 場景層 -->
+      <div id="scene"></div>
+      <div id="scene-tint"></div>
+      <div id="scene-vig"></div>
+
+      <!-- 立繪 -->
+      <img id="portrait" alt="" />
+
+      <!-- 左上狀態 -->
+      <div id="hud">
+        <div class="hud-age"><b id="hud-year">25</b><i>歲</i><em id="hud-stage">PGY</em></div>
+        <div id="hud-rank"></div>
+        <div id="hud-bars"></div>
+        <div id="hud-mix"></div>
+      </div>
+
+      <!-- 右上 -->
+      <div id="hud-right">
+        <button id="btn-status" class="dia" title="狀態"><span>狀</span></button>
+        <button id="btn-log" class="dia" title="年誌"><span>誌</span></button>
+        <button id="btn-save" class="dia" title="存檔"><span>存</span></button>
+        <div id="hud-money"><i class="coin"></i><b id="money-val">10</b><s>萬</s></div>
+      </div>
+
+      <!-- 名牌 -->
+      <div id="nameplate">
+        <u id="np-title"></u>
+        <p id="np-name">你</p>
+      </div>
+
+      <!-- 事件文字框 -->
+      <div id="textbox">
+        <u id="tb-src"></u>
+        <p id="tb-body"></p>
+        <span id="tb-more">▼</span>
+      </div>
+
+      <!-- 選項卡 -->
+      <div id="cards"></div>
+    </main>
+    <script>
+      document.getElementById('scene').style.backgroundImage = "url('/assets/scene-or.webp')";
+      document.getElementById('portrait').setAttribute('src', '/assets/portrait-f-42.webp');
+      document.getElementById('hud-year').textContent = '42';
+      document.getElementById('hud-stage').textContent = '主治醫師';
+      document.getElementById('hud-rank').textContent = '副教授・主治第 11 年';
+      document.getElementById('hud-bars').innerHTML = [
+        ['健康', 62],
+        ['自我', 71],
+        ['家庭', 38],
+      ]
+        .map(
+          ([k, v], i) =>
+            `<div class="br"><span>${k}</span><div class="bar b-${['health', 'self', 'family'][i]}"><i style="width:${v}%"></i><b>${v}</b></div></div>`,
+        )
+        .join('');
+      document.getElementById('hud-mix').innerHTML =
+        '<em>今年配置</em><div class="mixbar">' +
+        [
+          ['clinical', 40],
+          ['teaching', 15],
+          ['research', 20],
+          ['family', 10],
+          ['personal', 15],
+        ]
+          .map(([k, v]) => `<i style="width:${v}%;background:var(--c-${k})"></i>`)
+          .join('') +
+        '</div>';
+      document.getElementById('money-val').textContent = '286';
+      document.getElementById('np-title').textContent = '副教授';
+      document.getElementById('tb-src').textContent = '42 歲';
+      document.getElementById('tb-body').textContent =
+        '門診叫到王慶昌。他提著一袋自己種的芭樂進來，先把袋子放到你桌上才坐下。';
+    </script>
+  </body>
+</html>

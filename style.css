@@ -84,14 +84,22 @@ body {
 }
 
 /* ───────── 左上 HUD ───────── */
+/* 狀態列在右邊。
+   立繪貼左下、高 84%，臉大約落在畫面 20-38% 的高度；狀態列從頂端算下來約 32%，
+   兩者必然重疊，而且晚年的立繪臉更靠上，遮得更嚴重。
+   移到右上之後就不可能撞到，也不必為了閃避而把任何東西縮小。
+   top 讓開右上那排「狀／誌／存」按鈕，數值條右邊的數字用 padding 留位置。 */
 #hud {
   position: absolute;
-  top: 0;
-  left: 0;
+  top: calc(var(--u) * 5);
+  right: 0;
   z-index: 7;
-  padding: calc(var(--u) * 1.2) calc(var(--u) * 2) calc(var(--u) * 1.4) calc(var(--u) * 1.4);
-  background: linear-gradient(105deg, rgba(10, 9, 8, 0.93) 52%, transparent);
-  border-bottom-right-radius: calc(var(--u) * 3);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  padding: calc(var(--u) * 1.2) calc(var(--u) * 3.4) calc(var(--u) * 1.4) calc(var(--u) * 2.4);
+  background: linear-gradient(255deg, rgba(10, 9, 8, 0.93) 52%, transparent);
+  border-bottom-left-radius: calc(var(--u) * 3);
 }
 .hud-age {
   display: flex;

@@ -361,3 +361,33 @@ describe('凍卵這條線不會斷在半路', () => {
     expect(told / frozen, '凍了卵又單身的人，多數要看到那一幕').toBeGreaterThan(0.7);
   });
 });
+
+describe('遇到的人跟後來的伴侶要是同一個人', () => {
+  // fb_late_meet 的「女兒」是寫死的名詞，代稱掃描抓不到。
+  // 女性主角在同一幕遇到病人的女兒、log 解析成「他接起來」、
+  // 之後配偶又固定是男性的宗翰——同一個人在三句話裡換了兩次性別。
+  it('兩種主角走完整個接受分支都不會前後矛盾', async () => {
+    const { EVENTS } = await import('../src/events.js');
+    const { resolve } = await import('../src/engine.js');
+    const e = EVENTS.find((x) => x.id === 'fb_late_meet');
+    const call = e.choices.find((c) => /打那通電話/.test(c.label));
+
+    for (const [gender, self, other] of [
+      ['m', /女兒/, /她接起來/],
+      ['f', /兒子/, /他接起來/],
+    ]) {
+      const s = createGame(1, gender);
+      s.age = 43;
+      const text = resolve(s, e.text(s));
+      const memory = resolve(s, call.memory(s));
+      const log = resolve(s, call.log);
+      expect(text, `${gender} 正文`).toMatch(self);
+      expect(memory, `${gender} 記憶`).toMatch(self);
+      expect(log, `${gender} 結果`).toMatch(other);
+      // 三段文字不能各說各的性別
+      expect(text.includes('女兒') === memory.includes('女兒'), `${gender} 正文與記憶要一致`).toBe(
+        true,
+      );
+    }
+  });
+});
