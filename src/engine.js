@@ -542,11 +542,19 @@ export function forecast(state, alloc) {
   const dh = healthDelta(state, alloc);
   const cap = healthCap(state.age + 1);
   const nextHealth = Math.max(0, Math.min(cap, a.health + dh));
+  // 顯示的是「實際會變成多少」，不是公式算出來的原始增益。
+  // 健康上限隨年齡下降，所以三十幾歲之後常常出現「休息回了 4.2 點、
+  // 但上限也降了」——原本 chip 寫 +4.2 而後面接 100 → 98，兩個數字都對，
+  // 放在一起卻在說謊。上限咬住的時候要講出來，玩家才知道那不是 bug。
+  const netHealth = nextHealth - a.health;
+  const cappedByAge = dh > 0 && nextHealth < a.health + dh - 0.05;
   chips.push({
     label: '健康',
-    value: `${dh >= 0 ? '+' : ''}${dh.toFixed(1)}`,
-    detail: `${Math.round(a.health)} → ${Math.round(nextHealth)}`,
-    good: dh >= 0,
+    value: `${netHealth >= 0 ? '+' : '−'}${Math.abs(netHealth).toFixed(1)}`,
+    detail: cappedByAge
+      ? `${Math.round(a.health)} → ${Math.round(nextHealth)}（上限 ${Math.round(cap)}）`
+      : `${Math.round(a.health)} → ${Math.round(nextHealth)}`,
+    good: netHealth >= 0,
   });
 
   const mp = malpracticeChance(state);

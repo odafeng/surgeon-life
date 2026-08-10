@@ -378,3 +378,50 @@ describe('annualSlack', () => {
     expect(forecast(s, alloc).warnings.find((x) => x.includes('餘裕'))).toBeUndefined();
   });
 });
+
+describe('健康預告的數字不能自相矛盾', () => {
+  // 截圖上寫「健康 +4.2」，同一格後面卻是「100 → 98」。兩個數字都對：
+  // 休息確實回了 4.2 點，但 healthCap 隨年齡下降，34 歲的上限是 98。
+  // 放在一起就是在說謊——玩家看到正號，健康卻掉了。
+  const alloc = { clinical: 25, teaching: 20, research: 40, family: 0, personal: 15 };
+  const chip = (age, health) => {
+    const s = createGame(1, 'f');
+    s.age = age;
+    s.attrs.health = health;
+    return forecast(s, alloc).chips.find((c) => c.label === '健康');
+  };
+
+  it('上限咬住的時候顯示的是實際淨變化，而且說出上限', () => {
+    const c = chip(33, 100);
+    expect(c.value).toMatch(/^−/); // 實際會掉，就要顯示負號
+    expect(c.detail).toContain('100 → 98');
+    expect(c.detail).toMatch(/上限 98/); // 講出原因，否則玩家會以為是 bug
+    expect(c.good).toBe(false);
+  });
+
+  it('還沒碰到上限就照實顯示增益，也不多嘴', () => {
+    const c = chip(33, 70);
+    expect(c.value).toBe('+4.2');
+    expect(c.detail).toBe('70 → 74');
+    expect(c.detail).not.toMatch(/上限/);
+    expect(c.good).toBe(true);
+  });
+
+  it('顯示的數字永遠等於 detail 兩端的差', () => {
+    for (const [age, health] of [
+      [33, 100],
+      [33, 70],
+      [40, 95],
+      [55, 50],
+      [60, 40],
+    ]) {
+      const c = chip(age, health);
+      const [from, to] = c.detail
+        .match(/(\d+) → (\d+)/)
+        .slice(1)
+        .map(Number);
+      const shown = Number(c.value.replace('−', '-').replace('+', ''));
+      expect(Math.abs(shown - (to - from)), `${age} 歲 健康 ${health}`).toBeLessThan(1);
+    }
+  });
+});

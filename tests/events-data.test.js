@@ -226,3 +226,38 @@ describe('審稿的利益衝突', () => {
     expect(labels.some((l) => /延長審查期限/.test(l))).toBe(true);
   });
 });
+
+// 上一個 commit 改了四處行為卻沒有附測試，這裡補上。
+// 每一條都只釘住實際被回報、被修正的那一點，不擴成全域家規。
+describe('回報後修正的那幾處', () => {
+  const byId = (id) => EVENTS.find((e) => e.id === id);
+
+  it('休克的病人不會被拉去站著拍片', () => {
+    // 血壓量不到的人站不起來。不能站的時候看游離氣體是讓他左側躺。
+    const e = byId('w_the_night');
+    expect(e.text).toMatch(/血壓量不到/); // 前提還在，這條測試才有意義
+    expect(e.text).not.toMatch(/立位/);
+    expect(e.text).toMatch(/左側躺/);
+  });
+
+  it('爭第一作者的後果不記在升等的教學服務分數上', () => {
+    // 那是研究合作與科內政治，這個遊戲沒有建那條線；不要拿不相干的軸來頂。
+    const c = byId('r_authorship').choices.find((x) => /爭取第一作者/.test(x.label));
+    expect(c).toBeTruthy();
+    expect(c.effects.teaching ?? 0).toBe(0);
+    expect(c.effects.papers).toBeGreaterThan(0); // 你確實拿到了第一作者
+  });
+
+  it('女性線那兩處的後果也不記在教學服務分數上', () => {
+    // 頂撞主任是政治，拿診斷書談班表是人力調度，兩者都不是教學服務。
+    const chief = byId('fw_recruit_ask').choices.find((c) => /不會問我同梯/.test(c.label));
+    expect(chief).toBeTruthy();
+    expect(chief.effects.teaching ?? 0).toBe(0);
+    expect(chief.bond?.chief).toBeLessThan(0); // 代價由關係承擔
+
+    const roster = byId('fw_on_call_pregnant').choices.find((c) => /診斷書/.test(c.label));
+    expect(roster).toBeTruthy();
+    expect(roster.effects.teaching ?? 0).toBe(0);
+    expect(roster.bond?.chief).toBeLessThan(0);
+  });
+});
