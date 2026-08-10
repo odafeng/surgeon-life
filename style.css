@@ -250,7 +250,6 @@ body {
 }
 .coin::after {
   content: '';
-  pointer-events: none;
   position: absolute;
   inset: 30%;
   background: #141310;
