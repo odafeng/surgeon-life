@@ -430,27 +430,11 @@ body {
   width: min(calc(var(--u) * 74), 94%);
   max-height: 94%;
 }
-/* 卷軸上下的裝飾橫槓。
-   .scroll 是捲動容器，所以這兩條用 top/bottom 定位是相對「整份可捲動內容」，
-   內容一長，下面那條就會落在可見範圍的中間。它有背景色，於是把底下的
-   action card 蓋住並吃掉點擊——玩家會看到卡片在那裡，但怎麼點都沒反應。
-   純裝飾的東西不該出現在 hit test 裡。 */
-.scroll::before,
-.scroll::after {
-  content: '';
-  pointer-events: none;
-  position: absolute;
-  left: calc(var(--u) * -0.9);
-  right: calc(var(--u) * -0.9);
-  height: calc(var(--u) * 0.9);
-  background: linear-gradient(90deg, #6b5c44, #a48a63, #6b5c44);
-}
-.scroll::before {
-  top: calc(var(--u) * -0.9);
-}
-.scroll::after {
-  bottom: calc(var(--u) * -0.9);
-}
+/* 卷軸上下原本有兩條裝飾橫槓（.scroll::before / ::after）。已移除。
+   .scroll 是捲動容器，絕對定位的子元素會跟著內容一起捲——它相對的是
+   「未捲動時的 padding box」，捲下去之後那條橫槓就跑到面板中間，
+   像一條刪除線劃過 action card。而不捲動時它落在 box 外面，會被 overflow 裁掉。
+   也就是說這個裝飾從來沒有正確顯示過，唯一現身的時機就是變成那條橫槓。 */
 .scroll h2 {
   font-size: calc(var(--u) * 2.6);
   letter-spacing: 0.2em;
