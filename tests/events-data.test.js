@@ -288,3 +288,22 @@ describe('王慶昌的追蹤要接得上他開過的那台刀', () => {
     expect(t).toMatch(/斷層/); // 影像仍然要出現，只是排在症狀之後
   });
 });
+
+// 台灣的外科專科醫師甄審看的是完成訓練與筆試口試，沒有論文或第一作者門檻。
+// 原本住院醫師說「我要申請專科」，把一個不存在的制度門檻寫成理由。
+// 第一作者真正有用的地方是留任、找主治缺、申請 fellowship。
+describe('第一作者的理由要對得上真實需求', () => {
+  const e = () => EVENTS.find((x) => x.id === 'ac_author_order');
+
+  it('住院醫師要的不是專科考試的門票', () => {
+    expect(e().text).not.toMatch(/申請專科|專科醫師甄審/);
+  });
+
+  it('理由與後續結果講的是同一件事', () => {
+    const ev = e();
+    expect(ev.text).toMatch(/留|履歷/); // 他要的是留下來
+    const give = ev.choices.find((c) => /給他/.test(c.label));
+    expect(give.log).toMatch(/留|缺/); // 結果也要回答那件事
+    expect(give.log).not.toMatch(/申請/); // 不能還停在舊的理由上
+  });
+});

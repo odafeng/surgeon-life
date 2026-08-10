@@ -67,18 +67,29 @@ const BARS = [
   ['familyBond', '家庭', 30],
 ];
 
+/**
+ * HUD 上職級那一行。
+ *
+ * 後面那個數字是「當主治／住院醫師的第幾年」，不是「當這個職級的第幾年」。
+ * 原本兩者直接相接，於是 35 歲才升上助理教授的人在 36 歲看到「助理教授・第 5 年」，
+ * 36 歲底升副教授的人在 37 歲看到「副教授・第 6 年」——玩家沒有理由不那樣讀。
+ */
+export function rankLine(state) {
+  const stage = getStage(state);
+  const label = RANK_LABELS[state.rank] || stage.label;
+  if (stage.key === 'resident') return `${label}・第 ${state.age - 26} 年`;
+  if (stage.key !== 'attending') return label;
+  // 職級本身就是「主治醫師」時不必再標一次；掛了教職才需要說清楚那個數字算的是主治年資
+  const years = state.age - 31;
+  return label === '主治醫師' ? `${label}・第 ${years} 年` : `${label}・主治第 ${years} 年`;
+}
+
 export function renderHud(state) {
   const a = state.attrs;
   const stage = getStage(state);
   $('hud-year').textContent = state.age;
   $('hud-stage').textContent = stage.label;
-  const yearsIn =
-    stage.key === 'attending'
-      ? `・第 ${state.age - 31} 年`
-      : stage.key === 'resident'
-        ? `・第 ${state.age - 26} 年`
-        : '';
-  $('hud-rank').textContent = (RANK_LABELS[state.rank] || stage.label) + yearsIn;
+  $('hud-rank').textContent = rankLine(state);
 
   $('hud-bars').innerHTML = BARS.map(([k, label, lowAt]) => {
     const v = Math.round(a[k]);
