@@ -242,28 +242,35 @@ describe('結局不會反寫玩家的選擇', () => {
   // health 原本固定 50，於是 both_but 只會從「家庭垮」那半邊觸發，
   // 「健康垮但家庭很好」那條分支一次都沒被跑到——而那正是漏掉的那一條。
   // 每一個會被結局文字讀到的數值都要有高低兩種。
+  // kidEstranged 一直沒被列進來，於是 other_peoples_children 的內文從來沒進過這裡。
+  // 它以前只有 120 局裡的 5 局讀得到，漏掉不痛不癢；把它排到部主任與恩師之前
+  // 以後變成 42 局，這個洞就有份量了。只在 kids > 0 時給——那條鏈本來就要先有小孩，
+  // 硬造 kids = 0 的走偏小孩會製造一個玩不到的假紅燈。
   const states = () => {
     const out = [];
     for (const kids of [0, 1])
-      for (const succeeded of [false, true])
-        for (const rank of ['vs', 'associate', 'professor'])
-          for (const clinical of [30, 80])
-            for (const familyBond of [20, 80])
-              for (const health of [20, 70])
-                for (const self of [30, 80]) {
-                  const s = createGame(1);
-                  s.age = 66;
-                  s.rank = rank;
-                  s.attrs.clinical = clinical;
-                  s.attrs.familyBond = familyBond;
-                  s.attrs.health = health;
-                  s.attrs.self = self;
-                  s.family.kids = kids;
-                  if (kids) s.family.children = [{ bornAt: 34 }];
-                  s.family.stage = kids ? 'married' : 'single';
-                  s.people.chief.succeeded = succeeded;
-                  out.push(s);
-                }
+      for (const estranged of [false, true])
+        for (const succeeded of [false, true])
+          for (const rank of ['vs', 'associate', 'professor'])
+            for (const clinical of [30, 80])
+              for (const familyBond of [20, 80])
+                for (const health of [20, 70])
+                  for (const self of [30, 80]) {
+                    if (estranged && !kids) continue;
+                    const s = createGame(1);
+                    s.age = 66;
+                    s.rank = rank;
+                    s.attrs.clinical = clinical;
+                    s.attrs.familyBond = familyBond;
+                    s.attrs.health = health;
+                    s.attrs.self = self;
+                    s.family.kids = kids;
+                    if (kids) s.family.children = [{ bornAt: 34 }];
+                    s.family.stage = kids ? 'married' : 'single';
+                    s.people.chief.succeeded = succeeded;
+                    s.flags.kidEstranged = estranged;
+                    out.push(s);
+                  }
     return out;
   };
 
