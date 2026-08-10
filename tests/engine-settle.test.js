@@ -1,11 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import {
   createGame,
+  playYear,
   applyGrowth,
   settleHealth,
   settleMoney,
   settlePhd,
-  settleGrant,
   settlePromotion,
   malpracticeChance,
   projectCollapse,
@@ -13,6 +13,7 @@ import {
   conformAllocation,
   annualSlack,
 } from '../src/engine.js';
+import { ACTIONS, runAction } from '../src/actions.js';
 
 const alloc = (c, t, r, f, p) => ({
   clinical: c,
@@ -174,35 +175,70 @@ describe('settlePromotion', () => {
   });
 });
 
-describe('settleGrant', () => {
-  it('research >= 25% leaves an application record regardless of outcome', () => {
+describe('計畫只有一個主人', () => {
+  // 同一年裡，行動面板先說「通過了，累計 2 年」，年度事件又說「未通過，創新性不足」。
+  // 兩套系統各寫各的 grants，年資還會重複累計；而且不按那顆按鈕、
+  // 光把研究拉到 25% 就會自動送件，讓那個行動失去意義。
+  it('engine 不再自己送件——沒有按行動就不會有申請紀錄', async () => {
     const s = createGame(1);
     s.age = 40;
     s.rank = 'vs';
-    s.rng = { chance: () => false, next: () => 0.99 };
-    const log = settleGrant(s, alloc(40, 0, 30, 20, 10));
-    expect(s.grants.applied).toBe(true);
+    // 研究拉到 30%，遠超過舊門檻的 25%
+    await playYear(s, alloc(40, 10, 30, 10, 10), async () => 0);
+    expect(s.grants.applied, '沒有按寫計畫書就不該有申請紀錄').toBe(false);
     expect(s.grants.yearsPI).toBe(0);
-    expect(log).toMatch(/創新性不足/); // 被拒的審查意見,一行
   });
 
-  it('a passing roll adds a PI year', () => {
+  it('一年最多一則申請結果，主持年資最多加一', () => {
     const s = createGame(1);
     s.age = 40;
     s.rank = 'vs';
-    s.rng = { chance: () => true, next: () => 0 };
-    const log = settleGrant(s, alloc(40, 0, 30, 20, 10));
-    expect(s.grants.yearsPI).toBe(1);
-    expect(log).toMatch(/計畫/);
+    s.alloc = alloc(40, 10, 30, 10, 10);
+    s.rng = { chance: () => true, next: () => 0, getState: () => 0, setState: () => {} };
+    const grant = ACTIONS.find((a) => a.id === 'act_grant');
+    const before = s.grants.yearsPI;
+    const out = runAction(s, grant);
+    expect(s.grants.applied).toBe(true);
+    expect(s.grants.yearsPI - before).toBe(1);
+    expect(out).toMatch(/通過|沒過/);
   });
 
-  it('is a no-op below 25% research or outside attending surgery', () => {
+  it('行動的結果就是那一年唯一的結果', async () => {
     const s = createGame(1);
     s.age = 40;
     s.rank = 'vs';
-    expect(settleGrant(s, alloc(50, 20, 20, 5, 5))).toBeNull();
-    const pgy = createGame(1);
-    expect(settleGrant(pgy, alloc(50, 0, 30, 10, 10))).toBeNull();
+    s.alloc = alloc(40, 10, 30, 10, 10);
+    s.rng = { chance: () => true, next: () => 0, getState: () => 0, setState: () => {} };
+    runAction(
+      s,
+      ACTIONS.find((a) => a.id === 'act_grant'),
+    );
+    const after = s.grants.yearsPI;
+    const { logs } = await playYear(s, alloc(40, 10, 30, 10, 10), async () => 0);
+    expect(s.grants.yearsPI, '年底不該再加一次').toBe(after);
+    expect(logs.filter((l) => /計畫申請結果|創新性不足/.test(l.text))).toHaveLength(0);
+  });
+});
+
+describe('教職這條路還走得到', () => {
+  // 把年底的自動送件拿掉之後，計畫只能靠行動取得。
+  // 那是對的語意（你得真的去寫），但要確認它沒有把教授這一關關死。
+  it('每年按下寫計畫書的人，主持年資追得上教授的門檻', async () => {
+    const intent = { clinical: 30, teaching: 20, research: 30, family: 0, personal: 20 };
+    let reached = 0;
+    for (let seed = 1; seed <= 8; seed++) {
+      const s = createGame(seed);
+      while (!s.ending && s.age <= 65) {
+        const use = conformAllocation(s, intent);
+        s.alloc = use;
+        const grant = ACTIONS.find((a) => a.id === 'act_grant');
+        if (!grant.cond || grant.cond(s)) runAction(s, grant);
+        const { ending } = await playYear(s, use, async () => 0);
+        if (ending) break;
+      }
+      if (s.grants.yearsPI >= 2) reached += 1;
+    }
+    expect(reached, '按了一輩子計畫書卻湊不到兩年主持，那條路等於關死').toBeGreaterThan(5);
   });
 });
 

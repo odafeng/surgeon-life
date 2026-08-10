@@ -431,20 +431,12 @@ export function settlePhd(state, alloc) {
   return '你通過口試，拿到博士學位。口試委員最後一個問題是：「畢業後，你打算什麼時候做研究？」你看著自己下週的刀表，笑而不答。';
 }
 
-export function settleGrant(state, alloc) {
-  if (state.career !== 'surgery' || getStage(state).key !== 'attending') return null;
-  if (alloc.research < 25) return null;
-  state.grants.applied = true; // 申請紀錄本身就是副教授送審的門票
-  const p = Math.min(
-    0.5,
-    0.1 + state.talents.research * 0.03 + (state.flags.phd === 'done' ? 0.1 : 0),
-  );
-  if (state.rng.chance(p)) {
-    state.grants.yearsPI += 1;
-    return `你的部級研究計畫通過了，今年以主持人身分執行（累計 ${state.grants.yearsPI} 年）。經費不多，但升等表上那一格，終於能填了。`;
-  }
-  return '計畫申請結果：未通過。你寫了兩週的計畫書，審查意見一行：「創新性不足。」';
-}
+// 計畫的申請與結果由 actions.js 的 act_grant 負責，這裡沒有第二條路。
+//
+// 原本 playYear 每年會無條件再跑一次 settleGrant：只要研究 ≥ 25% 就自動送件、
+// 自己擲一次、自己加 yearsPI。於是同一年裡玩家先在行動面板看到「通過了，累計 2 年」，
+// 進事件之後又看到「未通過，創新性不足」——兩套系統各說各話，年資還會重複累計。
+// 而且不按那顆按鈕、光把研究拉到 25% 就會自動送件，讓那個行動失去意義。
 
 export function settlePromotion(state) {
   if (state.career !== 'surgery' || getStage(state).key !== 'attending') return null;
@@ -761,8 +753,6 @@ export async function playYear(state, alloc, chooser, onLog) {
 
   const phdLog = settlePhd(state, alloc);
   if (phdLog) await emit({ kind: 'info', text: phdLog });
-  const grantLog = settleGrant(state, alloc);
-  if (grantLog) await emit({ kind: 'info', text: grantLog });
   const promo = settlePromotion(state);
   if (promo) await emit({ kind: 'info', text: promo });
 
