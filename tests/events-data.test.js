@@ -272,10 +272,27 @@ describe('回報後修正的那幾處', () => {
       s.flags.eggsFrozen = frozenAt;
       return val(fee.log, s);
     };
-    expect(say(33, 52)).toMatch(/19 年前那個名字/);
-    expect(say(33, 36)).toMatch(/3 年前那個名字/);
-    expect(say(33, 34)).toMatch(/去年那個名字/); // 隔年就演的話「1 年前」讀起來很怪
-    expect(say(33, 68)).toMatch(/35 年前那個名字/);
+    // 正文的年數寫中文數字，阿拉伯數字只用在年齡與計數
+    expect(say(33, 52)).toMatch(/十九年前那個名字/);
+    expect(say(33, 36)).toMatch(/三年前那個名字/);
+    expect(say(33, 43)).toMatch(/十年前那個名字/);
+    expect(say(33, 53)).toMatch(/二十年前那個名字/);
+    expect(say(33, 34)).toMatch(/去年那個名字/); // 隔年就演的話「一年前」讀起來很怪
+    expect(say(33, 68)).toMatch(/三十五年前那個名字/);
+    expect(say(33, 52)).not.toMatch(/[0-9]/);
+  });
+
+  // 凍卵窗口 30-38 橫跨 R5 與主治，實測 273 次觸發裡 146 次是主治。
+  it('凍卵那一幕不會對主治講輪訓', () => {
+    const at = (rank) => {
+      const s = createGame(1, 'f');
+      s.age = 34;
+      s.rank = rank;
+      return val(byId('fw_egg_freeze').text, s);
+    };
+    expect(at('none')).toMatch(/輪訓/);
+    expect(at('vs')).not.toMatch(/輪訓/);
+    expect(at('professor')).not.toMatch(/輪訓/);
   });
 
   // 保管費的 cond 就是 flags.eggsFrozen。凡是正文說「停了」的選項，都必須把它清掉，
@@ -318,10 +335,24 @@ describe('回報後修正的那幾處', () => {
 
       const tried = base();
       byId('fw_eggs_used')
-        .choices.find((c) => /開始/.test(c.label))
+        .choices.find((c) => /登記/.test(c.label))
         .set(tried);
       expect(tried.flags.eggsTried).toBeTruthy();
       expect(law.cond(tried), '她三十幾歲就用過那個名字了').toBe(false);
+    });
+
+    // 《人工生殖法》限受術夫妻。這一幕的 cond 只要求「不是單身」，實測 135 次觸發
+    // 全部是未婚——所以法規那道牆要寫在正文與選項裡，開始療程等於先去登記。
+    it('開始療程的那個選項會先完成結婚登記', () => {
+      const start = byId('fw_eggs_used').choices.find((c) => /登記/.test(c.label));
+      const s = createGame(1, 'f');
+      s.age = 39;
+      s.family.stage = 'steady';
+      s.flags.eggsFrozen = 33;
+      start.set(s);
+      expect(s.family.stage, '沒有登記就開始療程等於遊戲自己違反它講過的法規').toBe('married');
+      expect(s.family.marriedAt).toBe(39);
+      expect(val(byId('fw_eggs_used').text, s)).toMatch(/結婚證書/);
     });
 
     it('凍卵線的每一條路都走得到某一個收尾', () => {

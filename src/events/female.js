@@ -7,6 +7,16 @@
 // 凍卵是這條線的核心決策：它不解決衝突，只把期限往後推，而且要付錢。
 const F = (s) => s.gender === 'f';
 
+// 正文的年數寫中文數字（一年、三年前、十年後），阿拉伯數字只用在年齡與計數。
+// 只有保管費那一幕需要動態年數，所以放這裡，不進共用的 text.js。
+const CN = '〇一二三四五六七八九';
+const cnYears = (n) =>
+  n < 10
+    ? CN[n]
+    : n < 20
+      ? `十${n % 10 ? CN[n % 10] : ''}`
+      : `${CN[(n / 10) | 0]}十${n % 10 ? CN[n % 10] : ''}`;
+
 export const FEMALE_EVENTS = [
   // ───────── 訓練期 ─────────
   {
@@ -43,7 +53,12 @@ export const FEMALE_EVENTS = [
     once: true,
     weight: 7,
     cond: (s) => F(s) && s.age >= 30 && s.age <= 38 && s.family.kids === 0,
-    text: '生殖醫學科的同學在群組貼了一張圖：卵子數量對年齡的曲線。你把它滑掉，晚上又滑回來看了一次。三十歲之後那條線愈來愈陡，而你明年還要輪訓。',
+    // 窗口 30-38 橫跨 R5 與主治，實測 273 次觸發裡 146 次是主治——「輪訓」對那一半是錯的職級語境。
+    // 兩句要講同一件事：曲線在陡，而你明年一樣停不下來。
+    text: (s) =>
+      `生殖醫學科的同學在群組貼了一張圖：卵子數量對年齡的曲線。你把它滑掉，晚上又滑回來看了一次。三十歲之後那條線愈來愈陡，${
+        s.rank === 'none' ? '而你明年還要輪訓' : '而你明年的刀表已經排到年底'
+      }。`,
     choices: [
       {
         label: '去凍卵。',
@@ -76,7 +91,7 @@ export const FEMALE_EVENTS = [
     // 1286 次演出裡只有 19 次剛好是三年。flags.eggsFrozen 存的就是凍卵那年的年齡。
     log: (s) => {
       const years = s.age - s.flags.eggsFrozen;
-      const when = years <= 1 ? '去年' : `${years} 年前`;
+      const when = years <= 1 ? '去年' : `${cnYears(years)}年前`;
       return `你繳了。緊急聯絡人那一欄，你寫的還是${when}那個名字，沒有改。`;
     },
   },
@@ -270,10 +285,15 @@ export const FEMALE_EVENTS = [
     ],
   },
   {
+    // 這一幕原本只要求「不是單身」，而實測 135 次觸發全部是未婚——交往穩定 57%、
+    // 約會中 43%、已婚 0。但《人工生殖法》限受術夫妻，也就是這個遊戲自己在 39 歲
+    // 那一幕講的同一條規定。只把 cond 收緊到 married 會讓這一幕消失：600 局裡
+    // 「已婚＋無小孩＋38 歲以上」是 0，在這個遊戲裡結了婚就會有小孩。
+    // 所以把那道牆寫進正文——她翻得過去，只是要先去登記，而順序是反的。
     id: 'fw_eggs_used',
     priority: true,
     scene: 'clinic',
-    mood: 'lifted',
+    mood: 'wry',
     stages: ['attending', 'aesthetic'],
     once: true,
     weight: 6,
@@ -283,21 +303,24 @@ export const FEMALE_EVENTS = [
       s.family.stage !== 'single' &&
       s.age >= 38 &&
       s.family.kids === 0,
-    text: '你三十幾歲那年凍的卵，還在。生殖中心問你要不要開始療程——他們用的詞是「解凍」，聽起來像在講別的東西。',
+    text: '你三十幾歲那年凍的卵，還在。生殖中心說可以開始療程——他們用的詞是「解凍」，聽起來像在講別的東西。掛掉之前對方補了一句：「那結婚證書，記得一起帶過來。」',
     choices: [
       {
-        label: '開始。',
-        hint: '療程要錢，也不保證成功',
+        label: '去戶政事務所登記。',
+        hint: '法規限受術夫妻；療程要錢，也不保證成功',
         effects: { money: -55, health: -5, self: 4 },
-        memory: '你用了三十幾歲那年凍的卵。當年那個決定，替現在的你留了一條路。',
+        memory: '為了解凍那些卵，你跟{配偶}去戶政事務所登記結婚。順序有點怪，但法規是這樣寫的。',
         set: (s) => {
+          s.family.stage = 'married';
+          s.family.marriedAt = s.age; // 婚禮那一幕要靠這個
+          s.family.floor = Math.max(s.family.floor, 20);
           // 走過療程就不能再讓「法規限受術夫妻」那一幕當成第一次領悟演出——
           // 她那時候有那個名字。伴侶後來離開的話 stage 會變回單身，那一幕就接得上來。
           s.flags.eggsTried = s.age;
           if (s.rng.chance(0.55)) s.flags.expectingChild = true;
           else s.flags.eggsFailed = true;
         },
-        log: '打針、抽血、看報告——這次你是病人，而且你看得懂每一個數字，這讓事情變得更難，不是更簡單。',
+        log: '你們排在一對很年輕的情侶後面，他們帶了氣球。承辦問要不要拍照，你說不用。走出來的時候{配偶}說：「順序有點怪。」你說對，順序有點怪。然後才是打針、抽血、看報告——這次你是病人，而且你看得懂每一個數字，這讓事情變得更難，不是更簡單。',
       },
       {
         label: '不用了。',
