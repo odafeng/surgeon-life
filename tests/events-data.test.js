@@ -277,6 +277,45 @@ describe('回報後修正的那幾處', () => {
     expect(say(33, 34)).toMatch(/去年那個名字/); // 隔年就演的話「1 年前」讀起來很怪
     expect(say(33, 68)).toMatch(/35 年前那個名字/);
   });
+
+  // 保管費的 cond 就是 flags.eggsFrozen。凡是正文說「停了」的選項，都必須把它清掉，
+  // 否則帳單會繼續寄——實測 400 局裡有 45 局選了「不用了。」，其中 14 局之後又被收費。
+  describe('說終止保管的選項要真的終止', () => {
+    const clears = (eventId, labelRe) => {
+      const c = byId(eventId).choices.find((x) => labelRe.test(x.label));
+      expect(c, `${eventId} 找不到 ${labelRe}`).toBeTruthy();
+      const s = createGame(1, 'f');
+      s.flags.eggsFrozen = 33;
+      c.set?.(s);
+      return s.flags.eggsFrozen;
+    };
+
+    it('「不用了。」之後不再收保管費', () => {
+      expect(clears('fw_eggs_used', /不用了/)).toBeFalsy();
+    });
+
+    it('簽了「不繼續保存」之後不再收保管費', () => {
+      expect(clears('fw_eggs_let_go', /不繼續保存/)).toBeFalsy();
+    });
+
+    it('選擇繼續保存的話，帳單本來就該繼續來', () => {
+      expect(clears('fw_eggs_let_go', /照舊/)).toBe(33);
+    });
+
+    it('凍卵線的每一條路都走得到某一個收尾', () => {
+      // 之前單身那條沒有出口：39 歲告訴她不能用，然後保管費一路收到六十幾歲。
+      const fee = byId('fw_egg_storage_fee');
+      const exits = ['fw_eggs_used', 'fw_eggs_let_go'];
+      const single = createGame(1, 'f');
+      single.age = 46;
+      single.flags.eggsFrozen = 33;
+      expect(fee.cond(single), '還在收費').toBe(true);
+      expect(
+        exits.some((id) => byId(id).cond(single)),
+        '單身、四十幾歲、還在繳保管費的人，至少要有一幕讓她決定',
+      ).toBe(true);
+    });
+  });
 });
 
 // 前一輪把王慶昌的第一台刀從破裂性腹主動脈瘤改成十二指腸前壁穿孔，
