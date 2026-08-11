@@ -131,6 +131,33 @@ export function backfillUsed(state, journal = []) {
   return added;
 }
 
+/**
+ * 舊存檔補記里程碑發生的年份。
+ *
+ * 恩師的最後一次門診、王慶昌的餅乾盒、阿蘭姐的最後一天，現在都是
+ * 「觸發的隔年 forced」——讀的是觸發那一幕記下的年份。但在那之前存的檔沒有
+ * 那個欄位，於是已經辦過惜別會、已經收到退休申請的人會永遠等不到後續。
+ * 實測 120 個中年存檔降級之後有 7 個卡住（阿蘭姐 6、恩師 2），不會爆，就是少一幕。
+ *
+ * 補成「去年」，讓它今年就演。跟 backfillUsed 一起在讀檔時跑。
+ */
+export function backfillMilestones(state) {
+  const added = [];
+  const fill = (key, when) => {
+    if (state.flags[key] !== undefined || !when) return;
+    state.flags[key] = state.age - 1;
+    added.push(key);
+  };
+  const p = state.people ?? {};
+  fill('mentorRetiredAt', (p.mentor?.stage ?? 0) >= 3 && !state.used.includes('m_last_clinic'));
+  fill('nurseNoticeAt', (p.nurse?.stage ?? 0) >= 2 && !p.nurse?.retired);
+  if (p.patient && p.patient.alive === false && p.patient.diedAt === undefined) {
+    p.patient.diedAt = state.age - 1;
+    added.push('patient.diedAt');
+  }
+  return added;
+}
+
 export function getStage(state) {
   if (state.career === 'aesthetic') return STAGES.aesthetic;
   if (state.age <= 26) return STAGES.pgy;

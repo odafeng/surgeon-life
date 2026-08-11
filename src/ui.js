@@ -5,6 +5,7 @@ import {
   getStage,
   conformAllocation,
   backfillUsed,
+  backfillMilestones,
   rollPointValue,
 } from './engine.js';
 import { PROLOGUE } from './events.js';
@@ -241,6 +242,9 @@ $('btn-continue').onclick = async () => {
   // 存檔可能是在某些事件還沒標成 once 之前存的，那時 used 沒有記過它們的 id。
   // 年誌留著正文，用它把已經演過的一次性事件補回去，否則舊存檔會繼續重播。
   backfillUsed(state, journal);
+  // 里程碑的年份是後來才開始記的。沒有它，已經辦過惜別會、收過退休申請的舊存檔
+  // 會永遠等不到後續那一幕。
+  backfillMilestones(state);
   setPortraitGender(state.gender);
   autoYears = 0;
   $('screen-start').classList.add('hidden');

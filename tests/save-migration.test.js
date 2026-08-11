@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { createGame, backfillUsed } from '../src/engine.js';
+import { createGame, backfillUsed, backfillMilestones } from '../src/engine.js';
 import { EVENTS } from '../src/events.js';
 
 // 把一個事件標成 once 只影響之後的抽籤。已經存在的存檔裡，state.used 從來沒有
@@ -51,5 +51,60 @@ describe('舊存檔的一次性事件', () => {
       backfillUsed(s, [{ kind: 'event', text: eventText(id) }]);
       expect(s.used, id).toContain(id);
     }
+  });
+});
+
+// 惜別會、退休申請、他過世那幾幕，現在都會把發生的年份記下來，後續那一幕靠它
+// 接在隔年。但在那之前存的檔沒有那個欄位——站上有人正玩到一半。
+// 實測把 120 個中年存檔降級成舊格式，不會爆，但有 7 個從此少一幕：
+// 已經辦過惜別會、已經收到退休申請的人，永遠等不到後續。
+describe('舊存檔補記里程碑的年份', () => {
+  const midGame = (mutate) => {
+    const s = createGame(1);
+    s.age = 56;
+    mutate(s);
+    return s;
+  };
+
+  it('辦過惜別會但沒有年份的，補成去年，今年就演得到', () => {
+    const s = midGame((x) => (x.people.mentor.stage = 3));
+    expect(backfillMilestones(s)).toContain('mentorRetiredAt');
+    expect(s.flags.mentorRetiredAt).toBe(55);
+    expect(s.age - s.flags.mentorRetiredAt, '要剛好落在後續那一幕的窗口裡').toBe(1);
+  });
+
+  it('已經演過後續的不會再補', () => {
+    const s = midGame((x) => {
+      x.people.mentor.stage = 3;
+      x.used.push('m_last_clinic');
+    });
+    expect(backfillMilestones(s)).not.toContain('mentorRetiredAt');
+  });
+
+  it('退休申請與過世那兩個也補', () => {
+    const s = midGame((x) => {
+      x.people.nurse.stage = 2;
+      x.people.patient.alive = false;
+    });
+    const filled = backfillMilestones(s);
+    expect(filled).toContain('nurseNoticeAt');
+    expect(filled).toContain('patient.diedAt');
+    expect(s.people.patient.diedAt).toBe(55);
+  });
+
+  it('還沒走到那一步的不要亂補', () => {
+    // 恩師還沒退休、護理長還沒遞申請、王慶昌還活著——補下去就會憑空演出後續
+    const s = midGame(() => {});
+    expect(backfillMilestones(s)).toEqual([]);
+    expect(s.flags.mentorRetiredAt).toBeUndefined();
+  });
+
+  it('已經有年份的不會被蓋掉', () => {
+    const s = midGame((x) => {
+      x.people.mentor.stage = 3;
+      x.flags.mentorRetiredAt = 51;
+    });
+    expect(backfillMilestones(s)).toEqual([]);
+    expect(s.flags.mentorRetiredAt, '玩家真正辦惜別會的那一年不能被改掉').toBe(51);
   });
 });
