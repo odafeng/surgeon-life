@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { createGame } from '../src/engine.js';
 import { decideEnding } from '../src/endings.js';
+import { EVENTS } from '../src/events.js';
 
 describe('decideEnding', () => {
   it('exit at specialty choice is a neutral path, not a verdict', () => {
@@ -73,6 +74,24 @@ describe('decideEnding', () => {
       // 兩個都只有一條路，順序是作者定的：親手開死教你的人排在最前面
       expect(only((s) => (mentorDied(s), kidGone(s)))).toBe('on_my_table');
       expect(only((s) => (mentorLived(s), kidGone(s)))).toBe('his_hands');
+    });
+
+    // 結局正文寫「你就會回到那第七個小時」，那句的前情是 m_op_failure 的第一句。
+    // 那一幕原本只在 attending 演，而走到這個結局的人正是最可能被債務逼出健保的——
+    // 實測 108 局裡有 12 局沒看過它就讀到結局，其中 11 局是因為換到了醫美階段。
+    it('結局回頭指的那一幕，在能拿到結局的每個階段都演得到', () => {
+      const s = createGame(1);
+      s.flags.mentorDiedOnTable = true;
+      const body = decideEnding(s, 'retire').body;
+      const scene = EVENTS.find((e) => e.id === 'm_op_failure');
+
+      // 先確認這個依賴是真的存在，不然下面那條在守一個不存在的東西
+      expect(body).toContain('第七個小時');
+      expect(scene.text).toContain('第七個小時');
+
+      // 結局只看 mentorDiedOnTable，不看階段，所以玩家可能在主治或醫美收尾
+      for (const stage of ['attending', 'aesthetic'])
+        expect(scene.stages, `${stage} 階段讀得到結局，卻演不到它引用的那一幕`).toContain(stage);
     });
 
     it('但人死了就是死了，過勞死仍然最優先', () => {

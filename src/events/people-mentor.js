@@ -280,7 +280,8 @@ export const MENTOR_EVENTS = [
     scene: 'or',
     mood: 'lifted',
     priority: true,
-    stages: ['attending'],
+    // 也要包含 aesthetic：那台刀的後續不會因為你換了工作就不存在。見 m_op_failure。
+    stages: ['attending', 'aesthetic'],
     once: true,
     forced: (s) => s.flags.mentorSurvived && !s.flags.mentorAftermath,
     text: '腫瘤拿乾淨了。他在恢復室醒來的第一句話是：「幾點了。」',
@@ -294,7 +295,12 @@ export const MENTOR_EVENTS = [
     scene: 'or',
     mood: 'weary',
     priority: true,
-    stages: ['attending'],
+    // 這一幕原本只在 attending 演，但走到這裡的人正是最可能被債務逼出健保的：
+    // 臨床配低才開得壞那台刀，臨床配低也一定欠債。恩師死在台上、隔年被逼出去，
+    // 這一幕就永遠演不了——而結局「他死在我的手上」寫著「回到那第七個小時」，
+    // 指的就是這一幕的第一句。實測 108 局拿到那個結局的人裡有 12 局沒看過它，
+    // 其中 11 局是被逼出健保之後才輪到。
+    stages: ['attending', 'aesthetic'],
     once: true,
     forced: (s) => s.flags.mentorDiedOnTable && !s.flags.mentorAftermath,
     text: '第七個小時，血壓開始掉。你做了所有能做的，包括他教過你、以及他沒教過你的。',
