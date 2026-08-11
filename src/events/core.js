@@ -332,27 +332,37 @@ export const CORE_EVENTS = [
     ],
   },
   {
+    // 這一格原本跟 fa_kindergarten 逐字相同，而且沒有年齡閘門——實測 134 次演出裡
+    // 63% 是孩子超過六歲，最大演到二十六歲的「幼稚園親子日」。
+    //
+    // 幼稚園那格已經有人守了（4-6），畫畫 6-11、運動會 6-12、國中 12-15、高中 16-18
+    // 也都有。真正空著的是搬出去之後：f_kid_leaves 演的是離開那一天而且 once，
+    // 之後那些年一幕都沒有。這一格改成守那裡。
+    //
+    // 閘門用 missedDinners 而不是當年的家庭配置：孩子成年之後，你現在給多少時間
+    // 已經不是重點，重點是前面那二十年欠了多少。familyBond 守不住這件事，
+    // 婚姻會把它撐在高點（見 f_reconcile 的註解）。
     id: 'f_kid_stranger',
     mood: 'weary',
     scene: 'home',
-    stages: ['resident', 'attending'],
+    stages: ['attending', 'aesthetic'],
+    once: true,
     weight: 4,
-    cond: (s) => s.family.kids > 0 && s.alloc.family < 25,
-    text: '幼稚園的親子日你又缺席了。老師後來轉述，孩子指著全家福說：「這是我{爸爸}，住在醫院。」',
-    effects: { familyBond: -15, self: -5 },
-    log: '你把這句話轉述給同事聽，大家都笑了。笑完之後，休息室安靜了很久。',
+    cond: (s) => {
+      const kid = s.family.children?.[0];
+      return Boolean(kid) && s.age - kid.bornAt >= 19 && s.stats.missedDinners >= 60;
+    },
+    text: '過年，孩子回來吃飯。席間他講了一件工作上的事，講到一半停下來說：「這個我上次講過了。」你不記得上次是什麼時候。',
+    effects: { familyBond: -6, self: -7 },
+    memory: '過年那頓飯，孩子講到一半說「這個我上次講過了」。你不記得上次是什麼時候。',
+    log: '他沒有不高興，只是把話題換掉了。他換得很自然，像練過很多次。',
   },
-  {
-    id: 'f_anniversary',
-    mood: 'lifted',
-    scene: 'home',
-    stages: ['resident', 'attending', 'aesthetic'],
-    weight: 2,
-    cond: (s) => s.family.stage === 'married' && s.alloc.family >= 25,
-    text: '結婚紀念日，你難得準時下班。餐廳裡你們聊的還是孩子和房貸——但至少，你在。',
-    effects: { familyBond: 10, self: 3 },
-    log: '「在場」聽起來是很低的標準。對你們家來說，它是奢侈品。',
-  },
+
+  // f_anniversary 移除：正文與 log 跟 people-family.js 的 fa_anniversary 一字不差，
+  // 是家庭弧線搬家時留下的第二個孤兒（第一個是這個檔案上面那格幼稚園）。
+  // 那一份寫得更完整——有配偶 bond、是 priority、而且會檢查配偶還在，
+  // 這一份不檢查。它唯一多蓋的是住院醫師階段，實測 400 局只演到 2 次，
+  // 已經把那個階段加進 fa_anniversary。
 
   // ───────────── 醫糾（special：由 engine 依機率注入）─────────────
   {

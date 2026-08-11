@@ -73,7 +73,10 @@ describe('離開健保的那一年', () => {
   it('真的走一遍，離開之後仍然看得到那幾個人', async () => {
     let switched = 0;
     let sawAny = 0;
-    for (let seed = 1; seed <= 120; seed++) {
+    // 樣本從 120 加到 300：轉出去的局數本來只比自檢門檻多一點，
+    // 而事件池一動（刪掉一個孤兒、改了一個閘門）抽籤序列就位移，
+    // 這一條會因為 RNG 消耗不同而在 5 與 6 之間擺盪。加大樣本讓它離邊緣遠一點。
+    for (let seed = 1; seed <= 300; seed++) {
       const s = createGame(seed, seed % 2 ? 'f' : 'm');
       const intent = { clinical: 62, teaching: 5, research: 5, family: 18, personal: 10 };
       let seen = 0;

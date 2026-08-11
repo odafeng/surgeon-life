@@ -505,7 +505,8 @@ export const FAMILY_ARC_EVENTS = [
     priority: true,
     scene: 'home',
     mood: 'lifted',
-    stages: ['attending', 'aesthetic'],
+    // resident 是從 core.js 那份逐字相同的孤兒接過來的，見那裡的註解
+    stages: ['resident', 'attending', 'aesthetic'],
     weight: 3,
     cond: (s) => s.family.stage === 'married' && s.alloc.family >= 22 && !S(s).gone,
     text: '結婚紀念日，你難得準時下班。餐廳裡你們聊的還是孩子和房貸——但至少，你在。',
