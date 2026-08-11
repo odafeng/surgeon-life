@@ -64,14 +64,34 @@ function autosave() {
 }
 
 async function runPrologue() {
+  const skipBtn = $('btn-skip-prologue');
+  let skipped = false;
+  skipBtn.classList.remove('hidden');
+  skipBtn.onclick = () => {
+    skipped = true;
+    skipBtn.classList.add('hidden');
+    // showText 只認 textbox 的點擊，沒有別的解除途徑，所以補一次給它
+    $('textbox').click();
+  };
+
   for (const step of PROLOGUE) {
+    // 跳過的人年誌照樣要有這幾年。那是他的人生紀錄，不是這一段的演出——
+    // 少了它，回頭翻年誌會發現自己是從 25 歲憑空出現的。
+    remember({ kind: 'event', text: step.text });
+    if (skipped) {
+      if (step.exam) remember({ kind: 'info', text: step.outcome });
+      continue;
+    }
+
     setScene(PROLOGUE_SCENE[step.age] || 'corridor');
     if (step.age >= 22) setPortrait(25); // 授袍之後才有白袍
-    remember({ kind: 'event', text: step.text });
 
     if (step.exam) {
       await showText({ src: `${step.age} 歲`, body: step.text }, { wait: false });
+      // askChoice 等的是卡片，textbox 的點擊解不開它——問你話的時候沒有跳過
+      skipBtn.classList.add('hidden');
       const idx = await askChoice(step.choices.map((label) => ({ label })));
+      if (!skipped) skipBtn.classList.remove('hidden');
       remember({ kind: 'choice', text: step.choices[idx] });
       remember({ kind: 'info', text: step.outcome });
       await showText({ src: '放榜', body: step.outcome });
@@ -79,6 +99,8 @@ async function runPrologue() {
       await showText({ src: `${step.age} 歲`, body: step.text });
     }
   }
+  skipBtn.classList.add('hidden');
+  skipBtn.onclick = null;
   await showText({
     src: '本篇開始',
     body: '從現在起，每一年的時間怎麼分，由你決定。\n分完之後還有精力可以花，命運再回應你——通常不是你想要的那種回應。',

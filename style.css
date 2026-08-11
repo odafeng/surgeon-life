@@ -880,6 +880,27 @@ body {
   color: #f3e6d2;
 }
 
+/* 序章跳過。位置跟快轉指示一樣，兩者不會同時出現。
+   刻意做得比其他按鈕安靜——它是給趕時間的人的出口，不是這一段的主要動作。 */
+#btn-skip-prologue {
+  position: absolute;
+  top: calc(var(--u) * 1.2);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 30;
+  font-family: inherit;
+  font-size: calc(var(--u) * 1.1);
+  background: rgba(14, 13, 11, 0.9);
+  border: 1px solid rgba(198, 167, 106, 0.45);
+  color: rgba(198, 167, 106, 0.75);
+  padding: calc(var(--u) * 0.35) calc(var(--u) * 1.2);
+  cursor: pointer;
+}
+#btn-skip-prologue:hover {
+  border-color: var(--gold);
+  color: var(--gold);
+}
+
 /* ───────── 行動面板 ───────── */
 .energy {
   display: flex;
