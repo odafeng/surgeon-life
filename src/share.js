@@ -122,16 +122,62 @@ export async function renderShareCard(ending, state) {
   return canvas;
 }
 
-/** 存到本機。不上傳、不呼叫任何服務——按下去只會多一個檔案。 */
-export async function downloadShareCard(ending, state) {
+const SITE = 'https://odafeng.github.io/surgeon-life/';
+
+async function cardFile(ending, state) {
   const canvas = await renderShareCard(ending, state);
   const blob = await new Promise((r) => canvas.toBlob(r, 'image/png'));
-  if (!blob) return false;
-  const url = URL.createObjectURL(blob);
+  if (!blob) return null;
+  return new File([blob], `外科醫師的一生-${ending.title}.png`, { type: 'image/png' });
+}
+
+/** 存到本機。不上傳、不呼叫任何服務——按下去只會多一個檔案。 */
+export async function downloadShareCard(ending, state) {
+  const file = await cardFile(ending, state);
+  if (!file) return false;
+  const url = URL.createObjectURL(file);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `外科醫師的一生-${ending.title}.png`;
+  a.download = file.name;
   a.click();
   URL.revokeObjectURL(url);
   return true;
+}
+
+/**
+ * 分享結局卡。
+ *
+ * 手機上走 Web Share，系統分享選單裡就有 FB、IG、Threads、LINE——這是唯一
+ * 能把圖直接送進 IG 的路，IG 沒有網頁版的發文入口。桌機多半不支援帶檔案分享，
+ * 那就退回下載，讓玩家自己貼；FB 與 Threads 的網頁 intent 只吃網址不吃圖，
+ * 送出去會變成遊戲本身的預覽圖而不是他那一局，所以不走那條。
+ *
+ * 回傳做了什麼，讓呼叫端把話講對：'shared' | 'cancelled' | 'downloaded'
+ */
+export async function shareCard(ending, state) {
+  const file = await cardFile(ending, state);
+  if (!file) return 'downloaded';
+
+  const payload = {
+    files: [file],
+    title: `外科醫師的一生 — ${ending.title}`,
+    text: `${ending.title}\n${SITE}`,
+  };
+  if (navigator.canShare?.(payload)) {
+    try {
+      await navigator.share(payload);
+      return 'shared';
+    } catch (e) {
+      // 使用者在分享選單按取消不是錯誤，不要當成失敗回報
+      if (e?.name === 'AbortError') return 'cancelled';
+    }
+  }
+
+  const url = URL.createObjectURL(file);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = file.name;
+  a.click();
+  URL.revokeObjectURL(url);
+  return 'downloaded';
 }

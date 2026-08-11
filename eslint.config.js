@@ -31,6 +31,7 @@ export default [
         // 結局卡在 canvas 上畫完再存成檔案
         Image: 'readonly',
         URL: 'readonly',
+        File: 'readonly',
       },
     },
   },

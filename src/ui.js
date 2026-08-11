@@ -13,7 +13,7 @@ import { openAllocPanel } from './alloc-panel.js';
 import { openActionPanel } from './action-panel.js';
 import { settleStreaks } from './actions.js';
 import { save, load, hasSave, clearSave, describeSave } from './save.js';
-import { downloadShareCard } from './share.js';
+import { shareCard, downloadShareCard } from './share.js';
 import {
   $,
   sleep,
@@ -298,20 +298,39 @@ $('btn-restart').onclick = () => {
   window.location.reload();
 };
 
-$('btn-share').onclick = async () => {
-  if (!lastEnding || !state) return;
-  const btn = $('btn-share');
-  btn.disabled = true;
-  const before = btn.textContent;
-  btn.textContent = '產生中…';
-  try {
-    await downloadShareCard(lastEnding, state);
-    btn.textContent = '存好了';
-  } catch {
-    btn.textContent = '存不起來';
-  }
+// 分享跟存檔是兩件事。手機上分享會叫出系統選單（FB、IG、Threads、LINE 都在裡面），
+// 桌機多半不支援帶檔案分享，那就退回下載——按鈕上的字要跟實際發生的事一致。
+const flash = (btn, msg, ms = 1800) => {
+  const before = btn.dataset.label ?? btn.textContent;
+  btn.dataset.label = before;
+  btn.textContent = msg;
   setTimeout(() => {
     btn.textContent = before;
     btn.disabled = false;
-  }, 1600);
+  }, ms);
 };
+
+const withCard = async (btn, run) => {
+  if (!lastEnding || !state) return;
+  btn.disabled = true;
+  btn.dataset.label = btn.dataset.label ?? btn.textContent;
+  btn.textContent = '產生中…';
+  try {
+    flash(btn, await run());
+  } catch {
+    flash(btn, '產不出來');
+  }
+};
+
+$('btn-share').onclick = () =>
+  withCard($('btn-share'), async () => {
+    const how = await shareCard(lastEnding, state);
+    if (how === 'shared') return '分享出去了';
+    if (how === 'cancelled') return '沒有分享';
+    return '這台裝置不能直接分享，已存成圖片';
+  });
+
+$('btn-save-card').onclick = () =>
+  withCard($('btn-save-card'), async () =>
+    (await downloadShareCard(lastEnding, state)) ? '存好了' : '存不起來',
+  );

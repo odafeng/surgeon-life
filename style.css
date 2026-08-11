@@ -1223,7 +1223,8 @@ body {
   position: static;
   bottom: auto;
 }
-#btn-share {
+#btn-share,
+#btn-save-card {
   font-family: inherit;
   font-size: calc(var(--u) * 1.3);
   background: transparent;
@@ -1233,11 +1234,22 @@ body {
   cursor: pointer;
   white-space: nowrap;
 }
-#btn-share:hover:not(:disabled) {
+/* 存成圖片是備援：手機上大家會按分享，這顆是給不能分享的裝置跟想自己排版的人 */
+#btn-save-card {
+  border-color: #8d8068;
+  color: var(--dim);
+  font-size: calc(var(--u) * 1.2);
+  padding-left: calc(var(--u) * 1.2);
+  padding-right: calc(var(--u) * 1.2);
+}
+#btn-share:hover:not(:disabled),
+#btn-save-card:hover:not(:disabled) {
   background: var(--gold);
+  border-color: var(--gold);
   color: var(--ink);
 }
-#btn-share:disabled {
+#btn-share:disabled,
+#btn-save-card:disabled {
   opacity: 0.55;
   cursor: default;
 }
