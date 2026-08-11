@@ -25,42 +25,62 @@ describe('decideEnding', () => {
     expect(decideEnding(s, 'retire').id).toBe('rent');
   });
 
-  // 孩子走偏那條鏈原本幾乎讀不到：120 局裡 53 局拿到 kidEstranged 且活到退休，
-  // 只有 5 局看得到結局，其餘被部主任（21）與恩師（16）先攔下來。
-  // 那兩個結局各自還有別的路可以拿到，這一條沒有。
-  describe('孩子走偏排在職涯結局之前', () => {
-    const estranged = () => {
+  // 判定鏈是有序的，先中先贏，所以順序就是一組取捨。這裡釘的是那組取捨的理由：
+  // 只有一條路能走到的結局，贏過很多條路都拿得到的結局。
+  //
+  // 兩件事各量過一次。孩子走偏：120 局有 53 局拿到旗標且活到退休，原本只有 5 局
+  // 讀得到結局。恩師那台刀：300 局有 62 局死在台上，53 局拿到「算術問題」，只有
+  // 3 局讀到「他死在我的手上」——而那不是巧合，臨床配低才開得壞那台刀，臨床配低
+  // 也一定欠債，兩件事被同一個配置綁在一起。
+  describe('只有一條路的結局排在前面', () => {
+    const only = (mutate) => {
       const s = createGame(1);
-      s.flags.kidEstranged = true;
-      return s;
+      mutate(s);
+      return decideEnding(s, 'retire').id;
     };
-
-    it('壓過部主任接班', () => {
-      const s = estranged();
-      s.people.chief.succeeded = true;
-      expect(decideEnding(s, 'retire').id).toBe('other_peoples_children');
-    });
-
-    it('壓過親手救回恩師', () => {
-      const s = estranged();
+    const aesthetic = (s) => {
+      s.career = 'aesthetic';
+      s.flags.forcedAesthetic = true;
+    };
+    const kidGone = (s) => {
+      s.flags.kidEstranged = true;
+    };
+    const mentorDied = (s) => {
+      s.flags.mentorDiedOnTable = true;
+    };
+    const mentorLived = (s) => {
       s.flags.mentorOperated = true;
       s.flags.mentorSurvived = true;
-      expect(decideEnding(s, 'retire').id).toBe('other_peoples_children');
+    };
+    const chief = (s) => {
+      s.people.chief.succeeded = true;
+    };
+
+    it('恩師死在台上壓過被債務逼出去', () => {
+      expect(only((s) => (mentorDied(s), aesthetic(s)))).toBe('on_my_table');
     });
 
-    it('壓過恩師死在台上', () => {
-      const s = estranged();
-      s.flags.mentorDiedOnTable = true;
-      expect(decideEnding(s, 'retire').id).toBe('other_peoples_children');
+    it('親手救回恩師也壓過被債務逼出去', () => {
+      expect(only((s) => (mentorLived(s), aesthetic(s)))).toBe('his_hands');
     });
 
-    // 但離開健保體系是另一個層級的分岔——那幾局的人生根本不在同一個地方收尾，
-    // 醫美自己那三個結局仍然優先。這是刻意留下的，不是漏掉。
-    it('讓給醫美階段的結局', () => {
-      const s = estranged();
-      s.career = 'aesthetic';
-      s.talents.social = 8;
-      expect(decideEnding(s, 'retire').id).toBe('laser');
+    it('孩子走偏壓過醫美與部主任', () => {
+      expect(only((s) => (kidGone(s), aesthetic(s)))).toBe('other_peoples_children');
+      expect(only((s) => (kidGone(s), chief(s)))).toBe('other_peoples_children');
+    });
+
+    it('恩師那台刀壓過孩子走偏', () => {
+      // 兩個都只有一條路，順序是作者定的：親手開死教你的人排在最前面
+      expect(only((s) => (mentorDied(s), kidGone(s)))).toBe('on_my_table');
+      expect(only((s) => (mentorLived(s), kidGone(s)))).toBe('his_hands');
+    });
+
+    it('但人死了就是死了，過勞死仍然最優先', () => {
+      const s = createGame(1);
+      mentorDied(s);
+      kidGone(s);
+      s.attrs.health = 0;
+      expect(decideEnding(s, 'death').id).toBe('no_self_heal');
     });
   });
 
