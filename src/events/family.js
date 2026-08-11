@@ -418,10 +418,19 @@ export const FAMILY_EVENTS = [
     mood: 'lifted',
     stages: ['attending', 'aesthetic'],
     weight: 2,
+    // log 的最後一句是「這是第一次真的做到」，演兩次就自打嘴巴。
+    // 以前這一幕根本不會演，所以沒人碰到；換了閘門之後它會演了，同一局最多兩次。
+    once: true,
+    // 原本第三條是 familyBond < 55，那一幕因此一次都沒演過：婚姻把家庭時間鎖到 floor，
+    // conformAllocation 會把低於 floor 的配置頂上去，於是婚後 bond 最低點的中位數是 90。
+    // 三條結婚路徑各 200 局，抽中 0 次——放寬門檻救不了，因為量錯了東西。
+    // familyBond 不記錄疏遠，missedDinners 記錄（它算的是低於承諾的那一段，floor 保護不到）。
+    // 實測「前期冷落、四十五歲後回頭」的人 85/199 會成立，中位有 21 年的機會；
+    // 一路給家庭 30% 的對照組 0/199 誤觸發。
     cond: (s) =>
       s.family.stage === 'married' &&
       s.alloc.family >= 30 &&
-      s.attrs.familyBond < 55 &&
+      s.stats.missedDinners >= 60 &&
       !spouseAway(s),
     text: '你休了年假，兩個人去了一趟沒有行程的旅行。第二天早上，{配偶}說：「你知道嗎，我好久沒看過你不看手機了。」',
     effects: { familyBond: 14, self: 6, health: 2 },

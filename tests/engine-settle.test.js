@@ -601,4 +601,37 @@ describe('錯過的晚餐要到得了讀它的那一幕', () => {
       expect(dinnerScene.cond(s), `${s.age} 歲不該成立`).toBe(false);
     }
   });
+
+  // 同一個計數器的另一端。這一幕原本看 familyBond < 55，而婚姻把家庭時間鎖到 floor，
+  // bond 掉不下來（婚後最低點中位 90），三條結婚路徑各 200 局抽中 0 次。
+  // familyBond 不記錄疏遠，missedDinners 記錄。
+  const tripScene = EVENTS.find((e) => e.id === 'f_reconcile');
+
+  it('冷落過又回頭的人，那趟旅行去得成', async () => {
+    const s = createGame(2);
+    let fired = false;
+    while (!s.ending && s.age < 66 && !fired) {
+      // 前期只給 5%，四十五歲之後才回頭——這一幕描寫的就是這個行為
+      const intent = s.age < 45 ? alloc(55, 10, 15, 5, 15) : alloc(25, 10, 10, 35, 20);
+      await playYear(s, conformAllocation(s, intent), async () => 0);
+      if (tripScene.cond(s)) fired = true;
+    }
+    expect(fired, `missedDinners 停在 ${s.stats.missedDinners}，那一幕的條件到不了`).toBe(true);
+  });
+
+  it('那一幕只演一次', () => {
+    // log 的最後一句是「這是第一次真的做到」。換閘門之前它從來不演，所以沒人碰到
+    // 重播問題；換了之後同一局會演到兩次，那句就自打嘴巴。
+    expect(tripScene.log).toMatch(/第一次真的做到/);
+    expect(tripScene.once, '寫著「第一次」的正文不能重播').toBe(true);
+  });
+
+  it('一路都做到的人不會拿到「好久沒看過你不看手機」', async () => {
+    // 沒有辜負過的人不需要和解——會誤觸發就表示這個閘沒有在分辨東西
+    const s = createGame(2);
+    while (!s.ending && s.age < 66) {
+      await playYear(s, conformAllocation(s, alloc(35, 10, 15, 30, 10)), async () => 0);
+      expect(tripScene.cond(s), `${s.age} 歲不該成立`).toBe(false);
+    }
+  });
 });
