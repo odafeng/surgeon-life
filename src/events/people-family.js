@@ -509,7 +509,13 @@ export const FAMILY_ARC_EVENTS = [
     stages: ['resident', 'attending', 'aesthetic'],
     weight: 3,
     cond: (s) => s.family.stage === 'married' && s.alloc.family >= 22 && !S(s).gone,
-    text: '結婚紀念日，你難得準時下班。餐廳裡你們聊的還是孩子和房貸——但至少，你在。',
+    // 「聊的還是孩子」對還沒有小孩的夫妻不成立，實測 324 局裡有 59 局是那樣看到的。
+    // 兩種婚姻聊的東西本來就不一樣，所以分岔而不是加 kids > 0 的閘——
+    // 加閘的話那 18% 就沒有結婚紀念日了，而這個遊戲很少寫「事情變好了」的場景。
+    text: (s) =>
+      s.family.kids > 0
+        ? '結婚紀念日，你難得準時下班。餐廳裡你們聊的還是孩子和房貸——但至少，你在。'
+        : '結婚紀念日，你難得準時下班。餐廳裡你們聊的還是房貸和你下個月的班表——但至少，你在。',
     effects: { familyBond: 10, self: 4 },
     bond: { spouse: 6 },
     log: '「在場」聽起來是很低的標準。對你們家來說，它是奢侈品。',

@@ -262,6 +262,32 @@ describe('回報後修正的那幾處', () => {
     expect(roster.bond?.chief).toBeLessThan(0);
   });
 
+  it('沒有小孩的夫妻，結婚紀念日不會聊到孩子', () => {
+    // 「餐廳裡你們聊的還是孩子和房貸」對還沒有小孩的人不成立，
+    // 實測 324 局裡有 59 局是那樣看到的。分岔而不是加閘——加閘的話那 18%
+    // 就沒有結婚紀念日了，而這個遊戲很少寫「事情變好了」的場景。
+    const at = (kids) => {
+      const s = createGame(1);
+      s.family.kids = kids;
+      if (kids) s.family.children = [{ bornAt: 34 }];
+      return val(byId('fa_anniversary').text, s);
+    };
+    expect(at(0), '還沒有小孩的人不會聊孩子').not.toMatch(/孩子/);
+    expect(at(1)).toMatch(/孩子和房貸/);
+    expect(at(0), '兩支都要留著「但至少，你在」').toMatch(/但至少，你在/);
+  });
+
+  it('舊存檔沒有去年的點值也不會講出怪句子', () => {
+    // lastPointValue 是今天才加的欄位。之前存的檔沒有它，
+    // 那一年就沒有可以比的對象——不能因此掉出 undefined 或 NaN。
+    const s = createGame(1);
+    s.pointValue = 0.88;
+    delete s.lastPointValue;
+    const t = val(byId('as_point_settle').text, s);
+    expect(t).not.toMatch(/undefined|NaN/);
+    expect(t).toMatch(/一模一樣/);
+  });
+
   // 教學服務分數是升等用的，算的是登錄得到的教學行為——演講時數、臨床教學、
   // 論文指導。這一類錯了至少六次，前四次都是零星撞到的（醫材函文、獵頭、爭第一
   // 作者、孕期班表），第五次才整批把 39 處有 teaching 正效果的抓出來一次審完。

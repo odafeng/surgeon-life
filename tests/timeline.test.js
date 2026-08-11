@@ -567,16 +567,28 @@ describe('帶著唯一識別資料的時刻只演一次', () => {
     expect(over.map(([id, n]) => `${id} 演了 ${n} 次`)).toEqual([]);
   });
 
-  it('總額結算可以年年來，但數字要跟著那一年的點值走', async () => {
+  it('總額結算可以年年來，數字是去年跟今年的差', async () => {
     const { EVENTS } = await import('../src/events.js');
     const e = EVENTS.find((x) => x.id === 'as_point_settle');
     expect(e.once, '這一幕是年度事件，不該標 once').toBeUndefined();
-    const low = createGame(1);
-    low.pointValue = 0.72;
-    const high = createGame(1);
-    high.pointValue = 0.95;
-    expect(e.text(low)).not.toBe(e.text(high)); // 點值不同，差額就不同
-    expect(e.text(low)).toMatch(/又貼出來/); // 語氣要說明這不是第一次
+
+    // 原本拿 0.95 當基準（跟最好的一年比），而正文說的是年初與年中——
+    // 一年只擲一個點值，那兩個時間點不存在。而且 Math.max 的下限讓點值 0.92
+    // 以上講出假數字，實測 15.2% 的年份。改成去年對今年，那是真的有兩個值。
+    const at = (last, now) => {
+      const s = createGame(1);
+      s.lastPointValue = last;
+      s.pointValue = now;
+      return e.text(s);
+    };
+    expect(at(0.9, 0.72), '今年比較差就要說少拿').toMatch(/實拿少了 1\.8 萬/);
+    expect(at(0.72, 0.9), '點值會回升，多拿也要講得出來').toMatch(/實拿多了 1\.8 萬/);
+    expect(at(0.85, 0.85), '一樣就說一樣，不要湊一個數字出來').toMatch(/一模一樣/);
+
+    // 兩年一樣的時候不能講成「少了 0.0 萬」，那是舊 clamp 的另一面
+    for (const pv of [0.72, 0.85, 0.92, 0.95]) expect(at(pv, pv)).not.toMatch(/0\.0 萬/);
+
+    expect(at(0.9, 0.72)).toMatch(/又貼出來/); // 語氣要說明這不是第一次
   });
 });
 

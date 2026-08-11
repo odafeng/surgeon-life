@@ -394,6 +394,10 @@ export function rollPointValue(state) {
   // 原本 playYear 才擲，於是盤上顯示的是去年的值：試玩者在 43 歲的盤看到 0.93，
   // 那一年實際是 0.81。ui 在開盤前呼叫一次，playYear 這一次就會是 no-op。
   if (state.flags.pointYear === state.age) return state.pointValue;
+  // 留著上一年的值：as_point_settle 講的是「同樣一台刀，去年開的和今年開的差多少」。
+  // 原本它拿 0.95 當基準，等於在跟「最好的一年」比，而正文說的是年初與年中——
+  // 一年只擲一個點值，那兩個時間點在這個遊戲裡不存在。
+  state.lastPointValue = state.pointValue;
   state.pointValue = Number((0.72 + state.rng.next() * 0.23).toFixed(2));
   state.flags.pointYear = state.age;
   return state.pointValue;
