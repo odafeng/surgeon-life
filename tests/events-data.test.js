@@ -262,6 +262,41 @@ describe('回報後修正的那幾處', () => {
     expect(roster.bond?.chief).toBeLessThan(0);
   });
 
+  // 教學服務分數是升等用的，算的是登錄得到的教學行為——演講時數、臨床教學、
+  // 論文指導。這一類錯了至少六次，前四次都是零星撞到的（醫材函文、獵頭、爭第一
+  // 作者、孕期班表），第五次才整批把 39 處有 teaching 正效果的抓出來一次審完。
+  //
+  // 這裡釘的是那次裁決的兩個方向：判為非教學的不能再長回來，判為諷刺的也不能被
+  // 下一個人當 bug 修掉——後者已經有兩個人差點動手。
+  describe('教學服務分數只給登錄得到的教學', () => {
+    const choiceOf = (id, labelRe) => {
+      const c = byId(id).choices.find((x) => labelRe.test(String(x.label)));
+      expect(c, `${id} 找不到 ${labelRe}`).toBeTruthy();
+      return c;
+    };
+
+    it.each([
+      ['ac_resident_hours', /你自己補/, '替住院醫師補班是人力替代'],
+      ['j_asks_hours', /照實填/, '爭取誠實登錄工時是倡議，而且失敗了'],
+      ['j_the_question', /會。總得有人開刀/, '醫局門口那五分鐘沒有系統登錄得到'],
+      ['j_the_question', /不會。你還來得及/, '同一段對話，反方向也不該扣'],
+      ['c_his_words', /不會出現在任何一張表上/, '辦公室裡的一句實話量不到'],
+      ['c_his_words', /我在幫你想別的辦法/, '整理技術報告是研究協助，而且被退了'],
+    ])('%s「%s」不記教學分', (id, labelRe, why) => {
+      expect(choiceOf(id, labelRe).effects?.teaching ?? 0, why).toBe(0);
+    });
+
+    it('答不出來那一支的教學分是刻意留的諷刺', () => {
+      // 那節門診本來就會登錄成教學時數（a_teaching_credit：「教學時數已認列」）。
+      // 制度記得到你出現過，記不到你答不出來。要拿掉它請先讀那一段的註解。
+      const silent = choiceOf('ac_clerk_question', /答不出來/);
+      expect(silent.effects.teaching, '這個 +2 是諷刺，不是軸錯置').toBe(2);
+      expect(silent.effects.self, '而它同時要讓你付代價，不然諷刺讀起來像獎勵').toBeLessThan(0);
+      // 並排的另一支沒有教學分，笑點靠這個對比成立
+      expect(choiceOf('ac_clerk_question', /這行還是值得/).effects?.teaching ?? 0).toBe(0);
+    });
+  });
+
   // 保管費年年收，這一幕沒有 once。原本寫死「三年前那個名字」，但實測它會在凍卵後
   // 第 1 到第 35 年之間演出，中位 19 年——1286 次演出裡只有 19 次剛好是三年。
   it('保管費通知講的年數是真的年數', () => {

@@ -516,7 +516,9 @@ export const ATTENDING_CAREER_EVENTS = [
     choices: [
       {
         label: '你自己補。',
-        effects: { health: -5, self: 2, teaching: 2 },
+        // 替住院醫師補班是人力替代，不是可登錄的教學活動。
+        // fw_on_call_pregnant 為同一件事立過同一條規矩。
+        effects: { health: -5, self: 2 },
         stats: { missedDinners: 2 },
         log: '主治沒有工時上限，因為主治不用登錄工時。制度保護了他，方法是把那些小時搬到一個沒有欄位的地方。',
       },
@@ -542,6 +544,11 @@ export const ATTENDING_CAREER_EVENTS = [
       },
       {
         label: '你答不出來。',
+        // 這個 +2 是刻意的，不是軸錯置——已經有兩個人（含我）差點把它當 bug 修掉。
+        //
+        // 那節門診本來就會被登錄成教學時數（見 a_teaching_credit：「每一小時都要登錄」、
+        // 「教學時數已認列」）。制度記得到你出現過，記不到你答不出來。
+        // 選項卡上兩支並排時看得最清楚：講場面話的那支沒有教學分，沉默的這支有。
         effects: { self: -5, teaching: 2 },
         log: '你沉默了大概五秒。學生說「我懂了」就走了。你到現在都不確定，他懂的是哪一種答案。',
       },

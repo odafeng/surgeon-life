@@ -85,7 +85,8 @@ export const JUNIOR_EVENTS = [
       },
       {
         label: '「照實填，被退件我去講。」',
-        effects: { self: 3, teaching: 2 },
+        // 替他爭取誠實登錄工時是倡議，不是教學——而且下面那行說它失敗了。
+        effects: { self: 3 },
         bond: { junior: 6 },
         log: '系統退了四次。第五次他改成 80，在附註欄寫「系統上限」。承辦人打電話來，請他把附註也刪掉。',
       },
@@ -173,7 +174,10 @@ export const JUNIOR_EVENTS = [
     choices: [
       {
         label: '「會。總得有人開刀。」',
-        effects: { teaching: 5, self: 4 },
+        // 這是全遊戲最重的一次師徒對話，而制度裡沒有這一格：醫局門口的五分鐘
+        // 沒有任何系統登錄得到。兩支都不動教學分——不會是說「會」不算、
+        // 說「不會」卻要扣。留不留得住他，由 bond 與 path 承擔。
+        effects: { self: 4 },
         bond: { junior: 10 },
         memory: '許士杰問你會不會建議他留在外科，你說會，因為總得有人開刀。',
         set: (s) => {
@@ -184,7 +188,7 @@ export const JUNIOR_EVENTS = [
       },
       {
         label: '「不會。你還來得及。」',
-        effects: { self: -6, teaching: -2 },
+        effects: { self: -6 },
         bond: { junior: 6 },
         memory: '許士杰問你會不會建議他留在外科，你說不會，你說他還來得及。',
         set: (s) => {
