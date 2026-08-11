@@ -98,7 +98,9 @@ export const ATTENDING_CAREER_EVENTS = [
     weight: 2,
     cond: (s) => s.attrs.papers >= 80,
     text: '新一年的期刊分區公告出來。你去年拚到刊出的那本，從第一區掉到第二區。你的論文沒變，計分規則沒變，變的是分母。',
-    effects: { self: -4 },
+    // 正文說少了 18 點，那 18 點以前沒有真的扣。玩家被告知分數掉了，HUD 上的數字
+    // 一動也不動，而這一幕沒有 once，每年都能再宣稱一次。
+    effects: { self: -4, papers: -18 },
     log: '你重算一次歸類計分，少了 18 點。你想申訴，但這件事沒有任何一個單位是負責人。',
   },
   {
