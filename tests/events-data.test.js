@@ -294,6 +294,17 @@ describe('回報後修正的那幾處', () => {
       expect(silent.effects.self, '而它同時要讓你付代價，不然諷刺讀起來像獎勵').toBeLessThan(0);
       // 並排的另一支沒有教學分，笑點靠這個對比成立
       expect(choiceOf('ac_clerk_question', /這行還是值得/).effects?.teaching ?? 0).toBe(0);
+
+      // 但那個對比只有看選項卡才讀得到，所以 log 要用機制語言點一下——
+      // 而且順序不能反：情緒先落地，官僚才收尾。
+      const log = String(silent.log);
+      expect(log, '沒有把制度那一句講出來，+2 讀起來就像遊戲以為你教了東西').toMatch(
+        /登錄成教學時數/,
+      );
+      expect(
+        log.indexOf('他懂的是哪一種答案'),
+        '公文那句蓋在留白前面，那句留白就沒了',
+      ).toBeLessThan(log.indexOf('登錄成教學時數'));
     });
   });
 
