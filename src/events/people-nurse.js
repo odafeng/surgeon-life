@@ -173,14 +173,20 @@ export const NURSE_EVENTS = [
         label: '「再撐兩年，我幫你排輕鬆一點的房。」',
         effects: { self: -2 },
         bond: { nurse: 5 },
-        set: (s) => advance(s, 'nurse', 2),
+        set: (s) => {
+          advance(s, 'nurse', 2);
+          s.flags.nurseNoticeAt = s.age; // 最後一天接在隔年，見 n_last_day
+        },
         log: '她笑出來：「我在這裡三十一年，沒有一間房是輕鬆的。」她把紙收回去，隔天照樣送了出去。',
       },
       {
         label: '問她之後想去哪裡。',
         effects: { self: 2 },
         bond: { nurse: 8 },
-        set: (s) => advance(s, 'nurse', 2),
+        set: (s) => {
+          advance(s, 'nurse', 2);
+          s.flags.nurseNoticeAt = s.age; // 最後一天接在隔年，見 n_last_day
+        },
         log: '她說想回台南顧她媽媽，九十一歲，已經不太認得人了。「總要有人在。」你二十六歲那年說過差不多的話。',
       },
     ],
@@ -192,8 +198,12 @@ export const NURSE_EVENTS = [
     priority: true,
     stages: ['attending'],
     once: true,
-    weight: 4,
-    cond: (s) => N(s).stage >= 2 && !N(s).retired,
+    // 申請那幕推到 stage 2，這一幕原本在抽籤池裡等——實測間隔中位 5 年、最長 14，
+    // 85% 隔兩年以上；更糟的是 199 局看到她遞申請，只有 99 局看到她最後一天，
+    // 其餘的人看著她申請退休，然後她就一直上班到永遠。
+    // 而申請那幕的 log 已經寫明「她把紙收回去，隔天照樣送了出去」——退休是確定的。
+    // 比照 m_last_clinic 與 w_the_box：隔年 forced。
+    forced: (s) => N(s).stage >= 2 && !N(s).retired && s.age - (s.flags.nurseNoticeAt ?? -99) === 1,
     text: '阿蘭姐最後一天上班。她照常七點十分到，照常把第一台的器械台鋪好，照常在交班本上寫下當天的房號。',
     effects: { self: -6 },
     bond: { nurse: 6 },

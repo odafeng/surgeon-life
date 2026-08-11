@@ -833,3 +833,37 @@ describe('年度考核唸的是你真正的數字', () => {
     expect(e.choices[0].log(a)).not.toBe(e.choices[0].log(b));
   });
 });
+
+// 同一個形狀在三條弧線上各出現一次：里程碑事件推進了 stage，而接在它後面的
+// 那一幕留在抽籤池裡，於是要嘛晚很多年，要嘛整局不演。
+//
+//   恩師惜別會 → 最後一次門診    間隔中位 7 年、最長 15，兩幕都演的只有 60 局
+//   王慶昌過世 → 兒子送來餅乾盒  過世的 76 局裡只有 23 局收得到
+//   阿蘭姐遞申請 → 她最後一天    間隔中位 5 年，199 局遞了申請只有 99 局看到她走
+//
+// 三幕都是那條線的情感收束，而且都不是機緣——惜別會辦完本來就要交接病人、
+// 盒子是兒子送來的、退休申請隔天就送出去了。三個都改成「觸發的隔年 forced」。
+// （w_grandson 沒有跟著改：孫子剛好輪到你的醫院見習本來就是運氣。）
+describe('里程碑之後的那一幕不留在抽籤池裡', () => {
+  const cases = [
+    ['m_last_clinic', 'mentorRetiredAt', '恩師的最後一次門診'],
+    ['w_the_box', null, '王慶昌的餅乾盒'], // 用 people.patient.diedAt，不是 flags
+    ['n_last_day', 'nurseNoticeAt', '阿蘭姐的最後一天'],
+  ];
+
+  it.each(cases)('%s 是 forced，不是抽籤', async (id) => {
+    const { EVENTS } = await import('../src/events.js');
+    const e = EVENTS.find((x) => x.id === id);
+    expect(e, `${id} 不見了`).toBeTruthy();
+    expect(e.forced, '留在 cond 就是留在抽籤池裡').toBeTypeOf('function');
+    expect(e.cond, 'forced 與 cond 不要同時存在，閘門會分散在兩個地方').toBeUndefined();
+  });
+
+  it.each(cases.filter(([, flag]) => flag))('%s 只在觸發的隔年演', async (id, flag) => {
+    const { EVENTS } = await import('../src/events.js');
+    const e = EVENTS.find((x) => x.id === id);
+    const src = String(e.forced);
+    expect(src, `${id} 沒有讀 ${flag}`).toContain(flag);
+    expect(src, '要釘在隔年，不是「之後任何一年」').toMatch(/===\s*1/);
+  });
+});
