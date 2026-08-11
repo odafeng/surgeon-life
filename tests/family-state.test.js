@@ -60,6 +60,41 @@ describe('懷孕到出生', () => {
   });
 });
 
+// 「把該辦的辦一辦」那個選項的 log 明寫「沒有婚禮，只有戶政事務所和兩份影本」，
+// 但它設 marriedAt，而 marriedAt 排的就是婚禮那一幕——500 局裡有 296 局隔年去敬酒。
+describe('說了不辦婚禮就不會辦', () => {
+  it('未婚生子後補登記的那條路不會接到婚禮', async () => {
+    let registered = 0;
+    for (let seed = 1; seed <= 60; seed++) {
+      const s = createGame(seed);
+      let sawRegistry = false;
+      let sawWedding = false;
+      while (!s.ending && s.age <= 65) {
+        const alloc = conformAllocation(s, {
+          clinical: 50,
+          teaching: 10,
+          research: 15,
+          family: 10,
+          personal: 15,
+        });
+        const { logs } = await playYear(s, alloc, async (ev) => {
+          if (/meet|reunion/.test(ev.id)) return 0;
+          if (ev.id === 'fa_ring' || ev.id === 'fb_unwed_pregnancy') return 1;
+          return 0; // 「把該辦的辦一辦」是第一個選項
+        });
+        for (const l of logs) {
+          if (l.text.includes('只有戶政事務所和兩份影本')) sawRegistry = true;
+          if (l.text.includes('敬酒到第三桌')) sawWedding = true;
+        }
+      }
+      if (sawRegistry) registered++;
+      expect(sawRegistry && sawWedding, `seed ${seed} 說了沒有婚禮，隔年又去敬酒`).toBe(false);
+    }
+    // 沒有人走到那條路的話，上面的斷言全部是空的
+    expect(registered, '沒有任何一局補登記，這個測試沒有驗到東西').toBeGreaterThan(0);
+  });
+});
+
 describe('第二胎', () => {
   // 不管主角是男是女，生第二個都要是一個真的會被問到的決定，
   // 不是藏在條件裡永遠碰不到的支線。

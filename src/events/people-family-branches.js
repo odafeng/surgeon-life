@@ -265,9 +265,12 @@ export const FAMILY_BRANCH_EVENTS = [
         bond: { spouse: 10 },
         set: (s) => {
           s.family.stage = 'married';
-          s.family.marriedAt = s.age; // 婚禮那一幕要靠這個，不然會拖到已婚十年後才辦
+          s.family.marriedAt = s.age;
           s.family.floor = Math.max(s.family.floor, 25);
           s.flags.unwed = false;
+          // 下面那句 log 明寫「沒有婚禮」，{她}也說了這樣就好。marriedAt 排的是婚禮那一幕，
+          // 於是 500 局裡有 296 局隔年去敬酒，把剛講完的話抵掉。這條路走的就是不辦。
+          s.flags.noWedding = true;
         },
         log: '沒有婚禮，只有戶政事務所和兩份影本。{她}說這樣就好。孩子那天穿了新衣服，不知道發生了什麼事。',
       },

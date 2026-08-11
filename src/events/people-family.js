@@ -130,8 +130,12 @@ export const FAMILY_ARC_EVENTS = [
     // 婚禮是里程碑，辦在答應的隔年，不跟其他事件搶抽籤。
     // 原本只看配偶的 stage，於是有人在結婚十一年、演完結婚紀念日之後又辦了一次；
     // 改成只看窗口又太窄，八成的人一輩子沒辦成——所以走 forced。
+    // noWedding：未婚生子後去戶政事務所補登記那條路，正文已經說了不辦。
     forced: (s) =>
-      s.family.stage === 'married' && !S(s).gone && s.age - (s.family.marriedAt ?? -99) === 1,
+      s.family.stage === 'married' &&
+      !S(s).gone &&
+      !s.flags.noWedding &&
+      s.age - (s.family.marriedAt ?? -99) === 1,
     text: '婚禮當天，你的手機在敬酒到第三桌時響了。是急診，車禍多重外傷，需要人手。',
     choices: [
       {
