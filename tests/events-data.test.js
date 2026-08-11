@@ -262,6 +262,24 @@ describe('回報後修正的那幾處', () => {
     expect(roster.bond?.chief).toBeLessThan(0);
   });
 
+  it('餅乾盒裡的收據張數是算出來的', () => {
+    // w_receipt 早就動態化了，這一幕沒跟上，還寫著「十九張」——
+    // 而這條線實際跨 19 到 34 年，中位 25。收據要算到他過世那年為止，
+    // 不是算到現在：盒子是身後才送來的。
+    const at = (metAt, diedAt, now) => {
+      const s = createGame(1);
+      s.age = now;
+      Object.assign(s.people.patient, { metAt, diedAt, alive: false });
+      const e = byId('w_the_box');
+      return val(e.text, s) + val(e.log, s);
+    };
+    expect(at(32, 59, 60), '32 遇到、59 過世＝二十七年').toMatch(/二十七張/);
+    expect(at(32, 59, 60)).toMatch(/寫到第二十七年/);
+    expect(at(34, 53, 55), '換一條線就要換數字').toMatch(/十九張/);
+    expect(at(32, 59, 65), '盒子晚幾年才送來也不影響張數').toMatch(/二十七張/);
+    expect(at(32, 59, 60), '正文的數字寫中文').not.toMatch(/[0-9]/);
+  });
+
   it('沒有小孩的夫妻，結婚紀念日不會聊到孩子', () => {
     // 「餐廳裡你們聊的還是孩子和房貸」對還沒有小孩的人不成立，
     // 實測 324 局裡有 59 局是那樣看到的。分岔而不是加閘——加閘的話那 18%

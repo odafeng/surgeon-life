@@ -2,6 +2,18 @@
 // 放在這裡是因為 engine → endings → characters 已經是一條 import 鏈，
 // 這兩個函式三邊都要用，只能住在鏈的外面。
 
+/**
+ * 正文裡的數字寫中文（一年、三年前、十九張），阿拉伯數字只用在年齡與計數欄位。
+ * 原本住在 female.js，因為只有保管費那一幕需要動態年數；王慶昌那個餅乾盒
+ * 是第二個呼叫端，所以搬到這裡來。支援 0-99。
+ */
+const CN = '〇一二三四五六七八九';
+export function cn(n) {
+  if (n < 10) return CN[n];
+  if (n < 20) return `十${n % 10 ? CN[n % 10] : ''}`;
+  return `${CN[(n / 10) | 0]}十${n % 10 ? CN[n % 10] : ''}`;
+}
+
 /** 事件的文字欄位都可以是狀態的函式：同一幕，不同的人生說法不一樣。 */
 export function val(v, state) {
   return typeof v === 'function' ? v(state) : v;

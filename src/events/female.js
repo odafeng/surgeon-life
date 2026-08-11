@@ -5,17 +5,9 @@
 // 而制度是照著「不會懷孕的人」設計的。這條線演的就是那個夾縫。
 //
 // 凍卵是這條線的核心決策：它不解決衝突，只把期限往後推，而且要付錢。
-const F = (s) => s.gender === 'f';
+import { cn } from '../text.js';
 
-// 正文的年數寫中文數字（一年、三年前、十年後），阿拉伯數字只用在年齡與計數。
-// 只有保管費那一幕需要動態年數，所以放這裡，不進共用的 text.js。
-const CN = '〇一二三四五六七八九';
-const cnYears = (n) =>
-  n < 10
-    ? CN[n]
-    : n < 20
-      ? `十${n % 10 ? CN[n % 10] : ''}`
-      : `${CN[(n / 10) | 0]}十${n % 10 ? CN[n % 10] : ''}`;
+const F = (s) => s.gender === 'f';
 
 export const FEMALE_EVENTS = [
   // ───────── 訓練期 ─────────
@@ -91,7 +83,7 @@ export const FEMALE_EVENTS = [
     // 1286 次演出裡只有 19 次剛好是三年。flags.eggsFrozen 存的就是凍卵那年的年齡。
     log: (s) => {
       const years = s.age - s.flags.eggsFrozen;
-      const when = years <= 1 ? '去年' : `${cnYears(years)}年前`;
+      const when = years <= 1 ? '去年' : `${cn(years)}年前`;
       return `你繳了。緊急聯絡人那一欄，你寫的還是${when}那個名字，沒有改。`;
     },
   },

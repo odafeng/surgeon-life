@@ -3,11 +3,14 @@
 // 弧線：0 那台刀 → 1 他每年回來，帶自己種的東西 → 2 這一次你可能救不回來 → 3 收束。
 // 只進不退，用 advance() 推。他記得的細節比你多，因為那是他的一生，而你那天只是在值班。
 import { advance } from '../characters.js';
+import { cn } from '../text.js';
 
 const W = (s) => s.people.patient;
 // 認識他幾年了。整條線的年資、他的年齡、以及「他每年都回來」的節奏都靠這個——
 // 沒有它的話，stage 1 的四幕會在連續四年演完，而台詞裡他老了十八歲。
 const years = (s) => (W(s).metAt ? s.age - W(s).metAt : 0);
+/** 他來看診的年數。身後那一幕要算到他走的那年，不能算到現在。 */
+const kept = (s) => Math.max(1, (W(s).diedAt ?? s.age) - (W(s).metAt ?? s.age));
 /** 這一幕至少要等認識滿 n 年。 */
 const after = (n) => (s) => W(s).stage === 1 && W(s).alive && years(s) >= n;
 
@@ -221,6 +224,7 @@ export const PATIENT_EVENTS = [
     memory: '王慶昌走的那天，他兒子說：我爸最後幾天一直在講你的名字。',
     set: (s) => {
       W(s).alive = false;
+      W(s).diedAt = s.age; // 餅乾盒裡的收據算到這一年為止，見 w_the_box
       advance(s, 'patient', 3);
     },
     log: '「我爸最後幾天一直在講你的名字。」告別式上他兒子塞給你一個紙袋，裡面六顆芭樂：「今年最後一批，我爸交代要留給你。」',
@@ -234,10 +238,14 @@ export const PATIENT_EVENTS = [
     once: true,
     weight: 2,
     cond: (s) => !W(s).alive,
-    text: '王慶昌的兒子帶了一個舊餅乾盒來醫院。裡面是十九張門診繳費收據、一張手術同意書影本，還有一本記事簿，每一年的同一天都寫著同一句話。',
+    // 「十九」是寫死的，而這條線實際跨 27 年——w_receipt 第五輪動態化了，
+    // 這一幕沒跟上。張數要算到他過世那年為止，不是算到現在：餅乾盒是身後才送來的。
+    text: (s) =>
+      `王慶昌的兒子帶了一個舊餅乾盒來醫院。裡面是${cn(kept(s))}張門診繳費收據、一張手術同意書影本，還有一本記事簿，每一年的同一天都寫著同一句話。`,
     effects: { self: -4 },
     bond: { patient: 2 },
-    log: '那句是「今仔日我又多活一年」，從第一年寫到第十九年，字跡一年比一年抖。他兒子說：「我爸把開刀那天當生日在過。」',
+    log: (s) =>
+      `那句是「今仔日我又多活一年」，從第一年寫到第${cn(kept(s))}年，字跡一年比一年抖。他兒子說：「我爸把開刀那天當生日在過。」`,
   },
   {
     id: 'w_grandson',
