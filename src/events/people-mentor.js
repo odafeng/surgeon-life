@@ -174,13 +174,19 @@ export const MENTOR_EVENTS = [
         effects: { self: 8 },
         bond: { mentor: 12 },
         memory: '陳文彬的惜別會上，沒有人提他開過幾台刀，所以你上台講了。',
-        set: (s) => advance(s, 'mentor', 3),
+        set: (s) => {
+          advance(s, 'mentor', 3);
+          s.flags.mentorRetiredAt = s.age; // 最後一次門診靠這個接在隔年，見 m_last_clinic
+        },
         log: '台下安靜了兩秒，然後有人開始鼓掌。陳文彬低頭喝茶，沒有看你。散場時他只說：「回去看你的病人。」',
       },
       {
         label: '坐在台下，跟著鼓掌。',
         effects: { self: -5 },
-        set: (s) => advance(s, 'mentor', 3),
+        set: (s) => {
+          advance(s, 'mentor', 3);
+          s.flags.mentorRetiredAt = s.age;
+        },
         log: '你鼓了掌。回程的電梯裡你一直在想那八分鐘，裡面沒有一句話提到他的手。',
       },
     ],
@@ -192,7 +198,12 @@ export const MENTOR_EVENTS = [
     priority: true,
     stages: ['attending'],
     once: true,
-    cond: (s) => M(s).stage >= 3 && !M(s).gone,
+    // 惜別會把弧線推到 stage 3，所以這一幕本來就排在它後面——惜別會不是最後一天，
+    // 辦完還要收尾、把病人一個一個轉出去。壞的是間隔：這一幕原本走抽籤又沒有
+    // 年齡上限，實測 60 局全部晚了中位 7 年，最長 15 年。玩家在 50 歲送走他，
+    // 57 歲才看到他「最後一次門診」，而中間他好像一直在看診。
+    // 改成惜別會的隔年 forced，接得上。
+    forced: (s) => M(s).stage >= 3 && !M(s).gone && s.age - (s.flags.mentorRetiredAt ?? -99) === 1,
     text: '陳文彬最後一次門診。他把追蹤了十幾年的病人一個一個轉給你，每一份病歷後面都夾著手寫的紙條。',
     effects: { self: 5, clinical: 2 },
     bond: { mentor: 6 },

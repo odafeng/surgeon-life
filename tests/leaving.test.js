@@ -92,12 +92,17 @@ describe('離開健保的那一年', () => {
         );
         if (ending) break;
       }
-      if (s.career === 'aesthetic') {
+      // 道別演在離開的隔年（見 leaving.js）。那一年沒有到來的人不算數——
+      // 原本這裡把所有轉出去的人都算進去，於是 seed 184 一紅就以為是回歸：
+      // 那一局 53 歲被逼出去、同一年就過勞死了，隔年不存在。
+      // 65 歲才被逼出去的也是同一回事，只是換成退休先到。
+      const survivedToFarewell = s.age > (s.flags.leftAt ?? Infinity);
+      if (s.career === 'aesthetic' && survivedToFarewell) {
         switched += 1;
         if (seen > 0) sawAny += 1;
       }
     }
     expect(switched, '這個配置要有人被債務逼出去，測試才有意義').toBeGreaterThan(5);
-    expect(sawAny, '轉出去的人不該一個道別都收不到').toBe(switched);
+    expect(sawAny, '活到隔年的人不該一個道別都收不到').toBe(switched);
   });
 });
