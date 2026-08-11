@@ -17,6 +17,7 @@ export default [
       'src/action-panel.js',
       'src/save.js',
       'src/collection.js',
+      'src/share.js',
     ],
     languageOptions: {
       globals: {
@@ -27,6 +28,9 @@ export default [
         setInterval: 'readonly',
         clearInterval: 'readonly',
         clearTimeout: 'readonly',
+        // 結局卡在 canvas 上畫完再存成檔案
+        Image: 'readonly',
+        URL: 'readonly',
       },
     },
   },

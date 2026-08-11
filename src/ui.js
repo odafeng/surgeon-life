@@ -13,6 +13,7 @@ import { openAllocPanel } from './alloc-panel.js';
 import { openActionPanel } from './action-panel.js';
 import { settleStreaks } from './actions.js';
 import { save, load, hasSave, clearSave, describeSave } from './save.js';
+import { downloadShareCard } from './share.js';
 import {
   $,
   sleep,
@@ -34,6 +35,7 @@ import {
 let state = null;
 let journal = [];
 let autoYears = 0; // 還要快轉幾年
+let lastEnding = null; // 結局卡要用，結局畫面關掉之前都留著
 
 setScene('or'); // 標題畫面就先鋪好開刀房，不要開場是一片黑
 
@@ -192,6 +194,7 @@ async function yearLoop() {
       autoYears = 0;
       renderFastFlag();
       clearSave(); // 走到結局就沒有「繼續」可言了
+      lastEnding = ending;
       await sleep(700);
       $('textbox').classList.add('hidden');
       $('cards').classList.add('hidden');
@@ -293,4 +296,22 @@ for (const b of document.querySelectorAll('.close-overlay')) {
 $('btn-restart').onclick = () => {
   clearSave();
   window.location.reload();
+};
+
+$('btn-share').onclick = async () => {
+  if (!lastEnding || !state) return;
+  const btn = $('btn-share');
+  btn.disabled = true;
+  const before = btn.textContent;
+  btn.textContent = '產生中…';
+  try {
+    await downloadShareCard(lastEnding, state);
+    btn.textContent = '存好了';
+  } catch {
+    btn.textContent = '存不起來';
+  }
+  setTimeout(() => {
+    btn.textContent = before;
+    btn.disabled = false;
+  }, 1600);
 };
